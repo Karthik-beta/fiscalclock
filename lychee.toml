@@ -9,4 +9,6 @@ exclude = [
   # Placeholders in templates, not real links.
   '^https://github\.com/Karthik-beta/fiscalclock/issues/new\?template=',
   '^https://github\.com/Karthik-beta/fiscalclock/security/advisories/new$',
+  # npmjs.com answers automated requests with 403 even for packages that exist.
+  '^https://www\.npmjs\.com/',
 ]

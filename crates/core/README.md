@@ -1,5 +1,11 @@
 # fiscalclock
 
+[![crates.io](https://img.shields.io/crates/v/fiscalclock?label=crates.io)](https://crates.io/crates/fiscalclock)
+[![docs.rs](https://img.shields.io/docsrs/fiscalclock?label=docs.rs)](https://docs.rs/fiscalclock)
+[![MSRV](https://img.shields.io/crates/msrv/fiscalclock?label=MSRV)](https://crates.io/crates/fiscalclock)
+[![CI](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml)
+[![Licence: MIT OR Apache-2.0](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue)](#licence)
+
 The Rust core of [fiscalclock](https://github.com/Karthik-beta/fiscalclock), a fiscal calendar engine. You describe a fiscal calendar as a JSON definition, and the crate answers questions about it: which fiscal year, quarter, period and week a date falls in, the bounds of any period, labels such as `Q4 FY2023`, and a day-by-day date dimension.
 
 The crate has no built-in calendars. Every calendar, including well-known ones, is a definition you supply. The format is specified in [`spec/definition-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md) and the operations in [`spec/api-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md).
@@ -52,9 +58,22 @@ Errors are JSON objects with a stable `code`, the JSON `path` of the offending f
 - Dependencies: `serde`, `serde_json` and `sha2`.
 - Minimum supported Rust version: 1.85.
 
-## Testing
+## How the results are checked
 
-Results are checked against conformance vectors whose expected values come from independent generators and cited sources, never from this crate. Other checks are a day-by-day differential test against a slow reference implementation for every date from 1900 to 2200, and property tests. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
+- 112 shared conformance vector files (4,070 cases) are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
+- Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
+- Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
+- On every push, CI runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.
+
+## Supply chain
+
+This package is built and published by the [release workflow](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/release.yml) from a version tag on `main`, after a smoke test of the built packages on Linux, macOS and Windows and the maintainer's approval. Every release file has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations). To check the `.crate` file attached to the GitHub release:
+
+```sh
+gh attestation verify <file> --repo Karthik-beta/fiscalclock
+```
+
+Report vulnerabilities privately as described in [SECURITY.md](https://github.com/Karthik-beta/fiscalclock/blob/main/SECURITY.md). Changes are listed in the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md).
 
 ## Licence
 

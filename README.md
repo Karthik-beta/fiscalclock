@@ -1,23 +1,32 @@
 # fiscalclock
 
+[![CI](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml)
+[![docs](https://github.com/Karthik-beta/fiscalclock/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/Karthik-beta/fiscalclock/actions/workflows/docs.yml)
+[![crates.io](https://img.shields.io/crates/v/fiscalclock?label=crates.io)](https://crates.io/crates/fiscalclock)
+[![docs.rs](https://img.shields.io/docsrs/fiscalclock?label=docs.rs)](https://docs.rs/fiscalclock)
+[![PyPI](https://img.shields.io/pypi/v/fiscalclock?label=PyPI)](https://pypi.org/project/fiscalclock/)
+[![npm](https://img.shields.io/npm/v/fiscalclock?label=npm)](https://www.npmjs.com/package/fiscalclock)
+[![Licence: MIT OR Apache-2.0](https://img.shields.io/badge/licence-MIT%20OR%20Apache--2.0-blue)](#licence)
+
 fiscalclock is an open-source fiscal calendar engine. You describe your organisation's fiscal calendar as a JSON definition, and it tells you which fiscal year, quarter, period and week any date falls in, the bounds of every period, and the labels your organisation uses for them.
 
-**Status:** pre-release. The 0.1.0 release is in preparation and nothing has been published to any registry yet. The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
+**Status:** 0.1.0 is the first release. The definition format and API are version 1 drafts and may change before 1.0; every change is recorded in the [changelog](CHANGELOG.md). The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
 
 ## Why it exists
 
 Real fiscal calendars vary in how the year is bounded (a fixed date, or a 52/53-week rule such as "the Saturday nearest 31 January"), how it is subdivided (calendar months, 4-4-5 week patterns, thirteen 4-week periods) and how it is named ("FY2026", "fiscal 2025", "FY 2025-26"). Existing tools each cover part of this inside one ecosystem; the [Analysis](https://github.com/Karthik-beta/fiscalclock/wiki/Analysis) page compares them. fiscalclock aims to be one open, data-defined engine whose answers are identical in Rust, Python and JavaScript.
 
-## Planned packages
+## Packages
 
-All packages are planned; none is published yet.
+All three packages are built from the same Rust core and return the same JSON for the same input.
 
-| Package | Registry | Planned for |
-| --- | --- | --- |
-| `fiscalclock` Rust crate | crates.io | 0.1.0 |
-| `fiscalclock` Python package | PyPI | 0.1.0 |
-| `fiscalclock` npm package (WebAssembly) | npm | 0.1.0 |
-| Command-line interface and MCP server | npm and PyPI | 0.4.0 |
+| Package | Install | Supports | Guide |
+| --- | --- | --- | --- |
+| Rust crate | `cargo add fiscalclock` | Rust 1.85 and later, `no_std` with `alloc` | [`crates/core`](crates/core/README.md) |
+| Python package | `pip install fiscalclock` | CPython 3.10 and later, and free-threaded 3.14; wheels for Linux, macOS and Windows | [`bindings/python`](bindings/python/README.md) |
+| npm package | `npm install fiscalclock` | Node.js 22 and later, and browsers (WebAssembly) | [`bindings/js`](bindings/js/README.md) |
+
+A command-line interface and an MCP server are planned for 0.4.0.
 
 The [Roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) lists what each release contains and the correctness gate it must pass.
 
@@ -47,9 +56,22 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 
 ## Why you can check the results
 
-- **Shared conformance vectors.** One set of JSON test vectors in [`conformance/`](conformance/README.md) is loaded by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output.
-- **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF calendar against NRF's published 53-week years.
+- **Shared conformance vectors.** 112 vector files with 4,070 cases in [`conformance/`](conformance/README.md) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output. CI regenerates the generated vectors and fails if they drift.
+- **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years NRF publishes (2006, 2012, 2017 and 2023).
+- **A second implementation.** A deliberately slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 across 960 generated definitions.
+- **Property tests.** Periods tile their year without gaps or overlaps, nest correctly, and round-trip through `shift` and through `format` and `parse`; week-based years have 364 or 371 days and 71 long years in every 400.
+- **Identical output in every language.** On every push, [CI](.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows, and requires the 14 raw outputs to match the Rust output byte for byte.
 - **Reproducible verification.** Every date-arithmetic claim in the design documents is reproduced by a standard-library script in [`research/verification/`](research/verification/README.md), which CI reruns on every pull request.
+
+## Supply chain
+
+- Releases are built and published only by the [release workflow](.github/workflows/release.yml), from a version tag on `main`. Each publish step needs the maintainer's approval in a protected GitHub environment.
+- Before publishing, the workflow installs the built wheel and npm tarball on Linux, macOS and Windows and runs a smoke test.
+- Every release file has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations). Check a downloaded file with `gh attestation verify <file> --repo Karthik-beta/fiscalclock`.
+- PyPI releases use trusted publishing, with no stored token. npm releases are published with provenance. The first crates.io and npm releases are published with API tokens; switching both registries to trusted publishing is tracked in [#35](https://github.com/Karthik-beta/fiscalclock/issues/35).
+- The core depends only on `serde`, `serde_json` and `sha2`, forbids `unsafe` code, and reads no clock, environment variable or global state.
+
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
