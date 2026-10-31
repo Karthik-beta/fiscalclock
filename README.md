@@ -68,7 +68,7 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 - Releases are built and published only by the [release workflow](.github/workflows/release.yml), from a version tag on `main`. Each publish step needs the maintainer's approval in a protected GitHub environment.
 - Before publishing, the workflow installs the built wheel and npm tarball on Linux, macOS and Windows and runs a smoke test.
 - Every release file has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations). Check a downloaded file with `gh attestation verify <file> --repo Karthik-beta/fiscalclock`.
-- PyPI releases use trusted publishing, with no stored token. npm releases are published with provenance. The first crates.io and npm releases are published with API tokens; switching both registries to trusted publishing is tracked in [#35](https://github.com/Karthik-beta/fiscalclock/issues/35).
+- All three registries use trusted publishing: the release workflow authenticates with short-lived OIDC credentials, and the repository stores no registry tokens. npm releases also carry npm provenance. Version 0.1.0 was published to crates.io and npm with API tokens, which have since been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The core depends only on `serde`, `serde_json` and `sha2`, forbids `unsafe` code, and reads no clock, environment variable or global state.
 
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
