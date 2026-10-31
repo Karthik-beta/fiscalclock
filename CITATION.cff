@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "fiscalclock: a fiscal calendar engine for Rust, Python and JavaScript"
+type: software
+authors:
+  - family-names: Parameshwara
+    given-names: Karthik
+repository-code: "https://github.com/Karthik-beta/fiscalclock"
+url: "https://github.com/Karthik-beta/fiscalclock/wiki"
+license:
+  - MIT
+  - Apache-2.0
+keywords:
+  - fiscal calendar
+  - fiscal year
+  - 4-4-5 calendar
+  - 52-53-week year
+  - retail calendar
