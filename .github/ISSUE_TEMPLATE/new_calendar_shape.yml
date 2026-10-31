@@ -1,0 +1,45 @@
+name: New calendar shape
+description: A real calendar that the definition format cannot express.
+title: "Calendar shape: "
+labels: ["type: feature", "calendar: new-shape", "area: spec", "status: needs-triage"]
+body:
+  - type: input
+    id: example
+    attributes:
+      label: Real example
+      description: The organisation or government that uses this calendar.
+    validations:
+      required: true
+  - type: input
+    id: source-url
+    attributes:
+      label: Source link
+      description: A filing, statute or official publication that describes the calendar.
+    validations:
+      required: true
+  - type: textarea
+    id: quote
+    attributes:
+      label: Verbatim quote
+      description: The exact sentence that states the rule.
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: What the format cannot express
+      description: Which part of the rule has no field or value in the definition format, and what goes wrong if you approximate it.
+    validations:
+      required: true
+  - type: textarea
+    id: attempt
+    attributes:
+      label: Closest definition you could write
+      render: json
+  - type: textarea
+    id: periods
+    attributes:
+      label: Example periods
+      description: Several reported period start and end dates, with where each appears in the source.
+    validations:
+      required: true
