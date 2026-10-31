@@ -1,0 +1,36 @@
+[build-system]
+requires = ["maturin>=1.9,<2"]
+build-backend = "maturin"
+
+[project]
+name = "fiscalclock"
+version = "0.1.0"
+description = "Fiscal calendar engine: compute any fiscal calendar from a JSON definition"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-MIT", "LICENSE-APACHE"]
+authors = [{ name = "Karthik Parameshwara" }]
+keywords = ["fiscal", "calendar", "4-5-4", "retail", "accounting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Free Threading :: 2 - Beta",
+    "Programming Language :: Rust",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/Karthik-beta/fiscalclock"
+Documentation = "https://github.com/Karthik-beta/fiscalclock/wiki"
+Issues = "https://github.com/Karthik-beta/fiscalclock/issues"
+Changelog = "https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md"
+
+[tool.maturin]
+python-source = "python"
+module-name = "fiscalclock._fiscalclock"
+features = ["pyo3/extension-module"]

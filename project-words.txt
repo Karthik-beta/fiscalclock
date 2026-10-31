@@ -1,5 +1,6 @@
 Karthik
 Parameshwara
+cdylib
 fiscalclock
 linkcheck
 lycheeverse
