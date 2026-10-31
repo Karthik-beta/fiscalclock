@@ -1,0 +1,3 @@
+# Python binding
+
+This folder will hold the `fiscalclock` Python package: a PyO3 extension module built with maturin, plus a small pure-Python layer that converts between Python types and the Rust core's JSON API. It accepts only exact `datetime.date` objects or ISO `YYYY-MM-DD` strings and rejects `datetime.datetime` and pandas `Timestamp` values, so a timestamp can never be silently truncated to the wrong day. Wheels are built for the stable ABI (abi3) and for free-threaded CPython 3.14. No calendar logic lives here; see [ADR-0002](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0002-single-rust-core-with-thin-bindings).
