@@ -81,3 +81,5 @@ jobs:
           python-version: "3.13"
       - name: Verification output matches the committed output
         run: python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
+      - name: Conformance vectors match their generators
+        run: python -I conformance/generators/check.py
