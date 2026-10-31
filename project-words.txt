@@ -20,6 +20,7 @@ manylinux
 msvc
 musl
 musllinux
+npmjs
 proptest
 pypa
 pypistats
