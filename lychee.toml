@@ -1,0 +1,13 @@
+# Link checking for every Markdown file in the repository.
+max_retries = 3
+timeout = 30
+accept = ["200..=299", "429"]
+user_agent = "Mozilla/5.0 (compatible; fiscalclock-linkcheck; +https://github.com/Karthik-beta/fiscalclock)"
+include_fragments = false
+exclude_path = ["target", "node_modules", "bindings/js/pkg", ".venv"]
+
+exclude = [
+  # Placeholders in templates, not real links.
+  '^https://github\.com/Karthik-beta/fiscalclock/issues/new\?template=',
+  '^https://github\.com/Karthik-beta/fiscalclock/security/advisories/new$',
+]

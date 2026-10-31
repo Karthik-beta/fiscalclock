@@ -1,0 +1,83 @@
+name: docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
+
+  spelling:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: streetsidesoftware/cspell-action@ce1816e4ce36532956ac6e983737392774b6e169 # v9.2.0
+        with:
+          incremental_files_only: false
+          config: cspell.json
+
+  links:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config lychee.toml --no-progress "./**/*.md"
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  yaml:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: yamllint
+        run: uvx yamllint==1.38.0 --strict .
+      - name: Issue forms match GitHub's schema
+        run: >-
+          uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-forms
+          $(ls .github/ISSUE_TEMPLATE/*.yml | grep -v config.yml)
+      - name: Issue template chooser matches GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-config .github/ISSUE_TEMPLATE/config.yml
+      - name: Workflows match GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-workflows .github/workflows/*.yml
+      - name: Discussion forms match GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
+      - name: Dependabot config matches GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+
+  verification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Verification output matches the committed output
+        run: python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
