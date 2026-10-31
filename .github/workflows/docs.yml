@@ -34,6 +34,12 @@ jobs:
         with:
           incremental_files_only: false
           config: cspell.json
+          # Prose and configuration only; code identifiers are not English words.
+          files: |
+            **/*.md
+            **/*.yml
+            **/*.yaml
+            **/*.toml
 
   links:
     runs-on: ubuntu-24.04
