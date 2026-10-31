@@ -1,0 +1,24 @@
+{
+  "name": "definition-invalid-json-not-object",
+  "description": "Invalid definition. Rule: api-v1 catalogue: INVALID_JSON when the definition is not valid JSON or not an object; path '' means the whole input. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": [
+    1,
+    2
+  ],
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "INVALID_JSON",
+        "path": ""
+      }
+    }
+  ]
+}

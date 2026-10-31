@@ -1,0 +1,355 @@
+{
+  "name": "runtime-nrf",
+  "description": "Runtime errors on the NRF 4-5-4 definition: malformed dates (including year 0000, a time suffix and a zone suffix), missing periods, bad arguments, unknown scheme, unrecognised labels, and dimension ranges with start after end_exclusive or longer than 146,097 days (INVALID_ARGUMENT; the spec does not pin which argument the path names, read here as end_exclusive).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/api-v1.md error catalogue and conventions; expected values computed by conformance/generators/fiscal_oracle.py",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 12
+      }
+    },
+    "naming": {
+      "default": "nrf",
+      "schemes": {
+        "nrf": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "efc8868a4b19eaab",
+        "canonical": "{\"naming\":{\"default\":\"nrf\",\"schemes\":{\"nrf\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"FY{yyyy} P{pp}\",\"quarter\":\"FY{yyyy} Q{q}\",\"week\":\"FY{yyyy} W{ww}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"extra_week\":{\"period\":12},\"periods\":[4,5,4,4,5,4,4,5,4,4,5,4],\"quarters\":[3,3,3,3],\"type\":\"week_pattern\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"sunday\"},\"year\":{\"anchor\":{\"day\":\"last\",\"edge\":\"end\",\"month\":1,\"rule\":\"nearest\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2023-02-29"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2023-2-01"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2023-01-05T00:00:00"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "20230105"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0000-06-15"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2023-13-01"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": " 2023-01-05"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2023-01-05Z"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2023,
+        "index": 5
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2023,
+        "index": 13
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 53
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 0
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 53
+        },
+        "n": 1
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "period"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "month",
+        "year": 2023,
+        "index": 1
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "level"
+      }
+    },
+    {
+      "op": "parent",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        }
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "period"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2023,
+          "index": 1
+        },
+        "n": 1.5
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "n"
+      }
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        },
+        "level": "day"
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "level"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        },
+        "scheme": "nope"
+      },
+      "expect_error": {
+        "code": "SCHEME_NOT_FOUND",
+        "path": "scheme"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY2023 X1"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": ""
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "2024-13-01",
+        "end_exclusive": "2024-02-07"
+      },
+      "expect_error": {
+        "code": "INVALID_DATE",
+        "path": "start"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "2024-02-07",
+        "end_exclusive": "2024-02-06"
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "end_exclusive"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "2000-01-01",
+        "end_exclusive": "2400-01-02"
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "end_exclusive"
+      }
+    },
+    {
+      "op": "dimension_csv",
+      "args": {
+        "start": "2024-02-07",
+        "end_exclusive": "2024-02-06"
+      },
+      "expect_error": {
+        "code": "INVALID_ARGUMENT",
+        "path": "end_exclusive"
+      }
+    }
+  ]
+}

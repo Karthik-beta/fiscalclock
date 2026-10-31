@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Karthik-beta/fiscalclock/conformance/schema/vector.schema.json",
+  "title": "fiscalclock conformance vector",
+  "description": "One vector file: a calendar definition and the cases run against it. See conformance/README.md.",
+  "type": "object",
+  "required": ["name", "description", "source", "definition", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "description": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "required": ["kind", "citation", "url", "checked_by"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["oracle", "cited", "spec", "errors"]},
+        "citation": {"type": "string", "minLength": 1},
+        "url": {"type": ["string", "null"]},
+        "checked_by": {"type": "string", "minLength": 1}
+      }
+    },
+    "definition": {
+      "description": "A calendar definition, spec version 1. Any JSON value, because error vectors include definitions that are not objects."
+    },
+    "cases": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/case"}}
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["op", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "op": {"enum": ["validate", "locate", "period", "shift", "parent", "children", "years", "format", "parse", "dimension", "dimension_csv", "explain"]},
+        "args": {"type": "object"},
+        "expect": {"description": "The exact result, compared as parsed JSON."},
+        "expect_subset": {"type": "object", "description": "Every key given must be present with this value. Nested objects are compared the same way, recursively."},
+        "expect_error": {
+          "oneOf": [
+            {"$ref": "#/$defs/error"},
+            {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/error"}}
+          ]
+        }
+      },
+      "oneOf": [
+        {"required": ["expect"]},
+        {"required": ["expect_subset"]},
+        {"required": ["expect_error"]}
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {"enum": ["INVALID_JSON", "UNKNOWN_FIELD", "MISSING_FIELD", "INVALID_TYPE", "INVALID_VALUE", "UNSUPPORTED_SPEC_VERSION", "UNSUPPORTED_FEATURE", "UNSUPPORTED_COMBINATION", "WEEKS_SUM_MISMATCH", "QUARTERS_SUM_MISMATCH", "EXTRA_WEEK_MISSING", "EXTRA_WEEK_OUT_OF_RANGE", "SHORT_MONTH_POLICY_MISSING", "SUBDIVISION_YEAR_MISMATCH", "DEFAULT_SCHEME_MISSING", "INVALID_TEMPLATE", "CENTURY_PIVOT_MISSING", "YEAR_NUMBER_COLLISION", "MAJORITY_TIE", "INVALID_DATE", "TIMESTAMP_REJECTED", "INVALID_ARGUMENT", "OUT_OF_RANGE", "PERIOD_NOT_FOUND", "LEVEL_NOT_NESTED", "SCHEME_NOT_FOUND", "TEMPLATE_MISSING", "LABEL_NOT_RECOGNISED", "AMBIGUOUS_LABEL"]},
+        "path": {"type": "string"},
+        "details": {"description": "When present, compared exactly with the error's details (used for AMBIGUOUS_LABEL candidates). Omitted when the spec does not pin the content, as for YEAR_NUMBER_COLLISION and MAJORITY_TIE details.years."}
+      }
+    }
+  }
+}
