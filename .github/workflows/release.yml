@@ -38,7 +38,7 @@ jobs:
         run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - name: The changelog has a section for this version
         if: env.PUBLISH == 'true'
-        run: grep -q "^## \[${GITHUB_REF_NAME#v}\]" CHANGELOG.md
+        run: python3 -I scripts/release_notes.py "$GITHUB_REF_NAME" > /dev/null
 
   crate:
     needs: check
@@ -304,8 +304,7 @@ jobs:
       - name: Create the GitHub release from the changelog section
         run: |
           version="${GITHUB_REF_NAME#v}"
-          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > notes.md
-          test -s notes.md
+          python3 -I scripts/release_notes.py "$version" > notes.md
           gh release create "$GITHUB_REF_NAME" artefacts/* --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
