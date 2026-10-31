@@ -66,7 +66,44 @@ Write an ADR before changing the definition format, the result of any operation 
 
 ## Build, test and lint
 
-TBD — added when code lands. Until then, use only the commands that the CI workflows in `.github/workflows/` run.
+These are the commands CI runs (`.github/workflows/ci.yml` and `docs.yml`). Run the ones that cover your change, from the repository root, and report them with their results.
+
+Rust core:
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --release -p fiscalclock
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p fiscalclock
+cargo build -p fiscalclock --target wasm32-unknown-unknown --release
+cargo +1.85 check -p fiscalclock
+```
+
+Python package (needs maturin 1.15.0):
+
+```sh
+maturin build --release --locked --out wheels --manifest-path bindings/python/Cargo.toml
+python -m pip install --no-index --find-links wheels fiscalclock
+python -m unittest discover -s bindings/python/tests
+```
+
+npm package (needs `wasm-bindgen-cli` at the version pinned in `bindings/js/Cargo.toml`):
+
+```sh
+cd bindings/js && npm ci && npm run build && npm test
+```
+
+Each conformance run writes `target/transcripts/<language>.txt`. After running all three, `cmp target/transcripts/rust.txt target/transcripts/python.txt` and the same for `js.txt` must report no difference.
+
+Evidence, vectors and versions:
+
+```sh
+python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
+python -I conformance/generators/check.py
+python -I scripts/check_versions.py
+```
+
+Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md"`, `lychee --config lychee.toml "./**/*.md"` and `yamllint --strict .`.
 
 ## Commits and pull requests
 
