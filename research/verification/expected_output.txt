@@ -1,0 +1,32 @@
+[PASS] C01 400-year rule: 168 rules x 2 windows [(1601, 2000), (2001, 2400)]; every rule has 71 long years in each window
+[PASS] C02 400 Gregorian years hold 20,871 weeks: 146097 days = 20871.0 weeks
+[PASS] C03 NRF 53-week years 2016-2030: 53-week fiscal years: [2017, 2023, 2028]
+[PASS] C04 NRF fiscal 2023 bounds: fiscal 2023 runs 2023-01-29 to 2024-02-03 (371 days)
+[PASS] C05 NRF fiscal 2024 start: fiscal 2024 starts 2024-02-04
+[PASS] C06 same_weekday example: 2024-02-04 minus 364 days = 2023-02-05, fiscal week 2 of fiscal 2023
+[PASS] C07 same_position is 371 days after a 53-week year: week 1 day 1 of fiscal 2024 minus 371 days = 2023-01-29 (fiscal 2023 week 1 day 1 = 2023-01-29)
+[PASS] C08 NRF 2017 restated first week: fiscal week 1 = 2017-01-29..2017-02-04; restated week 1 = 2017-02-05..2017-02-11
+[PASS] C09 Apple 53-week years 2016-2030: 53-week fiscal years: [2017, 2023, 2028]
+[PASS] C10 broadcast months are 4 or 5 weeks 2020-2031: 
+    2020: months 4-4-5-4-5-4-4-5-4-4-5-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2021: months 5-4-4-4-5-4-4-5-4-5-4-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2022: months 5-4-4-4-5-4-5-4-4-5-4-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2023: months 5-4-4-5-4-4-5-4-4-5-4-5 | quarters [13, 13, 13, 14] | year 53 weeks
+    2024: months 4-4-5-4-4-5-4-4-5-4-4-5 | quarters [13, 13, 13, 13] | year 52 weeks
+    2025: months 4-4-5-4-4-5-4-5-4-4-5-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2026: months 4-4-5-4-5-4-4-5-4-4-5-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2027: months 5-4-4-4-5-4-4-5-4-5-4-4 | quarters [13, 13, 13, 13] | year 52 weeks
+    2028: months 5-4-4-5-4-4-5-4-4-5-4-5 | quarters [13, 13, 13, 14] | year 53 weeks
+    2029: months 4-4-4-5-4-4-5-4-5-4-4-5 | quarters [12, 13, 14, 13] | year 52 weeks
+    2030: months 4-4-5-4-4-5-4-4-5-4-4-5 | quarters [13, 13, 13, 13] | year 52 weeks
+    2031: months 4-4-5-4-4-5-4-5-4-4-5-4 | quarters [13, 13, 13, 13] | year 52 weeks
+[PASS] C11 broadcast 2024 months run 4-4-5 in every quarter: 2024 months: [4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5]
+[PASS] C12 broadcast 2021 Q1 months run 5-4-4: 2021 months: [5, 4, 4, 4, 5, 4, 4, 5, 4, 5, 4, 4]
+[PASS] C12a correction (informational): 2021 is not 5-4-4 in every quarter: the proposal's 'months run ... 5-4-4 in 2021' holds for Q1 and Q4 only; 2021 quarters run [[5, 4, 4], [4, 5, 4], [4, 5, 4], [5, 4, 4]]
+[PASS] C13 broadcast 2029 quarters 12-13-14-13: 2029 quarters: [12, 13, 14, 13]
+[PASS] C14 broadcast quarters run 12 to 14 weeks 2020-2031: quarter lengths range 12..14
+[PASS] C15 ISO week year = week_based year starting Monday nearest 1 January, 1600-2399: 800 years compared with date.isocalendar(); mismatches: 0
+[PASS] C16 Care.com Q4 ends diverge in 2020, 2021, 2025-2027 (window 2019-2028): diverging years: [2020, 2021, 2025, 2026, 2027]; 2025: year rule 2025-12-27, quarter rule 2026-01-03
+[PASS] C17 Care.com reading note (informational): if 'prior to December 31' excludes 31 Dec, diverging years 2019-2028 are [2020, 2021, 2022, 2025, 2026, 2027]; inclusive reading over 2010-2035: [2010, 2014, 2015, 2020, 2021, 2025, 2026, 2027, 2031, 2032]
+[PASS] C18 date(9999,12,31) + 1 day raises OverflowError: OverflowError: date value out of range
+19 passed, 0 failed
