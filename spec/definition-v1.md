@@ -12,7 +12,7 @@ The key words "must", "must not" and "may" are used as in RFC 2119.
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
-| `spec_version` | integer | yes | Must be `1`. A higher value is rejected with `UNSUPPORTED_SPEC_VERSION`. |
+| `spec_version` | integer | yes | Must be `1`. Any other integer is rejected with `UNSUPPORTED_SPEC_VERSION`, and that is then the only error reported, because the rest of the definition may follow another version's rules. |
 | `$schema` | string | no | Ignored by the engine and excluded from the canonical form. |
 | `year` | object | yes | How the year is bounded. |
 | `week` | object | yes | How weeks run. |
@@ -21,6 +21,10 @@ The key words "must", "must not" and "may" are used as in RFC 2119.
 | `exceptions` | object | no | Reserved. Any value is rejected with `UNSUPPORTED_FEATURE` in 0.1.0. |
 
 Unknown fields at any level are rejected with `UNKNOWN_FIELD`. A missing required field is rejected with `MISSING_FIELD`. A value of the wrong JSON type is rejected with `INVALID_TYPE`.
+
+An object that repeats a key is rejected with `INVALID_JSON` at path `""`. RFC 8259 leaves the meaning of a repeated key to the parser, so a definition with two `year` blocks has more than one reading.
+
+`null` for an optional field without a default (`short_month`, `century_pivot`) means the field is absent, so the canonical form, which writes them as `null`, validates again. `null` for a reserved field (`exceptions`, `eras`) is still `UNSUPPORTED_FEATURE`.
 
 Weekday values are the lower-case English names `monday` … `sunday`. Month values are integers 1–12.
 
@@ -121,7 +125,7 @@ Each scheme:
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
 | `year_number` | `"start"`, `"end"` or `"majority"` | yes | Number a fiscal year by the calendar year of its first day, of its last day, or that holds more than half of its days. `"table"` is reserved (`UNSUPPORTED_FEATURE`). |
-| `offset` | integer | no, default 0 | Added to the year number, for example 1 for an Indian assessment year or 543 for a Buddhist Era year. |
+| `offset` | integer −1,000,000,000 to 1,000,000,000 | no, default 0 | Added to the year number, for example 1 to label each fiscal year by the following calendar year. Outside the range is `INVALID_VALUE`, so that every year number fits a 32-bit integer. |
 | `century_pivot` | integer 100–9999 | see below | Resolves two-digit years when parsing. A two-digit value *yy* means the unique year in [`century_pivot` − 99, `century_pivot`] whose last two digits are *yy*. |
 | `templates` | object | yes | Label templates keyed by level: `year`, `quarter`, `period`, `week`. At least one. Unknown keys are `UNKNOWN_FIELD`. |
 | `eras` | any | no | Reserved (`UNSUPPORTED_FEATURE`). |
@@ -140,16 +144,17 @@ A template is literal text with placeholders.
 | `{ww}` | Week index, zero-padded to 2 digits | `week` |
 
 - Every template must contain `{yyyy}` or `{yy}`, so that a label identifies its year. `{yy_next}` alone is not enough. Otherwise `INVALID_TEMPLATE`.
+- A `quarter`, `period` or `week` template must contain its index placeholder (`{q}`, `{pp}` or `{ww}`), otherwise its labels cannot tell the periods of one year apart. Otherwise `INVALID_TEMPLATE`.
 - An unknown placeholder, an unbalanced brace, or a placeholder used outside the levels shown is `INVALID_TEMPLATE`.
 - A template that contains `{yy}` but not `{yyyy}` needs `century_pivot`, otherwise `CENTURY_PIVOT_MISSING`. The pivot resolves `{yy}`, and `{yy_next}` is then checked against it.
 - Year numbers above 9999 or below 1 after `offset` cannot be formatted with `{yyyy}`; `format` returns `OUT_OF_RANGE`.
 
 ### Year numbers must be unique
 
-Every scheme must give consecutive fiscal years consecutive numbers across the whole supported range. Validation computes the number of every fiscal year in the range under every scheme and rejects:
+Every scheme must give consecutive fiscal years consecutive numbers across the whole supported range. Validation computes the number of every fiscal year from the first to the last fiscal year inside the supported range, under every scheme. It does this only once the definition is otherwise valid, because the numbers depend on the year boundaries. It rejects:
 
-- `YEAR_NUMBER_COLLISION` when two fiscal years get the same number or a number is skipped. This happens with `"start"` or `"end"` when the year boundary can fall on either side of 1 January. For example, ISO week years numbered by `"start"` give both the year starting Monday 1 January 2018 and the year starting Monday 31 December 2018 the number 2018. `details.years` lists the first affected years, and the hint suggests another `year_number`.
-- `MAJORITY_TIE` when `"majority"` is used and some fiscal year has exactly half of its days in each of two calendar years. `details.years` lists the first affected years.
+- `YEAR_NUMBER_COLLISION` when two fiscal years get the same number or a number is skipped. This happens with `"start"` or `"end"` when the year boundary can fall on either side of 1 January. For example, ISO week years numbered by `"start"` give both the year starting Monday 1 January 2018 and the year starting Monday 31 December 2018 the number 2018. `details.years` lists up to five of the year numbers, `offset` included, that are given twice or skipped, and the hint suggests a `year_number` that works.
+- `MAJORITY_TIE` when `"majority"` is used and some fiscal year has exactly half of its days in each of two calendar years. `details.years` lists up to five of the calendar years in which a tied fiscal year starts. A scheme with a tie is not also reported for collisions.
 
 The path is `naming.schemes.<name>.year_number`.
 

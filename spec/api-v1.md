@@ -69,6 +69,12 @@ Paths for common errors:
 | `INVALID_ARGUMENT` from `dimension` (`start` after `end_exclusive`, or more than 146,097 days) | `end_exclusive` |
 | `LEVEL_NOT_NESTED` and an invalid `level` from `children` | `level` |
 | `INVALID_ARGUMENT` from `years` (`from` after `to`, or more than 10,000 years) | `to` |
+| `PERIOD_NOT_FOUND` from `period` for a negative index or one too large to represent | `index` |
+| `INVALID_ARGUMENT` from `period` when an `index` is given for a year | `index` |
+| `OUT_OF_RANGE` for a `year` argument that is an integer too large for 32 bits | `year` |
+| `OUT_OF_RANGE` from `parse` when every matching label names a fiscal year outside the supported range | `label` |
+| `INVALID_ARGUMENT` for an unknown operation name | `op` |
+| `INVALID_ARGUMENT` when the arguments are not a JSON object, or repeat a key | `""` (empty string) |
 
 When validation finds a `MAJORITY_TIE` in a scheme, it does not also report `YEAR_NUMBER_COLLISION` for that scheme.
 
@@ -89,7 +95,9 @@ A failed operation returns `{"errors":[Error, …]}`. Validation reports every e
 | `parse` | `label` | Period, or `AMBIGUOUS_LABEL`, or `LABEL_NOT_RECOGNISED` |
 | `dimension` | `start`, `end_exclusive` (`start` ≤ `end_exclusive`, at most 146,097 days, which is 400 years) | Array of rows, see below; an empty range gives `[]` |
 | `dimension_csv` | `start`, `end_exclusive` | The same rows as CSV text |
-| `explain` | `date` | `{"date":"…","calendar_id":"…","steps":[{"level":"…","rule":"…","result":"…"},…]}` |
+| `explain` | `date` | `{"date":"…","calendar_id":"…","steps":[{"level":"…","rule":"…","result":"…"},…]}`. The `rule` and `result` strings are English for people to read. Their wording is not part of the API and may change in any release. |
+
+Argument keys that an operation does not use are ignored, so a binding may pass a whole Period where coordinates are expected.
 
 A `period` argument is a Period value or its coordinates `{"level","year","index"}`. The core recomputes the period from its coordinates and ignores any other keys, so a stale or edited Period cannot produce wrong bounds.
 
@@ -98,7 +106,7 @@ A `period` argument is a Period value or its coordinates `{"level","year","index
 1. Each template of each scheme is compiled to an exact, case-sensitive pattern. `{yyyy}` matches 4 digits, `{yy}` and `{yy_next}` 2 digits, `{pp}` and `{ww}` 2 digits, and `{q}` a digit 1–9 optionally followed by a second digit (no leading zero).
 2. Every template that matches the whole label yields a candidate, provided its values are consistent: indexes are in range for that year, and when `{yyyy}` and `{yy_next}` both appear, `{yy_next}` equals the last two digits of `{yyyy}` + 1. Two-digit years without `{yyyy}` resolve through the scheme's `century_pivot`. The scheme's `offset` is removed before the fiscal year is looked up.
 3. Candidates that denote the same period (same level and start) are merged.
-4. One candidate: return its Period. More than one: `AMBIGUOUS_LABEL` with `details: {"candidates":[{"period":Period,"scheme":"…","level":"…"},…]}`, ordered by start date and then scheme name. None: `LABEL_NOT_RECOGNISED`.
+4. One candidate: return its Period. More than one: `AMBIGUOUS_LABEL` with `details: {"candidates":[{"period":Period,"scheme":"…","level":"…"},…]}`, ordered by start date, then scheme name, then level (`year` first). None: `LABEL_NOT_RECOGNISED`, unless every match names a fiscal year outside the supported range, which is `OUT_OF_RANGE` at `label`.
 
 ### `dimension`
 
@@ -106,7 +114,7 @@ One row per day in `[start, end_exclusive)`. Columns, in order:
 
 `date, calendar_id, fiscal_year, quarter, period, week, day_of_year, day_of_quarter, day_of_period, day_of_week, year_start, year_last_day, quarter_start, quarter_last_day, period_start, period_last_day, week_start, week_last_day, year_has_extra_week, period_has_extra_week, week_is_extra_week`
 
-followed by one `label_<scheme>_<level>` column for every template, ordered by scheme name and then by level (`year`, `quarter`, `period`, `week`).
+followed by one `label_<scheme>_<level>` column for every template, ordered by scheme name and then by level (`year`, `quarter`, `period`, `week`). A label that cannot be formatted, such as a `{yyyy}` year number outside 1–9999, is `null` in JSON and an empty field in CSV.
 
 In JSON each row is an object with those keys in that order. CSV output follows RFC 4180 with a header row (present even when there are no rows), `\n` line endings, a final newline, booleans as `true`/`false`, and fields quoted only when they contain a comma, quote or line break.
 
@@ -114,7 +122,7 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 
 | Code | Raised by | When |
 | --- | --- | --- |
-| `INVALID_JSON` | validate | The definition is not valid JSON or not an object. |
+| `INVALID_JSON` | validate | The definition is not valid JSON, is not an object, or repeats a key in some object. |
 | `UNKNOWN_FIELD` | validate | A field the format does not define. |
 | `MISSING_FIELD` | validate | A required field is absent. |
 | `INVALID_TYPE` | validate | A field has the wrong JSON type. |
