@@ -1,5 +1,7 @@
 //! Runs every shared conformance vector under `conformance/vectors/` through
-//! the JSON API that the bindings wrap.
+//! the JSON API that the bindings wrap, and writes the raw output of every
+//! case to `target/transcripts/rust.txt`. The Python and JavaScript runners
+//! write the same transcript, and CI requires the three files to be identical.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -37,13 +39,17 @@ fn error_matches(want: &Value, got: &Value) -> bool {
         && want.get("details").is_none_or(|d| *d == got["details"])
 }
 
-fn check_case(definition: &str, case: &Value) -> Result<(), String> {
+fn run_case(definition: &str, case: &Value) -> String {
     let op = case["op"].as_str().unwrap();
-    let out = if op == "validate" {
+    if op == "validate" {
         json::validate(definition)
     } else {
         json::call(definition, op, &case["args"].to_string())
-    };
+    }
+}
+
+fn check_case(out: String, case: &Value) -> Result<(), String> {
+    let op = case["op"].as_str().unwrap();
     let got: Value = serde_json::from_str(&out).map_err(|e| format!("output is not JSON: {e}"))?;
     let ok = if let Some(want) = case.get("expect") {
         *want == got
@@ -76,6 +82,7 @@ fn every_conformance_vector_passes() {
     files.sort();
     assert!(!files.is_empty(), "no vectors under {}", root.display());
     let (mut cases, mut failures, mut disputed_failing) = (0, Vec::new(), Vec::new());
+    let mut transcript = String::new();
     for file in &files {
         let rel = file
             .strip_prefix(&root)
@@ -85,9 +92,11 @@ fn every_conformance_vector_passes() {
         let vector: Value = serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap();
         let definition = vector["definition"].to_string();
         let mut file_failures = Vec::new();
-        for case in vector["cases"].as_array().unwrap() {
+        for (i, case) in vector["cases"].as_array().unwrap().iter().enumerate() {
             cases += 1;
-            if let Err(e) = check_case(&definition, case) {
+            let out = run_case(&definition, case);
+            transcript.push_str(&format!("{rel}#{i}\t{out}\n"));
+            if let Err(e) = check_case(out, case) {
                 file_failures.push(e);
             }
         }
@@ -105,6 +114,9 @@ fn every_conformance_vector_passes() {
             (false, true) => {}
         }
     }
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/transcripts");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("rust.txt"), transcript).unwrap();
     eprintln!(
         "conformance: {} files, {cases} cases; disputed and still failing: {disputed_failing:?}",
         files.len()

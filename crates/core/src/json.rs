@@ -416,3 +416,16 @@ pub fn errors_json(errors: &[Error]) -> String {
     out.push_str("]}");
     out
 }
+
+/// The `TIMESTAMP_REJECTED` error for argument `path`, for bindings to return
+/// when a caller passes a timestamp (such as a Python `datetime` or a
+/// JavaScript `Date`) where a civil date is expected. Built here so that every
+/// binding returns the same bytes.
+pub fn timestamp_rejected(path: &str) -> String {
+    errors_json(&[Error::new(
+        ErrorCode::TimestampRejected,
+        path,
+        "a timestamp was passed where a civil date (year, month, day) is expected",
+    )
+    .hint("convert the timestamp to a date in the time zone you mean, then pass that date")])
+}
