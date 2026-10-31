@@ -142,7 +142,7 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 | `YEAR_NUMBER_COLLISION` | validate | A scheme gives two fiscal years the same number, or skips a number. |
 | `MAJORITY_TIE` | validate | A `majority` scheme meets a fiscal year split evenly between two calendar years. |
 | `INVALID_DATE` | any date argument | Not a valid `YYYY-MM-DD` civil date. |
-| `TIMESTAMP_REJECTED` | bindings | A timestamp type (`datetime.datetime`, pandas `Timestamp`, JS `Date`) was passed; the hint names the zone-aware helper. |
+| `TIMESTAMP_REJECTED` | bindings | A timestamp type (`datetime.datetime`, pandas `Timestamp`, JS `Date`) was passed. The hint says to convert it to a date in the intended time zone first. |
 | `INVALID_ARGUMENT` | any | An argument is missing, of the wrong type or out of its allowed range. |
 | `OUT_OF_RANGE` | any | The fiscal year involved is outside the supported range. |
 | `PERIOD_NOT_FOUND` | period, shift | No period has those coordinates. |
