@@ -123,3 +123,11 @@ test("values JSON cannot carry still produce a coded error", () => {
     assert.throws(() => cal.locate(v), (e) => e instanceof FiscalclockError && ["INVALID_ARGUMENT", "INVALID_DATE"].includes(e.code));
   }
 });
+
+test("real Temporal values, where the runtime has Temporal", { skip: typeof globalThis.Temporal === "undefined" && "no Temporal in this runtime" }, () => {
+  const { Temporal } = globalThis;
+  assert.deepEqual(cal.locate(Temporal.PlainDate.from("2024-02-03")), cal.locate("2024-02-03"));
+  assertError(() => cal.locate(Temporal.PlainDateTime.from("2024-02-03T12:00")), "TIMESTAMP_REJECTED", "date");
+  assertError(() => cal.locate(Temporal.Now.zonedDateTimeISO()), "TIMESTAMP_REJECTED", "date");
+  assertError(() => cal.locate(Temporal.Now.instant()), "TIMESTAMP_REJECTED", "date");
+});
