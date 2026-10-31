@@ -65,7 +65,12 @@ Paths for common errors:
 | Any error about a `period` argument, including `PERIOD_NOT_FOUND` from `shift` | `period` |
 | `OUT_OF_RANGE` from `shift` | `n` |
 | `TEMPLATE_MISSING`, and `OUT_OF_RANGE` from `format` | `period` |
-| `OUT_OF_RANGE` from `dimension` | `start` if its fiscal year is out of range, otherwise `end_exclusive` |
+| `OUT_OF_RANGE` from `dimension` | `start` if its fiscal year is out of range, otherwise `end_exclusive` when the fiscal year of the range's last day (`end_exclusive` minus one day) is out of range. An empty range returns `[]` without this check. |
+| `INVALID_ARGUMENT` from `dimension` (`start` after `end_exclusive`, or more than 146,097 days) | `end_exclusive` |
+| `LEVEL_NOT_NESTED` and an invalid `level` from `children` | `level` |
+| `INVALID_ARGUMENT` from `years` (`from` after `to`, or more than 10,000 years) | `to` |
+
+When validation finds a `MAJORITY_TIE` in a scheme, it does not also report `YEAR_NUMBER_COLLISION` for that scheme.
 
 A failed operation returns `{"errors":[Error, …]}`. Validation reports every error it finds, sorted by `path` and then `code`. Other operations report one error.
 
@@ -103,7 +108,7 @@ One row per day in `[start, end_exclusive)`. Columns, in order:
 
 followed by one `label_<scheme>_<level>` column for every template, ordered by scheme name and then by level (`year`, `quarter`, `period`, `week`).
 
-In JSON each row is an object with those keys in that order. CSV output follows RFC 4180 with a header row, `\n` line endings, a final newline, booleans as `true`/`false`, and fields quoted only when they contain a comma, quote or line break.
+In JSON each row is an object with those keys in that order. CSV output follows RFC 4180 with a header row (present even when there are no rows), `\n` line endings, a final newline, booleans as `true`/`false`, and fields quoted only when they contain a comma, quote or line break.
 
 ## Error catalogue
 

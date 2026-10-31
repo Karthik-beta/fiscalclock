@@ -16,7 +16,7 @@ This directory holds the shared test vectors that the Rust, Python and JavaScrip
   "description": "NRF 4-5-4 calendar year bounds, 2016-2030",
   "source": {
     "kind": "oracle",
-    "citation": "Independent week-based year computation in conformance/generators/week_based.py",
+    "citation": "Independent computation in conformance/generators/fiscal_oracle.py",
     "url": null,
     "checked_by": "research/verification/verify_claims.py C03, C04"
   },

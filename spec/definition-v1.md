@@ -166,9 +166,9 @@ The public API covers fiscal years that lie wholly between 0001-01-02 and 9999-1
 The canonical form is the definition after parsing, serialised as JSON with:
 
 - `$schema` removed;
-- optional fields with a default written out (`offset: 0`), and optional fields without a default written as `null` (`short_month`, `century_pivot`);
+- optional fields with a default written out (`offset: 0`), and optional fields without a default written as `null` (`short_month`, `century_pivot`); template levels that are absent stay absent;
 - object keys sorted by their UTF-8 bytes at every level;
-- no insignificant whitespace, integers in plain decimal, strings with the minimal JSON escapes: `\"`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`, other control characters as `\u00xx` with lower-case hexadecimal digits, and every other character, including non-ASCII, written as UTF-8.
+- no insignificant whitespace, integers in plain decimal, strings with the minimal JSON escapes: `\"`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`, other characters U+0000 to U+001F as `\u00xx` with lower-case hexadecimal digits, and every other character, including non-ASCII, written as UTF-8.
 
 `calendar_id` is the first 16 lower-case hexadecimal characters of the SHA-256 digest of the canonical form's UTF-8 bytes. Two definitions that differ only in key order, whitespace, `$schema` or written-out defaults have the same `calendar_id`.
 
