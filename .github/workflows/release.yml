@@ -284,7 +284,7 @@ jobs:
           node-version: "24"
           registry-url: https://registry.npmjs.org
       - name: Publish to npm with provenance
-        run: npm publish npm-dist/fiscalclock-*.tgz --provenance --access public
+        run: npm publish ./npm-dist/fiscalclock-*.tgz --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
