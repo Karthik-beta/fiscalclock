@@ -1,0 +1,4 @@
+# Only for design/scripts/build_brand_assets.py. Install into a virtual environment.
+fonttools==4.68.0
+pillow==13.0.0
+uharfbuzz==0.57.0
