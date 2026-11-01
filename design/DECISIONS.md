@@ -22,3 +22,10 @@ This file records every decision about fiscalclock's visual identity and design 
 | DD-010 | Font licences | Open licences only; any | **Open licences only (SIL Open Font License).** | Owner. |
 | DD-011 | Wiki page names and structure | Follow workclock; independent | **Independent.** | Owner. |
 | DD-012 | Extra assets beyond the brief (slides, social banners) | Owner unsure | **Open.** Phase 3 recommends what, if anything, to add. | Owner: "I'm not sure." |
+
+## Phase 3: brand directions (1 Nov 2026)
+
+| ID | Question | Options considered | Choice | Why |
+| --- | --- | --- | --- | --- |
+| DD-013 | Brand direction | A. Ledger (serif, ledger green, double-rule mark); B. Period grid (IBM Plex, ink blue, 4-5-4 week-grid mark); C. Interval (sans, deep teal, `[ )` mark). Sketches: [`explorations/brand-directions.html`](explorations/brand-directions.html); every colour pair checked by [`explorations/check_palettes.py`](explorations/check_palettes.py). | **Proposed, awaiting the owner:** C, set in IBM Plex Sans and Plex Mono instead of Inter and Commit Mono. | See the Phase 3 recommendation: the `[ )` mark is the most legible at 16 px and states the library's core rule; Plex removes C's weakest point (Inter reads as a default) and brings tabular figures by default. |
+| DD-014 | Extra assets (DD-012) | Slide template; social banner; none | **Proposed:** none beyond the brief for now; reconsider when the website exists. | Each extra asset is another file to keep in step with the tokens; nothing in the roadmap needs slides or banners yet. |
