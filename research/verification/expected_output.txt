@@ -6,6 +6,7 @@
 [PASS] C06 same_weekday example: 2024-02-04 minus 364 days = 2023-02-05, fiscal week 2 of fiscal 2023
 [PASS] C07 same_position is 371 days after a 53-week year: week 1 day 1 of fiscal 2024 minus 371 days = 2023-01-29 (fiscal 2023 week 1 day 1 = 2023-01-29)
 [PASS] C08 NRF 2017 restated first week: fiscal week 1 = 2017-01-29..2017-02-04; restated week 1 = 2017-02-05..2017-02-11
+[PASS] C19 NRF's published 53-week years 2006-2023 match the rule: rule gives [2006, 2012, 2017, 2023]; NRF publishes [2006, 2012, 2017, 2023]
 [PASS] C09 Apple 53-week years 2016-2030: 53-week fiscal years: [2017, 2023, 2028]
 [PASS] C10 broadcast months are 4 or 5 weeks 2020-2031: 
     2020: months 4-4-5-4-5-4-4-5-4-4-5-4 | quarters [13, 13, 13, 13] | year 52 weeks
@@ -29,4 +30,4 @@
 [PASS] C16 Care.com Q4 ends diverge in 2020, 2021, 2025-2027 (window 2019-2028): diverging years: [2020, 2021, 2025, 2026, 2027]; 2025: year rule 2025-12-27, quarter rule 2026-01-03
 [PASS] C17 Care.com reading note (informational): if 'prior to December 31' excludes 31 Dec, diverging years 2019-2028 are [2020, 2021, 2022, 2025, 2026, 2027]; inclusive reading over 2010-2035: [2010, 2014, 2015, 2020, 2021, 2025, 2026, 2027, 2031, 2032]
 [PASS] C18 date(9999,12,31) + 1 day raises OverflowError: OverflowError: date value out of range
-19 passed, 0 failed
+20 passed, 0 failed

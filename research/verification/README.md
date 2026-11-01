@@ -41,6 +41,7 @@ A change to `expected_output.txt` needs a linked issue that explains why the res
 | C16 | Care.com's year rule and quarter rule give different Q4 ends in 2020, 2021 and 2025–2027 (window 2019–2028), for example 27 Dec 2025 against 3 Jan 2026 | Proposal: Shapes the families miss |
 | C17 | Informational: the C16 result depends on reading "closest and prior to December 31" as "on or before 31 December", and on the window | Wiki Evidence (caveat) |
 | C18 | `date(9999, 12, 31) + timedelta(days=1)` raises `OverflowError` | Proposal: Edge cases (supported range) |
+| C19 | The NRF rule gives exactly the 53-week years NRF publishes for 2006–2023 (2006, 2012, 2017 and 2023); NRF's page lists none after FY23, so 2028 (C03) is the rule's prediction only | Conformance vector `cited/nrf-53-week-years.json`; wiki Evidence |
 
 ## Relationship to the conformance vectors
 

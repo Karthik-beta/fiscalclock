@@ -127,6 +127,17 @@ def check_nrf() -> None:
         f"restated week 1 = {restated}..{restated + timedelta(days=6)}",
     )
 
+    # NRF's 4-5-4 calendar page (https://nrf.com/resources/4-5-4-calendar, read 31 Oct 2026) says
+    # "2006, 2012, 2017 and 2023 are all 53-week years." and "This anomaly has most recently
+    # occurred in FY12, FY17 and FY23." The page lists no 53-week years after FY23.
+    published = [2006, 2012, 2017, 2023]
+    rule = [fy for fy in range(2006, 2024) if (nrf_end(fy) - nrf_end(fy - 1)).days == 371]
+    check(
+        "C19 NRF's published 53-week years 2006-2023 match the rule",
+        rule == published,
+        f"rule gives {rule}; NRF publishes {published}",
+    )
+
 
 def check_apple() -> None:
     # Apple: year ends on the last Saturday of September; named by end year.
