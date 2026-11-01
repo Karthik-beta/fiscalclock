@@ -54,7 +54,8 @@ WHITE = LIGHT["--fc-palette-neutral-0"]
 
 
 def num(v: float) -> str:
-    return f"{v:.2f}".rstrip("0").rstrip(".") if v != int(v) else str(int(v))
+    """Format a number for SVG with up to five decimals, so small scale factors keep their precision."""
+    return f"{v:.5f}".rstrip("0").rstrip(".") if v != int(v) else str(int(v))
 
 
 # Symbol geometry -----------------------------------------------------------
@@ -261,7 +262,8 @@ def year_strip(t: Type, theme: str, x: float, y: float, width: float, height: fl
     return "".join(out)
 
 
-def card(t: Type, width: int, height: int, theme: str = "light") -> str:
+def card(t: Type, width: int, height: int, theme: str = "light", headline: bool = True) -> str:
+    """A social card. Without the headline, it is the background of the Canva template, whose text stays editable."""
     c = LIGHT if theme == "light" else DARK
     margin = round(width * 0.0667)
     body = [f'<rect width="{width}" height="{height}" fill="{c["--fc-color-bg-default"]}"/>']
@@ -270,7 +272,8 @@ def card(t: Type, width: int, height: int, theme: str = "light") -> str:
     head1, _ = t.path("Fiscal years, quarters, periods and weeks", 50, 600, margin, 232)
     head2, _ = t.path("from one JSON definition.", 50, 600, margin, 296)
     sub, _ = t.path("Rust, Python and JavaScript, with byte-identical results.", 26, 400, margin, 350)
-    body.append(f'<g fill="{c["--fc-color-text-default"]}">{head1}{head2}</g><g fill="{c["--fc-color-text-muted"]}">{sub}</g>')
+    if headline:
+        body.append(f'<g fill="{c["--fc-color-text-default"]}">{head1}{head2}</g><g fill="{c["--fc-color-text-muted"]}">{sub}</g>')
     body.append(year_strip(t, theme, margin, height - 205, width - 2 * margin, 48, 17))
     note, nw = t.path("Example: NRF 4-5-4 fiscal 2023, 53 weeks", 17, 400, 0, 0)
     note, _ = t.path("Example: NRF 4-5-4 fiscal 2023, 53 weeks", 17, 400, (width - nw) / 2, height - 205 + 48 + 14 + 17 * 3.6)
@@ -287,6 +290,108 @@ def banner(t: Type, theme: str) -> str:
     desc, _ = t.path("Fiscal calendar engine: compute any fiscal calendar from a JSON definition.", 19, 400, 32, 116)
     body.append(lock + f'<g fill="{c["--fc-color-text-muted"]}">{desc}</g>')
     return svg(w, h, "".join(body), "fiscalclock: fiscal calendar engine. Compute any fiscal calendar from a JSON definition.")
+
+
+# Wiki illustrations ---------------------------------------------------------
+# The GitHub wiki does not display SVG, so these are rendered to PNG and
+# committed to the wiki repository. They explain the rules; they are not brand
+# assets.
+
+def wiki_images(t: Type) -> dict[str, tuple[str, int]]:
+    L, D = LIGHT, DARK
+    files: dict[str, tuple[str, int]] = {}
+
+    def label(text: str, x: float, y: float, colour: str, size: float = 18, weight: int = 400, centre: bool = False) -> str:
+        if centre:
+            _, w = t.path(text, size, weight, 0, 0)
+            x -= w / 2
+        d, _ = t.path(text, size, weight, x, y)
+        return f'<g fill="{colour}">{d}</g>'
+
+    # Variants: colour and one-colour lockups on light and dark backgrounds.
+    tiles = [("light", None, "Colour, light background"), ("dark", None, "Colour, dark background"),
+             ("light", "mono", "One colour, light background"), ("dark", "white", "One colour, dark background")]
+    body = []
+    for i, (theme, mono, caption) in enumerate(tiles):
+        x0, y0 = (i % 2) * 800, (i // 2) * 300
+        c = L if theme == "light" else D
+        ink = WHITE if mono == "white" else INK[theme]
+        open_end = ink if mono else OPEN[theme]
+        _, lw = lockup_body(t, 0, 0, 60, ink, open_end)
+        lock, _ = lockup_body(t, x0 + (800 - lw) / 2, y0 + 130 + 0.37 * 60, 60, ink, open_end)
+        body.append(f'<rect x="{x0}" y="{y0}" width="800" height="300" fill="{c["--fc-color-bg-default"]}"/>' + lock)
+        body.append(label(caption, x0 + 400, y0 + 262, c["--fc-color-text-muted"], 18, 400, True))
+    files["logo-variants.svg"] = (svg(1600, 600, "".join(body), "The fiscalclock logo in colour and in one colour, on light and dark backgrounds"), 1600)
+
+    # Clear space: half the symbol's height on every side.
+    size, W, H = 100, 1200, 480
+    h = BRACKET_EM * size
+    pad = h / 2
+    _, lw = lockup_body(t, 0, 0, size, INK["light"], OPEN["light"])
+    x, top = (W - lw) / 2, (H - h) / 2 - 24
+    lock, _ = lockup_body(t, x, top + (BRACKET_EM - BELOW_EM) * size, size, INK["light"], OPEN["light"])
+    guide, accent, muted = L["--fc-color-border-strong"], L["--fc-color-accent-default"], L["--fc-color-text-muted"]
+    body = [f'<rect width="{W}" height="{H}" fill="{L["--fc-color-bg-default"]}"/>',
+            f'<rect x="{num(round(x - pad, 2))}" y="{num(round(top - pad, 2))}" width="{num(round(lw + 2 * pad, 2))}" height="{num(round(h + 2 * pad, 2))}" fill="{L["--fc-color-bg-subtle"]}" stroke="{guide}" stroke-width="2" stroke-dasharray="8 6"/>',
+            f'<rect x="{num(round(x, 2))}" y="{num(round(top, 2))}" width="{num(round(lw, 2))}" height="{num(round(h, 2))}" fill="{L["--fc-color-bg-default"]}"/>',
+            lock,
+            f'<rect x="{num(round(x - pad, 2))}" y="{num(round(top + h / 2 - 1, 2))}" width="{num(round(pad, 2))}" height="2" fill="{accent}"/>',
+            label("x", x - pad / 2, top + h / 2 - 10, accent, 22, 600, True),
+            f'<rect x="{num(round(x + lw + pad / 2, 2))}" y="{num(round(top, 2))}" width="2" height="{num(round(h, 2))}" fill="{accent}"/>',
+            label("2x", x + lw + pad / 2 + 10, top + h / 2 + 8, accent, 22, 600),
+            label("Clear space: x is half the height of the symbol, on every side.", W / 2, H - 30, muted, 20, 400, True)]
+    files["logo-clear-space.svg"] = (svg(W, H, "".join(body), "Clear space around the fiscalclock lockup: half the symbol's height on every side"), W)
+
+    # Sizes, at actual pixels.
+    body = []
+    for row, theme in enumerate(("light", "dark")):
+        c = L if theme == "light" else D
+        y0 = row * 200
+        body.append(f'<rect x="0" y="{y0}" width="1000" height="200" fill="{c["--fc-color-bg-default"]}"/>')
+        x = 50
+        for px in (16, 20, 24, 32, 48, 64):
+            kind = "small" if px < 24 else "master"
+            sc = px / SYMBOLS[kind][0]
+            body.append(symbol_paths(kind, INK[theme], OPEN[theme], f"translate({x} {y0 + 90 - px / 2}) scale({num(round(sc, 5))})"))
+            body.append(label(f"{px} px", x + px / 2, y0 + 155, c["--fc-color-text-muted"], 16, 400, True))
+            body.append(label(f"{kind} drawing", x + px / 2, y0 + 177, c["--fc-color-text-muted"], 13, 400, True))
+            x += max(px, 64) + 90
+    files["logo-sizes.svg"] = (svg(1000, 400, "".join(body), "The fiscalclock symbol at 16, 20, 24, 32, 48 and 64 pixels on light and dark backgrounds"), 1000)
+
+    # Misuse.
+    cells = [("colours swapped", "swap"), ("stretched", "stretch"), ("rotated", "rotate"),
+             ("off-palette colours", "recolour"), ("busy background", "busy"), ("effects added", "effects")]
+    body = [f'<defs><pattern id="busy" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">'
+            f'<rect width="14" height="14" fill="{L["--fc-palette-teal-50"]}"/><rect width="7" height="14" fill="{L["--fc-palette-amber-300"]}"/></pattern></defs>']
+    for i, (caption, kind) in enumerate(cells):
+        x0, y0 = (i % 3) * 400, (i // 3) * 260
+        body.append(f'<rect x="{x0 + 0.5}" y="{y0 + 0.5}" width="399" height="259" fill="{L["--fc-color-bg-default"]}" stroke="{L["--fc-color-border-default"]}"/>')
+        ink, open_end = INK["light"], OPEN["light"]
+        tf = f"translate({x0 + 152} {y0 + 30}) scale(1.5)"
+        if kind == "swap":
+            ink, open_end = open_end, ink
+        elif kind == "stretch":
+            tf = f"translate({x0 + 100} {y0 + 54}) scale(3 1.2)"
+        elif kind == "rotate":
+            tf = f"translate({x0 + 200} {y0 + 102}) rotate(-15) translate(-48 -48) scale(1.5)"
+        elif kind == "recolour":
+            ink, open_end = L["--fc-color-status-danger"], L["--fc-color-status-info"]
+        elif kind == "busy":
+            body.append(f'<rect x="{x0 + 110}" y="{y0 + 20}" width="180" height="160" fill="url(#busy)"/>')
+        elif kind == "effects":
+            body.append(f'<g transform="translate(7 7)" opacity="0.4">{symbol_paths("master", L["--fc-color-text-muted"], L["--fc-color-text-muted"], tf)}</g>')
+        body.append(symbol_paths("master", ink, open_end, tf))
+        body.append(label(f"Don't: {caption}", x0 + 200, y0 + 228, L["--fc-color-text-default"], 18, 600, True))
+    files["logo-misuse.svg"] = (svg(1200, 520, "".join(body), "Six ways not to use the fiscalclock symbol"), 1200)
+
+    # Year strip in both themes.
+    for theme in ("light", "dark"):
+        c = L if theme == "light" else D
+        body = f'<rect width="1200" height="250" fill="{c["--fc-color-bg-default"]}"/>' + year_strip(t, theme, 80, 60, 1040, 56, 17)
+        files[f"diagram-year-strip-{theme}.svg"] = (svg(1200, 250, body,
+            "NRF 4-5-4 fiscal 2023 drawn to scale: 53 weeks from 2023-01-29 (included) to 2024-02-04 (excluded), "
+            "quarters of 13, 13, 13 and 14 weeks, with week 53 hatched in period 12"), 1200)
+    return files
 
 
 # Rendering ------------------------------------------------------------------
@@ -312,6 +417,7 @@ def pad_png(path: Path, background: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--font", required=True, type=Path, help="IBM Plex Sans variable font file")
+    parser.add_argument("--wiki-images", type=Path, help="also write the wiki's PNG illustrations into this folder")
     parser.add_argument("--inkscape", default=shutil.which("inkscape") or r"C:\Program Files\Inkscape\bin\inkscape.com")
     args = parser.parse_args()
     t = Type(args.font)
@@ -319,6 +425,7 @@ def main() -> int:
     files = {**build_logos(t), **build_icons()}
     files["social/og-image.svg"] = card(t, 1200, 630)
     files["social/github-social-preview.svg"] = card(t, 1280, 640)
+    files["social/og-template-background.svg"] = card(t, 1200, 630, headline=False)
     files["readme/readme-banner-light.svg"] = banner(t, "light")
     files["readme/readme-banner-dark.svg"] = banner(t, "dark")
     for name, text in files.items():
@@ -350,6 +457,15 @@ def main() -> int:
     layers[0].save(OUT / "icons" / "favicon.ico", format="ICO", sizes=[(48, 48), (32, 32), (16, 16)], append_images=layers[1:])
     shutil.rmtree(tmp)
     (OUT / "icons" / "favicon-tile-16.svg").unlink()
+    r("social/og-template-background.svg", "social/og-template-background.png", 2400, 1260)
+    if args.wiki_images:
+        args.wiki_images.mkdir(parents=True, exist_ok=True)
+        for name, (text, width) in wiki_images(t).items():
+            src = args.wiki_images / name
+            src.write_text(text, encoding="utf-8", newline="\n")
+            render(ink, src, src.with_suffix(".png"), width)
+            src.unlink()
+        print(f"wrote the wiki illustrations to {args.wiki_images}")
     print(f"wrote {len(files)} SVG files and their PNG exports to {OUT.relative_to(ROOT).as_posix()}/")
     return 0
 
