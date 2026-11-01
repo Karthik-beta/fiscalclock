@@ -1,3 +1,5 @@
+<!-- cspell:words Canva Inkscape opensource wordmark workclock -->
+
 # Design decision log
 
 This file records every decision about fiscalclock's visual identity and design system: the question, the options considered, the choice, and the reason. Newest entries go at the bottom of each table. The wiki page "Design decision log" mirrors this file; when they differ, this file wins.
