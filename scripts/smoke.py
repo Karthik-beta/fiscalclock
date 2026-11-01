@@ -1,6 +1,8 @@
 """Smoke test for an installed fiscalclock wheel. Run with ``python -I scripts/smoke.py``."""
 
 import datetime as dt
+import sys
+import sysconfig
 
 import fiscalclock
 
@@ -24,4 +26,9 @@ except fiscalclock.FiscalclockError as e:
     assert e.code == "TIMESTAMP_REJECTED", e.code
 else:
     raise AssertionError("a datetime was accepted")
+if sysconfig.get_config_var("Py_GIL_DISABLED"):
+    # The interpreter re-enables the GIL when it imports a module that does
+    # not declare free-threading support, so this proves the wheel does.
+    assert not sys._is_gil_enabled(), "importing fiscalclock re-enabled the GIL"
+    print("free-threaded build, GIL still disabled")
 print(f"fiscalclock {fiscalclock.__version__} from {fiscalclock.__file__}: ok")
