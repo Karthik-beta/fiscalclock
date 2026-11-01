@@ -106,7 +106,7 @@
       },
       "ink": {
         "$value": "{palette.neutral.900}",
-        "$description": "Labels, quarter boundaries, start and end markers."
+        "$description": "Labels, quarter boundaries and the closed start marker."
       },
       "ink-muted": {
         "$value": "{palette.neutral.600}",
@@ -123,6 +123,10 @@
       "extra-week": {
         "$value": "{palette.teal.700}",
         "$description": "Hatch and outline of an extra (53rd) week; always also labelled."
+      },
+      "open-end": {
+        "$value": "{palette.teal.700}",
+        "$description": "The open marker at end_exclusive, as in the logo's open parenthesis."
       },
       "calendar-b": {
         "$value": "{palette.blue.700}",

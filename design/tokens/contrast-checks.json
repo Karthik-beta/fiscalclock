@@ -42,6 +42,7 @@
     {"foreground": "color.diagram.rule", "background": "color.diagram.period-fill", "minimum": 3, "criterion": "1.4.11 diagram line"},
     {"foreground": "color.diagram.extra-week", "background": "color.diagram.surface", "minimum": 3, "criterion": "1.4.11 diagram mark"},
     {"foreground": "color.diagram.extra-week", "background": "color.diagram.period-fill", "minimum": 3, "criterion": "1.4.11 diagram mark"},
+    {"foreground": "color.diagram.open-end", "background": "color.diagram.surface", "minimum": 3, "criterion": "1.4.11 diagram mark"},
     {"foreground": "color.diagram.calendar-b", "background": "color.diagram.surface", "minimum": 4.5, "criterion": "1.4.3 diagram labels"},
     {"foreground": "color.diagram.reference-date", "background": "color.diagram.surface", "minimum": 4.5, "criterion": "1.4.3 diagram labels"},
     {"foreground": "color.logo.ink", "background": "color.bg.default", "minimum": 4.5, "criterion": "Logo (exempt; checked anyway)"},

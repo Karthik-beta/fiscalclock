@@ -2,7 +2,7 @@
 
 Every shape is drawn from the geometry below; every word is IBM Plex Sans,
 converted to outlines so that no file depends on an installed font. Colours
-are read from the generated design tokens (design/tokens/build/), so the
+are read from the generated design tokens (design/tokens/generated/), so the
 assets cannot drift from the token files.
 
 Requirements (not needed for anything else in the repository):
@@ -42,7 +42,7 @@ WORDMARK = "fiscalclock"
 
 
 def tokens(theme: str) -> dict[str, str]:
-    return json.loads((ROOT / "design" / "tokens" / "build" / f"tokens.{theme}.json").read_text(encoding="utf-8"))
+    return json.loads((ROOT / "design" / "tokens" / "generated" / f"tokens.{theme}.json").read_text(encoding="utf-8"))
 
 
 LIGHT, DARK = tokens("light"), tokens("dark")
@@ -212,10 +212,13 @@ FY_END_EXCLUSIVE = FY_START + dt.timedelta(weeks=53)
 assert FY_END_EXCLUSIVE == dt.date(2024, 2, 4)
 
 
-def year_strip(t: Type, theme: str, x: float, y: float, width: float, height: float, label_size: float) -> str:
+def year_strip(t: Type, theme: str, x: float, y: float, width: float, height: float, label_size: float,
+               period_labels: bool = False) -> str:
+    """Diagram D1, the year strip, drawn to scale: one unit of width per week."""
     c = LIGHT if theme == "light" else DARK
     ink, muted, rule = c["--fc-color-diagram-ink"], c["--fc-color-diagram-ink-muted"], c["--fc-color-diagram-rule"]
     fill, extra, surface = c["--fc-color-diagram-period-fill"], c["--fc-color-diagram-extra-week"], c["--fc-color-diagram-surface"]
+    open_end = c["--fc-color-diagram-open-end"]
     unit = width / 53
     out = [f'<defs><pattern id="hatch-{theme}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
            f'<rect width="2" height="6" fill="{extra}"/></pattern></defs>']
@@ -237,7 +240,17 @@ def year_strip(t: Type, theme: str, x: float, y: float, width: float, height: fl
             col = ink if heavy else rule
             ext = 10 if heavy else 0
             out.append(f'<rect x="{num(round(px - w / 2, 2))}" y="{num(y - ext)}" width="{num(w)}" height="{num(height + ext)}" fill="{col}"/>')
+        if period_labels:
+            span = (weeks - (1 if i == 11 else 0)) * unit   # keep P12's label clear of the hatched week
+            text = f"P{i + 1}"
+            _, tw = t.path(text, label_size * 0.85, 600, 0, 0)
+            d, _ = t.path(text, label_size * 0.85, 600, px + (span - tw) / 2, y + height * 0.55)
+            out.append(f'<g fill="{ink}">{d}</g>')
         acc += weeks
+    # The extra week is also labelled, never shown by colour or hatching alone.
+    wk, ww = t.path("week 53", label_size, 600, 0, 0)
+    wk, _ = t.path("week 53", label_size, 600, x + width - ww, y - 12)
+    out.append(f'<g fill="{extra}">{wk}</g>')
     # Quarter labels above the strip.
     q_start = 0
     for q in range(4):
@@ -250,7 +263,7 @@ def year_strip(t: Type, theme: str, x: float, y: float, width: float, height: fl
     ay = y + height + 14
     out.append(f'<rect x="{num(x)}" y="{num(ay - 1)}" width="{num(width)}" height="2" fill="{ink}"/>')
     out.append(f'<circle cx="{num(x)}" cy="{num(ay)}" r="7" fill="{ink}"/>')
-    out.append(f'<circle cx="{num(x + width)}" cy="{num(ay)}" r="6" fill="{surface}" stroke="{extra}" stroke-width="3"/>')
+    out.append(f'<circle cx="{num(x + width)}" cy="{num(ay)}" r="6" fill="{surface}" stroke="{open_end}" stroke-width="3"/>')
     d1, _ = t.path(FY_START.isoformat(), label_size * 1.15, 600, x, ay + label_size * 2.1)
     n1, _ = t.path("start, included", label_size, 400, x, ay + label_size * 3.6)
     end_text = FY_END_EXCLUSIVE.isoformat()
@@ -387,7 +400,7 @@ def wiki_images(t: Type) -> dict[str, tuple[str, int]]:
     # Year strip in both themes.
     for theme in ("light", "dark"):
         c = L if theme == "light" else D
-        body = f'<rect width="1200" height="250" fill="{c["--fc-color-bg-default"]}"/>' + year_strip(t, theme, 80, 60, 1040, 56, 17)
+        body = f'<rect width="1200" height="250" fill="{c["--fc-color-bg-default"]}"/>' + year_strip(t, theme, 80, 60, 1040, 56, 17, period_labels=True)
         files[f"diagram-year-strip-{theme}.svg"] = (svg(1200, 250, body,
             "NRF 4-5-4 fiscal 2023 drawn to scale: 53 weeks from 2023-01-29 (included) to 2024-02-04 (excluded), "
             "quarters of 13, 13, 13 and 14 weeks, with week 53 hatched in period 12"), 1200)
@@ -440,7 +453,6 @@ def main() -> int:
     r("readme/readme-banner-light.svg", "readme/readme-banner.png", 1680, 300)
     r("icons/icon-tile.svg", "icons/icon-512.png", 512)
     r("icons/icon-tile.svg", "icons/icon-192.png", 192)
-    r("icons/icon-tile.svg", "icons/registry-icon-512.png", 512)
     r("icons/icon-maskable.svg", "icons/icon-maskable-512.png", 512)
     r("icons/icon-maskable.svg", "icons/apple-touch-icon.png", 180)
     for suffix, bg in (("", BG["light"]), ("-dark", BG["dark"])):

@@ -1,7 +1,7 @@
 """Check that brand assets and design documents use only token values.
 
 - Every colour in an SVG under assets/brand/ must be a palette primitive in
-  design/tokens/build/tokens.light.json.
+  design/tokens/generated/tokens.light.json.
 - Every hex colour written in a Markdown file under design/ or in a wiki
   folder passed with --wiki must also be a palette primitive. The research
   notes, the research brief, the explorations and the decision log are
@@ -32,9 +32,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--wiki", type=Path, help="a clone of the wiki to check as well")
     args = parser.parse_args(argv)
-    tokens = json.loads((ROOT / "design/tokens/build/tokens.light.json").read_text(encoding="utf-8"))
+    tokens = json.loads((ROOT / "design/tokens/generated/tokens.light.json").read_text(encoding="utf-8"))
     palette = {v.lower() for k, v in tokens.items() if k.startswith("--fc-palette-")}
-    names = set(tokens) | set(json.loads((ROOT / "design/tokens/build/tokens.dark.json").read_text(encoding="utf-8")))
+    names = set(tokens) | set(json.loads((ROOT / "design/tokens/generated/tokens.dark.json").read_text(encoding="utf-8")))
     problems = []
 
     for svg in sorted((ROOT / "assets/brand").rglob("*.svg")):
@@ -43,7 +43,7 @@ def main(argv: list[str] | None = None) -> int:
                 problems.append(f"{svg.relative_to(ROOT).as_posix()}: {colour} is not a palette colour")
 
     docs = [p for p in (ROOT / "design").rglob("*.md") if not SKIP & set(p.relative_to(ROOT / "design").parts) and p.name not in SKIP_FILES]
-    docs.append(ROOT / "design/tokens/build/contrast.md")
+    docs.append(ROOT / "design/tokens/generated/contrast.md")
     if args.wiki:
         docs += sorted(p for p in args.wiki.glob("*.md") if p.name not in SKIP_FILES)
     for doc in sorted(set(docs)):

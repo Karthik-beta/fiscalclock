@@ -15,15 +15,15 @@ The format is the W3C Design Tokens Community Group (DTCG) [2025.10 report](http
 | [`semantic.dark.tokens.json`](semantic.dark.tokens.json) | The same roles, with the same names, for the dark theme. |
 | [`fiscalclock.resolver.json`](fiscalclock.resolver.json) | The resolver document: primitives first, then one `theme` modifier with `light` and `dark` contexts. |
 | [`contrast-checks.json`](contrast-checks.json) | Colour pairs checked against WCAG 2.2 in both themes on every build. |
-| [`build/`](build/) | Generated files. Never edit them by hand. |
+| [`generated/`](generated/) | Generated files. Never edit them by hand. |
 
 Use semantic tokens in products. Primitives exist so that semantic tokens can alias them; using `palette.teal.700` directly in a page would bypass the theme switch.
 
 ## Building
 
 ```sh
-python -I design/scripts/build_tokens.py            # regenerate build/
-python -I design/scripts/build_tokens.py --check    # fail if build/ is out of date
+python -I design/scripts/build_tokens.py            # regenerate generated/
+python -I design/scripts/build_tokens.py --check    # fail if generated/ is out of date
 python -I design/scripts/build_tokens.py --self-test
 ```
 
@@ -31,9 +31,9 @@ The script uses only the Python standard library. It rejects any part of the for
 
 | Output | Use |
 | --- | --- |
-| [`build/tokens.css`](build/tokens.css) | CSS custom properties, prefixed `--fc-`. |
-| [`build/tokens.light.json`](build/tokens.light.json), [`build/tokens.dark.json`](build/tokens.dark.json) | Every token resolved to a plain CSS value, for tools that take values in configuration rather than CSS. |
-| [`build/contrast.md`](build/contrast.md) | The contrast report, with every checked pair's ratio in both themes. |
+| [`generated/tokens.css`](generated/tokens.css) | CSS custom properties, prefixed `--fc-`. |
+| [`generated/tokens.light.json`](generated/tokens.light.json), [`generated/tokens.dark.json`](generated/tokens.dark.json) | Every token resolved to a plain CSS value, for tools that take values in configuration rather than CSS. |
+| [`generated/contrast.md`](generated/contrast.md) | The contrast report, with every checked pair's ratio in both themes. |
 
 ## How the website will consume them
 

@@ -10,7 +10,7 @@ design/tokens/, tied together by fiscalclock.resolver.json:
 This script implements the subset of the format that the token files use and
 rejects everything else, so a token it cannot read is an error, never a guess.
 
-Outputs, all in design/tokens/build/:
+Outputs, all in design/tokens/generated/:
 
 - tokens.css: primitives on :root; light semantic tokens on :root; dark
   semantic tokens under prefers-color-scheme (unless data-theme="light") and
@@ -41,7 +41,7 @@ from contrast import contrast_ratio, format_ratio  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 TOKENS = ROOT / "design" / "tokens"
-BUILD = TOKENS / "build"
+BUILD = TOKENS / "generated"
 RESOLVER = TOKENS / "fiscalclock.resolver.json"
 CHECKS = TOKENS / "contrast-checks.json"
 PREFIX = "fc"
@@ -284,7 +284,7 @@ def flat_values(resolved: dict) -> dict:
 
 
 def build(resolver_path: Path = RESOLVER, checks_path: Path = CHECKS) -> dict[str, str]:
-    """Return {file name: contents} for everything in design/tokens/build/."""
+    """Return {file name: contents} for everything in design/tokens/generated/."""
     primitives, contexts = load_contexts(resolver_path)
     resolved = {name: resolve(tokens) for name, tokens in contexts.items()}
     prim_paths = sorted(primitives)
