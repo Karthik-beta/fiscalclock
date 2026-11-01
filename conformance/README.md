@@ -4,8 +4,8 @@ This directory holds the shared test vectors that the Rust, Python and JavaScrip
 
 ## Layout
 
-- `vectors/<group>/<name>.json` holds the vectors. Groups: `oracle` (generated from an independent implementation or standard library), `cited` (taken from a published calendar, filing or standard, with a citation), `spec` (worked examples from the spec), `errors` (definitions and arguments that must fail with a given code).
-- `generators/` holds standard-library Python scripts that write the `oracle` vectors. They do not import fiscalclock. CI regenerates them and fails if the output differs from the committed files.
+- `vectors/<group>/<name>.json` holds the vectors. Groups: `oracle` (generated from an independent implementation or standard library), `cited` (taken from a published calendar, filing or standard, with a citation), `spec` (worked examples from the spec), `errors` (definitions and arguments that must fail with a given code). `pandas` holds week-based year bounds from pandas' `FY5253` offset, a second generator independent of `oracle`; its files have `source.kind` `oracle`.
+- `generators/` holds standard-library Python scripts that write the `oracle` vectors. They do not import fiscalclock. CI regenerates them and fails if the output differs from the committed files. `generators/pandas_vectors.py` writes the `pandas` group and needs pandas; see [generators/README.md](generators/README.md#pandas-fy5253-vectors).
 - `schema/vector.schema.json` is the JSON Schema for a vector file.
 
 ## Vector file

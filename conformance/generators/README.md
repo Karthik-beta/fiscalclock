@@ -1,6 +1,6 @@
 # Vector generators
 
-These scripts write every file under `conformance/vectors/`. They use the Python standard library only, read no network or clock, and never import fiscalclock. The expected results come from `fiscal_oracle.py`, a separate implementation of `spec/definition-v1.md` and `spec/api-v1.md` built on Python `datetime`. ISO week vectors come from `date.isocalendar()` instead.
+These scripts write every file under `conformance/vectors/`. All but `pandas_vectors.py` use the Python standard library only, read no network or clock, and never import fiscalclock. The expected results come from `fiscal_oracle.py`, a separate implementation of `spec/definition-v1.md` and `spec/api-v1.md` built on Python `datetime`. ISO week vectors come from `date.isocalendar()` instead.
 
 ## Run
 
@@ -28,7 +28,36 @@ python -I conformance/generators/check.py      # CI: regenerate into a temp dir,
   - `range-edges-*` covers the first and last supported fiscal years.
 - `error_vectors.py` writes `vectors/errors/`. The `definition-*` files hold one invalid definition per validation code, and the expected code and path come from reading the spec. The `definition-year-number-collision-*` and `definition-majority-tie-*` files are computed by the oracle's scan of the supported range, and assert code and path only, because the spec does not pin the content of `details.years`. The `runtime-*` files cover runtime errors computed by the oracle, with paths from the api-v1.md table "Paths for common errors".
 - `spec_cited_vectors.py` writes `vectors/spec/` and `vectors/cited/`. Their expected values are typed in from the spec or from a quoted source, and the generator stops if the oracle disagrees.
+- `pandas_vectors.py` writes `vectors/pandas/` (see [pandas FY5253 vectors](#pandas-fy5253-vectors)).
 - `schema_check.py` is a small validator for the JSON Schema keywords the vector schema uses. It rejects any keyword it does not implement.
+
+## pandas FY5253 vectors
+
+`pandas_vectors.py` gives the week-based year bounds a second source that shares no code with `fiscal_oracle.py`. It takes every year-end date from the `FY5253` offset of pandas 3.0.6 (released 17 September 2026, per [PyPI](https://pypi.org/project/pandas/3.0.6/)), and derives the other fields by date arithmetic on those dates. It does not import fiscalclock or `fiscal_oracle.py`. pandas is a dependency of this script only; `generate.py` and `check.py` stay standard library only, and they neither write nor delete `vectors/pandas/`, because `vectorlib.write_all` touches only the groups in `GROUPS`. The script refuses to run under any other pandas version.
+
+```sh
+uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py           # rewrite vectors/pandas/
+uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py --check   # CI: regenerate into a temp dir, diff, validate the schema
+```
+
+### Mapping from FY5253 to a definition
+
+The [pandas documentation for `FY5253`](https://pandas.pydata.org/docs/reference/api/pandas.tseries.offsets.FY5253.html) (as of 1 November 2026) describes `weekday` as an integer from 0 (Monday) to 6 (Sunday), `startingMonth` as the month in which the fiscal year ends, and `variation` as `"nearest"` (the year ends on the weekday closest to the last day of that month) or `"last"` (the year ends on the final such weekday of that month). Each `FY5253(weekday=w, startingMonth=m, variation=v)` maps to:
+
+| FY5253 | Definition | Reason |
+| --- | --- | --- |
+| `startingMonth=m` | `year.anchor.edge: "end"`, `month: m`, `day: "last"` | pandas fixes the year's last day relative to the last day of month `m`. |
+| `variation="last"` | `rule: "last"` | The final weekday `w` of the month is the latest `w` on or before its last day, which is the spec's `last` rule. |
+| `variation="nearest"` | `rule: "nearest"` | Both pick the weekday closest to the target; a weekday is never four days from the target both ways, so neither needs a tie rule. |
+| `weekday=w` | `week.starts_on`: the weekday after `w` | The spec has no year-end weekday; with edge `end` the year's last day is the day before `week.starts_on` (definition-v1.md, "Week-based year"). |
+
+The subdivision is an arbitrary valid 4-4-5 pattern with the extra week in period 12. No case asserts quarters, periods or weeks, because pandas does not model them.
+
+### Coverage and year numbers
+
+The script writes one file, `fy5253-<variation>-<weekday>-m<month>`, for each of the 168 combinations of 7 weekdays, 12 months and 2 variations. Each file has a `validate` case that asserts only `ok: true`, `period` cases with the exact year for the fiscal years numbered 2000 to 2030, and `locate` cases that assert the date and the containing year on each year's last day and the next year's first day for 2024 to 2026.
+
+The spec rejects a scheme that gives two fiscal years one number or skips a number (`YEAR_NUMBER_COLLISION`) or a `majority` tie (`MAJORITY_TIE`) anywhere in the supported range. The script picks `year_number: "end"` when it numbers consecutively every FY5253 year whose last day falls in 1700 to 2099, and `"majority"` otherwise. Those 400 years are 146,097 days, a whole number of weeks, which the script asserts, so the pattern of year ends repeats in every 400-year cycle and one cycle stands for the whole range. The result is `"majority"` for the seven December `nearest` combinations, whose year can end on 1 to 3 January, and `"end"` for the other 161.
 
 ## Reading conventions used by the vectors
 
