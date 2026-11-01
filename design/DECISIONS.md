@@ -1,4 +1,4 @@
-<!-- cspell:words Canva DTCG Inkscape lockup Lockup opensource wordmark workclock -->
+<!-- cspell:words Canva DTCG Inkscape lockup Lockup opensource wordmark WCAG workclock -->
 
 # Design decision log
 
