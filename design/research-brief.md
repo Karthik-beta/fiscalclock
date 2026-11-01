@@ -1,4 +1,4 @@
-<!-- cspell:words DTCG Inkscape Canva wordmark wordmarks Terrazzo APCA Crameri Fumadocs Geist Mintlify Okabe Reinecke Trockman Tuch Tufte maskable monospace -->
+<!-- cspell:words DTCG Inkscape Canva wordmark wordmarks Terrazzo APCA Crameri Fumadocs Geist Mintlify Okabe Reinecke Trockman Tuch Tufte maskable monospace WCAG -->
 
 # Research brief
 
