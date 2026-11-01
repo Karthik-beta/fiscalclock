@@ -92,3 +92,11 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: pandas FY5253 vectors match their generator
         run: uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py --check
+      - name: Evidence register is well formed
+        run: python -I research/evidence/check_quotes.py --offline
+      - name: Evidence page matches the register
+        run: python -I research/evidence/render_evidence.py --check
+      - name: Every quoted source still contains its quote
+        # Third-party pages change, so this runs weekly rather than on every pull request.
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python -I research/evidence/check_quotes.py

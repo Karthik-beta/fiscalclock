@@ -11,4 +11,8 @@ exclude = [
   '^https://github\.com/Karthik-beta/fiscalclock/security/advisories/new$',
   # npmjs.com answers automated requests with 403 even for packages that exist.
   '^https://www\.npmjs\.com/',
+  # sec.gov refuses requests without a contact email in the User-Agent, and
+  # packages.ecosyste.ms answers link checkers with 402; both pages exist.
+  '^https://(www\.)?sec\.gov/',
+  '^https://packages\.ecosyste\.ms/',
 ]
