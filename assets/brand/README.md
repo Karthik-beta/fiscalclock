@@ -7,7 +7,7 @@ fiscalclock's logo, icons, social cards and README banner. Every file here is ge
 | Folder | Contents |
 | --- | --- |
 | [`logo/`](logo/) | Lockup, symbol and wordmark, each in colour for light backgrounds, colour for dark backgrounds (`-dark`), one colour (`-mono`) and white (`-mono-white`); the symbol's small drawing for 16 to 23 px (`-small`); PNG exports of the lockups and symbols. |
-| [`icons/`](icons/) | `favicon.svg` (switches with the colour scheme), `favicon.ico`, the Apple touch icon, web app icons (192, 512, maskable 512), the docs.rs logo and a 512 px registry icon. |
+| [`icons/`](icons/) | `favicon.svg` (switches with the colour scheme), `favicon.ico`, the Apple touch icon, web app icons (192, 512, maskable 512), and the docs.rs logo. `icon-512.png` also serves anywhere a square project icon is needed, such as an avatar. |
 | [`social/`](social/) | The Open Graph card (1200 × 630), the GitHub social preview (1280 × 640) and the background of the Canva card template. |
 | [`readme/`](readme/) | The README banner for light and dark themes, plus an opaque PNG fallback for PyPI and npm. |
 
