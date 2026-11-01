@@ -1,0 +1,151 @@
+{
+  "color": {
+    "$type": "color",
+    "bg": {
+      "default": {
+        "$value": "{palette.neutral.25}",
+        "$description": "Page background."
+      },
+      "subtle": {
+        "$value": "{palette.neutral.100}",
+        "$description": "Sidebars, code blocks, table headers."
+      },
+      "raised": {
+        "$value": "{palette.neutral.0}",
+        "$description": "Menus and popovers, which sit above the page."
+      },
+      "accent-subtle": {
+        "$value": "{palette.teal.50}",
+        "$description": "Tinted background for the current item and highlighted rows."
+      }
+    },
+    "text": {
+      "default": {
+        "$value": "{palette.neutral.900}",
+        "$description": "Body text and headings."
+      },
+      "muted": {
+        "$value": "{palette.neutral.600}",
+        "$description": "Secondary text: captions, metadata, table labels."
+      },
+      "on-accent": {
+        "$value": "{palette.neutral.0}",
+        "$description": "Text on an accent-filled button."
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "{palette.neutral.200}",
+        "$description": "Decorative dividers that carry no meaning on their own."
+      },
+      "strong": {
+        "$value": "{palette.neutral.500}",
+        "$description": "Borders that identify a control or carry meaning; at least 3:1."
+      }
+    },
+    "accent": {
+      "default": {
+        "$value": "{palette.teal.700}",
+        "$description": "The one accent: links, the current item, the open end of an interval."
+      },
+      "hover": {
+        "$value": "{palette.teal.800}",
+        "$description": "Accent under the pointer."
+      }
+    },
+    "focus": {
+      "ring": {
+        "$value": "{palette.teal.700}",
+        "$description": "Keyboard focus outline, drawn 2 px wide with a 2 px offset."
+      }
+    },
+    "status": {
+      "success": {
+        "$value": "{palette.green.700}",
+        "$description": "Success text and icons."
+      },
+      "warning": {
+        "$value": "{palette.amber.700}",
+        "$description": "Warning text and icons."
+      },
+      "danger": {
+        "$value": "{palette.red.700}",
+        "$description": "Error text and icons."
+      },
+      "info": {
+        "$value": "{palette.blue.700}",
+        "$description": "Informational text and icons."
+      }
+    },
+    "code": {
+      "bg": {
+        "$value": "{palette.neutral.100}",
+        "$description": "Code block background."
+      },
+      "text": {
+        "$value": "{palette.neutral.900}",
+        "$description": "Code text."
+      },
+      "keyword": {
+        "$value": "{palette.teal.700}",
+        "$description": "Keywords and imports."
+      },
+      "string": {
+        "$value": "{palette.blue.700}",
+        "$description": "String literals, including dates."
+      },
+      "comment": {
+        "$value": "{palette.neutral.600}",
+        "$description": "Comments."
+      }
+    },
+    "diagram": {
+      "surface": {
+        "$value": "{palette.neutral.25}",
+        "$description": "Diagram background."
+      },
+      "ink": {
+        "$value": "{palette.neutral.900}",
+        "$description": "Labels, quarter boundaries and the closed start marker."
+      },
+      "ink-muted": {
+        "$value": "{palette.neutral.600}",
+        "$description": "Secondary labels and week ticks."
+      },
+      "rule": {
+        "$value": "{palette.neutral.500}",
+        "$description": "Period separators; at least 3:1 against the surface."
+      },
+      "period-fill": {
+        "$value": "{palette.neutral.100}",
+        "$description": "Fill for alternate periods; never the only cue."
+      },
+      "extra-week": {
+        "$value": "{palette.teal.700}",
+        "$description": "Hatch and outline of an extra (53rd) week; always also labelled."
+      },
+      "open-end": {
+        "$value": "{palette.teal.700}",
+        "$description": "The open marker at end_exclusive, as in the logo's open parenthesis."
+      },
+      "calendar-b": {
+        "$value": "{palette.blue.700}",
+        "$description": "The second calendar in a comparison; drawn dashed."
+      },
+      "reference-date": {
+        "$value": "{palette.amber.700}",
+        "$description": "A caller-supplied reference date; always labelled with its ISO date."
+      }
+    },
+    "logo": {
+      "ink": {
+        "$value": "{palette.neutral.900}",
+        "$description": "The closed bracket and the wordmark."
+      },
+      "open-end": {
+        "$value": "{palette.teal.700}",
+        "$description": "The open parenthesis: the excluded end."
+      }
+    }
+  }
+}
