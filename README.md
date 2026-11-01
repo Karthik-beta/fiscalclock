@@ -1,4 +1,10 @@
-# fiscalclock
+<h1>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Karthik-beta/fiscalclock/main/assets/brand/readme/readme-banner-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Karthik-beta/fiscalclock/main/assets/brand/readme/readme-banner-light.svg">
+  <img alt="fiscalclock: fiscal calendar engine. Compute any fiscal calendar from a JSON definition." src="https://raw.githubusercontent.com/Karthik-beta/fiscalclock/main/assets/brand/readme/readme-banner.png" width="840">
+</picture>
+</h1>
 
 [![CI](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Karthik-beta/fiscalclock/actions/workflows/ci.yml)
 [![docs](https://github.com/Karthik-beta/fiscalclock/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/Karthik-beta/fiscalclock/actions/workflows/docs.yml)
@@ -80,6 +86,7 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 - [ADR index](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-Index): design decisions and their reasons
 - [Roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap): phases and release gates
 - [Evidence](https://github.com/Karthik-beta/fiscalclock/wiki/Evidence): the source or check behind every factual claim
+- [Design system](https://github.com/Karthik-beta/fiscalclock/wiki/Design-System): the logo, colours, type and design tokens; the logo and icon files are in [`assets/brand/`](assets/brand/README.md)
 
 ## Out of scope
 
@@ -92,3 +99,5 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md). Real-world calendars with a cited sourc
 ## Licence
 
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT licence](LICENSE-MIT), at your option.
+
+<!-- cspell:words srcset -->
