@@ -1,4 +1,4 @@
-<!-- cspell:words Inkscape -->
+<!-- cspell:words Inkscape lockups WCAG -->
 
 # Design
 

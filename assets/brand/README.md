@@ -1,4 +1,4 @@
-<!-- cspell:words Inkscape Canva -->
+<!-- cspell:words Inkscape Canva Lockup lockups maskable wordmark -->
 
 # Brand assets
 
