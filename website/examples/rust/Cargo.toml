@@ -1,0 +1,13 @@
+# The Rust examples on the website, run by `npm run test:examples`. The empty
+# [workspace] table makes this its own workspace, so the repository's
+# workspace never builds it.
+[package]
+name = "fiscalclock-website-examples"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+fiscalclock = "=0.1.0"
+
+[workspace]

@@ -15,11 +15,13 @@
     "check": "astro check",
     "preview": "astro preview",
     "test": "playwright test --project=checks",
-    "shots": "playwright test --project=shots"
+    "shots": "playwright test --project=shots",
+    "test:examples": "node scripts/test-examples.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.8",
-    "astro": "7.4.4"
+    "astro": "7.4.4",
+    "fiscalclock": "0.1.0"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",
