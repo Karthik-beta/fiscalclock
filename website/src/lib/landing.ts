@@ -9,6 +9,10 @@
  */
 import { FiscalCalendar, type Period } from "fiscalclock";
 import oracle from "../../../conformance/vectors/oracle/nrf-4-5-4.json";
+import retail454 from "../../examples/retail-4-5-4.json";
+import askPy from "../../examples/python/ask_quarter.out?raw";
+import askJs from "../../examples/js/ask_quarter.out?raw";
+import askRs from "../../examples/rust/src/bin/ask_quarter.out?raw";
 import { nrf, type VectorFile } from "./examples";
 import { formatJsonBlocks } from "./json-format";
 
@@ -23,38 +27,10 @@ export const quarters = cal.children(year, "quarter");
 export const periods = cal.children(year, "period");
 export const yearLabel = cal.format(year);
 
-export const askDate = "2024-02-03";
-const here = cal.locate(askDate);
-export const askOutput = `${cal.format(here.quarter)}\n${cal.callJson("locate", `{"date": "${askDate}"}`)}`;
-
-export const snippets = {
-  python: `from fiscalclock import FiscalCalendar
-
-with open("nrf-4-5-4.json") as f:
-    cal = FiscalCalendar(f.read())
-
-here = cal.locate("${askDate}")
-print(cal.format(here.quarter))
-print(cal.call_json("locate", '{"date": "${askDate}"}'))`,
-  javascript: `import { readFileSync } from "node:fs";
-import { FiscalCalendar } from "fiscalclock";
-
-const cal = new FiscalCalendar(readFileSync("nrf-4-5-4.json", "utf8"));
-
-const here = cal.locate("${askDate}");
-console.log(cal.format(here.quarter));
-console.log(cal.callJson("locate", '{"date": "${askDate}"}'));`,
-  rust: `use fiscalclock::{Date, FiscalCalendar};
-
-fn main() {
-    let text = std::fs::read_to_string("nrf-4-5-4.json").unwrap();
-    let cal = FiscalCalendar::from_json(&text).unwrap();
-
-    let here = cal.locate(Date::parse_iso("${askDate}").unwrap()).unwrap();
-    println!("{}", cal.format(&here.quarter, None).unwrap());
-    println!("{}", cal.call_json("locate", r#"{"date": "${askDate}"}"#));
-}`,
-};
+// The question's snippets are the ask_quarter example, which `npm run test:examples`
+// runs in every language; the page shows their one shared expected output.
+const askOutputs = { python: askPy, javascript: askJs, rust: askRs };
+export const askOutput = askPy.replace(/\r\n/g, "\n").replace(/\n$/, "");
 
 crossCheck();
 
@@ -85,6 +61,14 @@ function crossCheck(): void {
 
   // The page prints definitionText, so it must be the definition the dates came from.
   if (JSON.stringify(JSON.parse(definitionText)) !== JSON.stringify(definition)) problems.push("the printed definition differs from the cited vector's definition");
+
+  // The examples read examples/retail-4-5-4.json, which the page tells readers to save from the printed definition.
+  if (JSON.stringify(retail454) !== JSON.stringify(definition)) problems.push("examples/retail-4-5-4.json differs from the cited vector's definition");
+
+  // The page says all three languages print the same lines, and shows them once.
+  const here = cal.locate("2024-02-03");
+  const live = `${cal.format(here.quarter)}\n${cal.callJson("locate", '{"date": "2024-02-03"}')}`;
+  for (const [language, out] of Object.entries(askOutputs)) same(`locate 2024-02-03 (${language}'s ask_quarter.out)`, live, out.replace(/\r\n/g, "\n").replace(/\n$/, ""));
 
   // The 4-5-4 pattern with the extra week in period 12, as drawn by design/scripts/build_brand_assets.py.
   same("period lengths in weeks", periods.map((p) => p.weeks), [4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 5]);

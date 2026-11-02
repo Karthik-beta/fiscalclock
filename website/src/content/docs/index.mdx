@@ -9,6 +9,9 @@ import { Code, Tabs, TabItem } from "@astrojs/starlight/components";
 import RawOutput from "../../components/RawOutput.astro";
 import YearStripFigure from "../../components/YearStripFigure.astro";
 import * as fy from "../../lib/landing";
+import askQuarterPy from "../../../examples/python/ask_quarter.py?raw";
+import askQuarterJs from "../../../examples/js/ask_quarter.mjs?raw";
+import askQuarterRs from "../../../examples/rust/src/bin/ask_quarter.rs?raw";
 import "../../styles/landing.css";
 
 <div class="landing-top not-content">
@@ -36,7 +39,7 @@ import "../../styles/landing.css";
 
 <p class="landing-label">An example: the NRF 4-5-4 retail calendar. fiscalclock has no built-in calendars.</p>
 
-<Code code={fy.definitionText} lang="json" title="nrf-4-5-4.json" wrap hangingIndent={2} />
+<Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
 
 </div>
 </div>
@@ -58,15 +61,15 @@ import "../../styles/landing.css";
 
 ## Ask it a question
 
-Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition above as `nrf-4-5-4.json` and ask:
+Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition above as `retail-4-5-4.json` and ask:
 
 <Tabs syncKey="lang">
-  <TabItem label="Python"><Code code={fy.snippets.python} lang="python" /></TabItem>
-  <TabItem label="JavaScript"><Code code={fy.snippets.javascript} lang="js" /></TabItem>
-  <TabItem label="Rust"><Code code={fy.snippets.rust} lang="rust" /></TabItem>
+  <TabItem label="Python"><Code code={askQuarterPy} lang="python" /></TabItem>
+  <TabItem label="JavaScript"><Code code={askQuarterJs} lang="js" /></TabItem>
+  <TabItem label="Rust"><Code code={askQuarterRs} lang="rust" /></TabItem>
 </Tabs>
 
-All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. The output below was produced by the npm package when this page was built.
+All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package, and it must print exactly the output below.
 
 <RawOutput text={fy.askOutput} label="Output" />
 
