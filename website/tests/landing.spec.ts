@@ -28,6 +28,23 @@ test("at 1280 by 800 pixels the year strip starts on the first screen, beside a 
   expect(JSON.parse((await code.locator(".ec-line").allTextContents()).join("\n"))).toMatchObject({ spec_version: 1, subdivision: { extra_week: { period: 12 } } });
 });
 
+for (const [width, shown] of [[375, true], [1280, false]] as const) {
+  test(`the strip's scroll hint is ${shown ? "shown" : "hidden"} at ${width} pixels wide, where the strip ${shown ? "overflows" : "fits"}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    for (const path of ["/", "/playground/"]) {
+      await page.goto(path);
+      const scroller = page.locator(".strip-scroll");
+      await expect(scroller).toHaveCount(1);
+      // The playground draws its strip again after it loads, so poll the current one.
+      await expect.poll(() => scroller.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(shown);
+      const hint = page.getByText("Scroll sideways to see the whole year.");
+      if (shown) await expect(hint).toBeVisible();
+      else await expect(hint).toBeHidden();
+      await expect(scroller).toHaveAttribute("aria-label", /scrolls sideways$/);
+    }
+  });
+}
+
 test("the question's three snippets share one output block with the label and the core's JSON", async ({ page }) => {
   await page.goto("/");
   const output = page.locator("figure.raw-output", { has: page.getByText("Output", { exact: true }) });

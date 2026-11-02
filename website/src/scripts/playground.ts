@@ -10,6 +10,7 @@ import { formatJson } from "../lib/json-format";
 import { decodeState, encodeState, type PlaygroundState } from "../lib/playground-state";
 import { renderYearStrip } from "../lib/year-strip";
 import { rangeForPath, type Range } from "./json-path";
+import { addScrollHint } from "./strip-hint";
 
 /** Where an error's `path` points: into the definition, or at one of the inputs beside it. */
 type ErrorSource = "definition" | "date" | "year";
@@ -294,6 +295,7 @@ function showStrip(cal: FiscalCalendar | undefined, here: Location | undefined, 
       ? `${here.date} is in fiscal year ${here.year.year}, so it is not marked here.`
       : "";
   stripBox.replaceChildren(scroller, el("p", { class: "pg-hint" }, note));
+  addScrollHint(scroller);
   // On a narrow screen, bring the marked date into view.
   const marker = scroller.querySelector<SVGRectElement>("[data-marker]");
   if (marker) scroller.scrollLeft = marker.x.baseVal.value - scroller.clientWidth / 2;

@@ -41,9 +41,20 @@ const svg = renderYearStrip(periods, { id, title, quarters });
   </details>
 </figure>
 
+<script>
+  import { addScrollHint } from "../scripts/strip-hint";
+  for (const scroller of document.querySelectorAll<HTMLElement>(".strip-figure .strip-scroll")) addScrollHint(scroller);
+</script>
+
 <style>
   .strip-figure {
     margin: 0;
+  }
+  .strip-figure :global(.strip-hint) {
+    margin-top: var(--fc-space-2);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
   }
   .strip-scroll {
     overflow-x: auto;
