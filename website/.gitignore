@@ -11,6 +11,10 @@ public/apple-touch-icon.png
 public/og-image.png
 public/fonts/
 
+# Written by scripts/import-docs.mjs from spec/ and CHANGELOG.md
+src/content/docs/reference/spec/
+src/content/docs/project/changelog.md
+
 # Playwright
 test-results/
 playwright-report/
