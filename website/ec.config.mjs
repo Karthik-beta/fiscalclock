@@ -1,8 +1,12 @@
-import { readFileSync } from "node:fs";
 import { defineEcConfig, ExpressiveCodeTheme } from "@astrojs/starlight/expressive-code";
+import dark from "./src/styles/generated/tokens.dark.json" with { type: "json" };
+import light from "./src/styles/generated/tokens.light.json" with { type: "json" };
 
 // Syntax colours are the four code tokens, read from the synced token build so
 // they cannot drift from design/tokens. Each pair is contrast-checked there.
+// The files are imported, not read from disk, because the <Code> component
+// loads this config from a bundled copy where relative file paths break.
+const TOKENS = { light, dark };
 const SCOPES = {
   keyword: ["keyword", "storage", "storage.type", "storage.modifier", "constant.language", "variable.language"],
   string: ["string", "punctuation.definition.string"],
@@ -10,8 +14,7 @@ const SCOPES = {
 };
 
 function codeTheme(type) {
-  const url = new URL(`./src/styles/generated/tokens.${type}.json`, import.meta.url);
-  const tokens = JSON.parse(readFileSync(url, "utf8"));
+  const tokens = TOKENS[type];
   return new ExpressiveCodeTheme({
     name: `fiscalclock-${type}`,
     type,
