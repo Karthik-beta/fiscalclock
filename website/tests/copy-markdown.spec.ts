@@ -22,3 +22,9 @@ test("View as Markdown links to the Markdown copy", async ({ page }) => {
   await page.goto("/guides/style-check/");
   await expect(page.getByRole("link", { name: "View as Markdown" })).toHaveAttribute("href", "/guides/style-check.md");
 });
+
+test("the landing page links its Markdown copy but shows no copy controls under its headline", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute("href", /index\.md$/);
+  await expect(page.getByRole("button", { name: "Copy page as Markdown" })).toHaveCount(0);
+});

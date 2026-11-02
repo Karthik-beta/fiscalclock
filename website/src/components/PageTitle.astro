@@ -2,12 +2,14 @@
 import Default from "@astrojs/starlight/components/PageTitle.astro";
 import { hasMarkdownCopy, markdownPath } from "../agents/paths.ts";
 
-const { id } = Astro.locals.starlightRoute.entry;
+const { id, data } = Astro.locals.starlightRoute.entry;
+// The landing page keeps its Markdown copy and head link, but not these controls under its headline.
+const showControls = hasMarkdownCopy(id) && data.template !== "splash";
 ---
 
 <Default />
 {
-  hasMarkdownCopy(id) && (
+  showControls && (
     <div class="page-markdown" data-page-markdown={markdownPath(id)}>
       <button type="button">Copy page as Markdown</button>
       <a href={markdownPath(id)}>View as Markdown</a>
