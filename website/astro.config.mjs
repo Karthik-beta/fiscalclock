@@ -14,7 +14,7 @@ export default defineConfig({
       logo: {
         light: "./src/assets/brand/fiscalclock-lockup.svg",
         dark: "./src/assets/brand/fiscalclock-lockup-dark.svg",
-        alt: "fiscalclock",
+        alt: "",
         replacesTitle: true,
       },
       favicon: "/favicon.svg",
