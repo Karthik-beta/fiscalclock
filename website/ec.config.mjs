@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { defineEcConfig, ExpressiveCodeTheme } from "@astrojs/starlight/expressive-code";
 
 // Syntax colours are the four code tokens, read from the synced token build so
@@ -9,9 +10,11 @@ const SCOPES = {
   comment: ["comment", "punctuation.definition.comment"],
 };
 
+// Resolved from the working directory, website/, not from import.meta.url: the
+// <Code> component loads this file again from a bundled chunk under dist/.
 function codeTheme(type) {
-  const url = new URL(`./src/styles/generated/tokens.${type}.json`, import.meta.url);
-  const tokens = JSON.parse(readFileSync(url, "utf8"));
+  const file = resolve(`src/styles/generated/tokens.${type}.json`);
+  const tokens = JSON.parse(readFileSync(file, "utf8"));
   return new ExpressiveCodeTheme({
     name: `fiscalclock-${type}`,
     type,
