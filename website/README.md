@@ -18,6 +18,8 @@ Run these in `website/`.
 | `npm run check` | Type-checks the site with `astro check`. |
 | `npm test` | Runs the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs, the skip link, internal links and their anchors, and the spec import. Run `npm run build` first. |
 | `npm run test:examples` | Runs every code example in `examples/` in Python, JavaScript and Rust against fiscalclock 0.1.0, and fails unless each prints exactly its `.out` file. Needs Python 3 and Cargo; Python runs in `website/.venv`, which the script creates. |
+
+| `npm test` | Runs the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs and the skip link. It also checks the deployment configuration (see [Deployment](#deployment)). Run `npm run build` first. |
 | `npm run shots` | Saves full-page screenshots of every built page, light and dark, at 1280 and 375 pixels wide, into `test-results/shots/` for review. |
 
 ## How the theme gets its values
@@ -50,3 +52,37 @@ Both pages run the published `fiscalclock` npm package, pinned to an exact versi
 ## Code examples
 
 Every code example in the documentation is a file in [`examples/`](examples/): `python/<name>.py`, `js/<name>.mjs` and `rust/src/bin/<name>.rs`, each next to a `<name>.out` file holding its exact output. A page imports both with a `?raw` import and shows them with Starlight's `<Code>` component in `<Tabs syncKey="lang">`, Python first, so the page shows the same files that `npm run test:examples` runs. The expected outputs are written from the spec and the cited sources, not copied from a run, except where the text is not part of the API (the wording of `explain`, and pandas' table layout). The Rust examples are their own Cargo workspace, outside the repository's workspace.
+
+## Deployment
+
+Vercel builds and serves the site. [`vercel.json`](vercel.json) holds the install command, the build-skip check, the redirects and the response headers. The other settings are made by hand in the Vercel project.
+
+### What `vercel.json` does
+
+- Installs with `npm ci --ignore-scripts` (see [Install scripts](#install-scripts)).
+- Runs [`scripts/should-build.sh`](scripts/should-build.sh) as the [`ignoreCommand`](https://vercel.com/docs/project-configuration/vercel-json#ignorecommand). It builds only when `website/`, `design/tokens/`, `assets/brand/`, `spec/`, `CHANGELOG.md`, `conformance/vectors/cited/` or `bindings/js/package.json` changed since the branch's last successful deployment ([`VERCEL_GIT_PREVIOUS_SHA`](https://vercel.com/docs/environment-variables/system-environment-variables)), or since the parent commit when there is none. It builds when it cannot tell, for example when the commit to compare with is not in the clone.
+- Sets [`trailingSlash: true`](https://vercel.com/docs/project-configuration/vercel-json#trailingslash), so `/guides/style-check` redirects to `/guides/style-check/`, the form Astro builds and Starlight links to. Paths with a file extension, such as `.md` copies, do not redirect.
+- Redirects `fiscalclock.vercel.app`, and only that host, to `https://fiscalclock.karthik.nz` with a 308. Preview deployments have other host names and are not redirected. If Vercel gives the project a different `vercel.app` name, change the `eq` value.
+- Sends `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy` on every response. Files under `/_astro/`, whose names contain a content hash, get `Cache-Control: public, max-age=31536000, immutable`; files under `/fonts/`, whose names do not, are cached for a week. `.wasm`, `.md` and `llms*.txt` files get their content types. Everything else gets Vercel's default `public, max-age=0, must-revalidate` ([Cache-Control headers](https://vercel.com/docs/caching/cache-control-headers)).
+
+The policy allows Starlight's inline scripts by their SHA-256 hashes instead of `'unsafe-inline'`. A change that adds or edits an inline script makes `npm test` fail; run `npm run build`, then `node scripts/csp-hashes.mjs`, and commit `vercel.json`. Styles use `'unsafe-inline'`, because Starlight writes `style` attributes into the HTML.
+
+`npm test` checks all of this. It compiles `vercel.json` with `@vercel/routing-utils`, the package Vercel publishes for that step; loads every built page from [`scripts/serve-with-headers.mjs`](scripts/serve-with-headers.mjs), which applies the same headers, and fails on any policy violation; and runs `should-build.sh` in temporary Git repositories.
+
+### Vercel project settings
+
+Set these by hand. Links are to Vercel's documentation as of 2 November 2026.
+
+| Setting | Value |
+| --- | --- |
+| Root Directory ([build settings](https://vercel.com/docs/builds/configure-a-build#root-directory)) | `website` |
+| Framework Preset ([project settings](https://vercel.com/docs/project-configuration/project-settings)) | Astro |
+| Node.js Version ([Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)) | 24.x. Vercel uses the `engines.node` range in `package.json` instead when one is set; its table maps `>=22.0.0` to the newest major it offers. |
+| Ignored Build Step | Leave the default; `ignoreCommand` in `vercel.json` overrides it. |
+| Git Fork Protection ([security settings](https://vercel.com/docs/project-configuration/security-settings#git-fork-protection)) | On. A pull request from a fork then deploys only after you authorise it. |
+
+Nothing deploys from a fork without that authorisation. The [`website.yml`](../.github/workflows/website.yml) workflow builds and tests pull requests from forks with read-only repository access and no secrets.
+
+### DNS
+
+At Cloudflare, add a `CNAME` record named `fiscalclock` whose target is the value the Vercel project's Domains page shows for `fiscalclock.karthik.nz`; each project has its own ([add a domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain)). Set the record to DNS only (grey cloud), not proxied: Vercel recommends connecting directly ([proxies in front of Vercel](https://vercel.com/kb/guide/can-i-use-a-proxy-on-top-of-my-vercel-deployment)).
