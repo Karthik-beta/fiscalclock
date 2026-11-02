@@ -1,4 +1,4 @@
-<!-- cspell:words lockups WCAG -->
+<!-- cspell:words lockups plugin WCAG -->
 
 # fiscalclock website
 
@@ -16,7 +16,7 @@ Run these in `website/`.
 | `npm run dev` | Copies the generated files (see below), then serves the site with live reload. |
 | `npm run build` | Copies the generated files, then builds the static site into `dist/`. |
 | `npm run check` | Type-checks the site with `astro check`. |
-| `npm test` | Runs the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs and the skip link. Run `npm run build` first. |
+| `npm test` | Runs the unit tests in `tests/unit/` with `node --test`, then the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs and the skip link. Run `npm run build` first. |
 | `npm run shots` | Saves full-page screenshots of every built page, light and dark, at 1280 and 375 pixels wide, into `test-results/shots/` for review. |
 
 ## How the theme gets its values
@@ -29,6 +29,14 @@ Run these in `website/`.
 The copied files are generated and ignored by Git. Change a value in `design/tokens/` or a file in `assets/brand/`, never in `website/`.
 
 The font files are served unmodified, as the packages ship them. The SIL Open Font License does not let a modified version use the Reserved Font Name "Plex", so do not subset or convert them.
+
+## Files for AI agents
+
+Decision DD-033 makes AI agents part of the audience. The build publishes:
+
+- `/llms.txt`, `/llms-full.txt` and `/llms-small.txt`, written by the [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/) plugin. A build step in [`src/agents/llms-postbuild.ts`](src/agents/llms-postbuild.ts) then adds a list of every page's Markdown copy to `llms.txt` and drops the pages in `LLMS_EXCLUDE` ([`src/agents/paths.ts`](src/agents/paths.ts)), because the plugin can do neither.
+- A Markdown copy of every docs page at the page's path plus `.md`, with the home page at `/index.md`. [`src/pages/[...slug].md.ts`](src/pages/[...slug].md.ts) converts each page's MDX with [`src/agents/mdx-to-markdown.ts`](src/agents/mdx-to-markdown.ts). Its `COMPONENTS` table says how each MDX component becomes Markdown. A page that uses a component missing from the table fails the build, so add an entry when a page needs a new component.
+- A `<link rel="alternate" type="text/markdown">` to that copy in each page's head, and a "Copy page as Markdown" button and a "View as Markdown" link under the page title. Pages with a `hero` show no title, so they have no button.
 
 ## Install scripts
 

@@ -11,7 +11,8 @@ head:
       content: noindex
 ---
 
-import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import definition from "../../../fixtures/style-check/definition.json?raw";
 
 This page exists to check the site theme. It shows every element the theme styles so that the automated accessibility tests and the screenshot review cover them in light and dark. It is not documentation. The calendar, code and dates are copied from the examples in the [Python package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/python/README.md), the [npm package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/README.md) and the [Rust crate README](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/README.md).
 
@@ -36,18 +37,7 @@ The year in the example ends on <time datetime="2024-02-03">3 Feb 2024</time>.
 
 ## Code
 
-```json title="definition.json"
-{
-  "spec_version": 1,
-  "year": {"type": "week_based",
-           "anchor": {"edge": "end", "month": 1, "day": "last", "rule": "nearest"}},
-  "week": {"starts_on": "sunday", "numbering": "contains_start"},
-  "subdivision": {"type": "week_pattern", "periods": [4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4],
-                  "quarters": [3, 3, 3, 3], "extra_week": {"period": 12}},
-  "naming": {"default": "fy", "schemes": {"fy": {"year_number": "start",
-             "templates": {"year": "FY{yyyy}", "quarter": "Q{q} FY{yyyy}"}}}}
-}
-```
+<Code code={definition} lang="json" title="definition.json" />
 
 ```sh
 pip install fiscalclock

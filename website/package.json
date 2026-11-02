@@ -14,12 +14,13 @@
     "precheck": "npm run sync",
     "check": "astro check",
     "preview": "astro preview",
-    "test": "playwright test --project=checks",
+    "test": "node --test \"tests/unit/*.test.ts\" && playwright test --project=checks",
     "shots": "playwright test --project=shots"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.8",
-    "astro": "7.4.4"
+    "astro": "7.4.4",
+    "starlight-llms-txt": "0.12.0"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",
@@ -27,7 +28,14 @@
     "@ibm/plex-mono": "2.5.0",
     "@ibm/plex-sans": "1.1.0",
     "@playwright/test": "1.64.1",
-    "typescript": "6.0.3"
+    "@types/mdast": "4.0.4",
+    "mdast-util-mdx-jsx": "3.2.0",
+    "remark-gfm": "4.0.1",
+    "remark-mdx": "3.1.1",
+    "remark-parse": "11.0.0",
+    "remark-stringify": "11.0.0",
+    "typescript": "6.0.3",
+    "unified": "11.0.5"
   },
   "allowScripts": {
     "@ibm/plex-mono": false,

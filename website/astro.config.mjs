@@ -1,5 +1,7 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import starlightLlmsTxt from "starlight-llms-txt";
+import { PAGE_SEPARATOR, llmsPostbuild } from "./src/agents/llms-postbuild.ts";
 
 const site = "https://fiscalclock.karthik.nz";
 const repo = "https://github.com/Karthik-beta/fiscalclock";
@@ -27,6 +29,14 @@ export default defineConfig({
         { tag: "meta", attrs: { property: "og:image:alt", content: "fiscalclock" } },
       ],
       social: [{ icon: "github", label: "GitHub", href: repo }],
+      plugins: [
+        starlightLlmsTxt({
+          pageSeparator: PAGE_SEPARATOR,
+          // Each heading's anchor otherwise becomes a "Section titled" link line.
+          customSelectors: { all: [".sl-anchor-link"] },
+        }),
+      ],
+      routeMiddleware: "./src/agents/route-middleware.ts",
       editLink: { baseUrl: `${repo}/edit/main/website/` },
       customCss: [
         "./src/styles/generated/tokens.css",
@@ -42,5 +52,6 @@ export default defineConfig({
         { label: "Project", items: [{ autogenerate: { directory: "project" } }] },
       ],
     }),
+    llmsPostbuild(),
   ],
 });

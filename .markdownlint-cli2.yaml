@@ -11,5 +11,6 @@ ignores:
   - "target/**"
   - "**/node_modules/**"
   - "bindings/js/pkg/**"
+  - "website/dist/**"
   - ".venv/**"
   - "CODE_OF_CONDUCT.md"

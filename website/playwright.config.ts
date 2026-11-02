@@ -13,7 +13,8 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
   },
   projects: [
-    { name: "checks", testIgnore: /shots\.spec\.ts/ },
+    // tests/unit/ holds node:test unit tests, run by `npm test` before Playwright.
+    { name: "checks", testIgnore: [/shots\.spec\.ts/, /[\\/]unit[\\/]/] },
     { name: "shots", testMatch: /shots\.spec\.ts/ },
   ],
   webServer: {
