@@ -6,6 +6,20 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 const results = (page: Page) => page.locator("#pg-location");
 const errors = (page: Page) => page.locator("#pg-errors");
+const status = (page: Page) => page.locator("#pg-status");
+
+/** Counts every change to the status region, since rewriting even the same text can make a screen reader speak again. */
+async function countStatusWrites(page: Page): Promise<() => Promise<number>> {
+  await status(page).evaluate((node) => {
+    (window as any).statusWrites = 0;
+    new MutationObserver((records) => ((window as any).statusWrites += records.length)).observe(node, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+  });
+  return () => page.evaluate(() => (window as any).statusWrites);
+}
 const editor = (page: Page) => page.getByRole("textbox", { name: "Definition" });
 
 /** Opens the playground once its script has drawn the first results, so typing is not lost to the initial load. */
@@ -64,6 +78,48 @@ test("an invalid date shows the library's error for the date argument", async ({
   await page.getByLabel("Date (YYYY-MM-DD)").fill("2024-02-30");
   await expect(errors(page).getByText("INVALID_DATE", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("the date field does not ask for a numeric keypad, which has no hyphen on iOS", async ({ page }) => {
+  await openPlayground(page);
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).not.toHaveAttribute("inputmode");
+});
+
+test("the error list is not a live region; a separate status line speaks the outcome", async ({ page }) => {
+  await openPlayground(page);
+  await expect(errors(page)).not.toHaveAttribute("aria-live");
+  await expect(status(page)).toHaveText("");
+});
+
+test("typing that keeps the same errors neither changes the status nor redraws the error list", async ({ page }) => {
+  await openPlayground(page);
+  const definition = await currentDefinition(page);
+  delete definition.subdivision.extra_week;
+  await replaceDefinition(page, JSON.stringify(definition, null, 2));
+  const announcement = "fiscalclock reported 1 error: EXTRA_WEEK_MISSING at subdivision.extra_week.";
+  await expect(status(page)).toHaveText(announcement);
+  const item = await errors(page).getByRole("listitem").elementHandle();
+  const statusWrites = await countStatusWrites(page);
+
+  // Each pause is longer than the 200 ms debounce, so every key leads to a render.
+  for (const key of [" ", " ", "Enter", " "]) {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(300);
+  }
+  await expect(status(page)).toHaveText(announcement);
+  expect(await statusWrites()).toBe(0);
+  expect(await item!.evaluate((node) => node.isConnected)).toBe(true);
+});
+
+test("a change of outcome is announced once, with the library's labels for where the date falls", async ({ page }) => {
+  await openPlayground(page);
+  const statusWrites = await countStatusWrites(page);
+  await page.getByLabel("Date (YYYY-MM-DD)").selectText();
+  await page.keyboard.type("2022-06-01", { delay: 30 });
+  // NRF FY2022 starts on 2022-01-30 with 4-5-4 periods: 2022-06-01 is day 124, in May 29 to July 2.
+  await expect(status(page)).toHaveText("2022-06-01 is in FY2022, FY2022 Q2, FY2022 P05, FY2022 W18.");
+  await page.waitForTimeout(500);
+  expect(await statusWrites()).toBe(1);
 });
 
 test("the state survives a reload through the URL fragment", async ({ page }) => {

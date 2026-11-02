@@ -34,6 +34,7 @@ const dateInput = $<HTMLInputElement>("pg-date");
 const yearInput = $<HTMLInputElement>("pg-year");
 const notice = $("pg-notice");
 const errorsBox = $("pg-errors");
+const statusBox = $("pg-status");
 const locationBox = $("pg-location");
 const stripBox = $("pg-strip");
 const stripHeading = $("pg-strip-heading");
@@ -100,7 +101,7 @@ const editor = new EditorView({
       keymap.of([...defaultKeymap, ...historyKeymap]),
       EditorView.contentAttributes.of({ "aria-labelledby": "pg-definition-heading", "aria-describedby": "pg-editor-hint" }),
       EditorView.updateListener.of((u) => {
-        if (u.docChanged) schedule();
+        if (u.docChanged) schedule({ followDate: false });
       }),
     ],
   }),
@@ -131,13 +132,28 @@ function loadFromUrl(): void {
     notice.textContent = "The playground state in this link could not be read, so the first example is shown instead.";
     applyState(fallback);
   }
-  render({ followDate: false });
+  pendingFollowDate = false;
+  flush();
 }
 
 let timer: number | undefined;
-function schedule(): void {
+let pendingFollowDate = false;
+/**
+ * Renders 200 ms after the last edit, so a screen reader hears the outcome once typing pauses.
+ * The address updates at once, so a reload or a copied link never loses what was typed.
+ */
+function schedule({ followDate }: { followDate: boolean }): void {
+  history.replaceState(null, "", encodeState(readState()));
+  pendingFollowDate ||= followDate;
   clearTimeout(timer);
-  timer = window.setTimeout(() => render({ followDate: false }), 200);
+  timer = window.setTimeout(flush, 200);
+}
+
+function flush(): void {
+  clearTimeout(timer);
+  const follow = pendingFollowDate;
+  pendingFollowDate = false;
+  render({ followDate: follow });
 }
 
 
@@ -185,30 +201,60 @@ function render({ followDate }: { followDate: boolean }): void {
   showLocation(cal, here, state);
   showStrip(cal, here, state, errors);
   showErrors(errors);
+  announce(errors.length > 0 ? errorSummary(errors) : cal && here ? locationSummary(cal, here) : "");
 }
 
+function whereText(e: ShownError): string | null {
+  if (e.source === "date") return "in the date you entered";
+  if (e.source === "year") return "in the fiscal year you entered";
+  return e.path === "" ? "in the whole definition" : null;
+}
+
+const MAX_ANNOUNCED_ERRORS = 3;
+function errorSummary(errors: ShownError[]): string {
+  const named = errors.slice(0, MAX_ANNOUNCED_ERRORS).map((e) => `${e.code} ${whereText(e) ?? `at ${e.path}`}`);
+  const rest = errors.length - named.length;
+  if (rest > 0) named.push(`and ${rest} more`);
+  return `fiscalclock reported ${errors.length === 1 ? "1 error" : `${errors.length} errors`}: ${named.join(", ")}.`;
+}
+
+function locationSummary(cal: FiscalCalendar, here: Location): string {
+  const labels = (["year", "quarter", "period", "week"] as const).map((level) => labelOf(cal, here[level]).textContent);
+  return `${here.date} is in ${labels.join(", ")}.`;
+}
+
+/**
+ * The status region speaks only when the outcome changes, so a pause in typing that
+ * leaves the same errors says nothing. The first render sets the baseline silently.
+ */
+let announced: string | null = null;
+function announce(summary: string): void {
+  if (summary === announced) return;
+  if (announced !== null) statusBox.textContent = summary;
+  announced = summary;
+}
+
+let shownErrorsKey = JSON.stringify([]);
 function showErrors(errors: ShownError[]): void {
   dateInput.setAttribute("aria-invalid", String(errors.some((e) => e.source === "date")));
   yearInput.setAttribute("aria-invalid", String(errors.some((e) => e.source === "year")));
-  const ranges = errors.filter((e) => e.source === "definition").map((e) => rangeForPath(editor.state, e.path));
+  const ranges = errors.map((e) => (e.source === "definition" ? rangeForPath(editor.state, e.path) : null));
   editor.dispatch({ effects: setErrorRanges.of(ranges.filter((r): r is Range => r !== null)) });
 
+  // Rebuilding an unchanged list would move focus off a path button and churn the DOM on every keystroke.
+  const key = JSON.stringify(errors.map((e, i) => [e.source, e.code, e.path, e.message, e.hint ?? null, ranges[i] !== null]));
+  if (key === shownErrorsKey) return;
+  shownErrorsKey = key;
   if (errors.length === 0) {
     errorsBox.replaceChildren();
     return;
   }
   const items = errors.map((e, i) => {
-    const range = e.source === "definition" ? ranges[i] : null;
-    const where =
-      e.source !== "definition"
-        ? `in the ${e.source === "date" ? "date" : "fiscal year"} you entered`
-        : e.path === ""
-          ? "in the whole definition"
-          : null;
+    const where = whereText(e);
     const pathNode = where
       ? el("span", {}, where)
-      : range
-        ? el("button", { type: "button", class: "pg-path", "data-from": String(range.from), "data-to": String(range.to) }, el("code", {}, e.path))
+      : ranges[i]
+        ? el("button", { type: "button", class: "pg-path", "data-path": e.path }, el("code", {}, e.path))
         : el("code", {}, e.path);
     const item = el("li", {}, el("div", { class: "pg-error-head" }, el("code", { class: "pg-error-code" }, e.code), pathNode), el("p", {}, e.message));
     if (e.hint) item.append(el("p", { class: "pg-hint-text" }, `Hint: ${e.hint}`));
@@ -221,9 +267,10 @@ function showErrors(errors: ShownError[]): void {
 errorsBox.addEventListener("click", (event) => {
   const button = (event.target as Element).closest<HTMLButtonElement>("button.pg-path");
   if (!button) return;
-  const from = Number(button.dataset.from);
-  const to = Number(button.dataset.to);
-  editor.dispatch({ selection: { anchor: from, head: to }, scrollIntoView: true });
+  // Resolved on click: edits since the list was drawn may have moved the text.
+  const range = rangeForPath(editor.state, button.dataset.path!);
+  if (!range) return;
+  editor.dispatch({ selection: { anchor: range.from, head: range.to }, scrollIntoView: true });
   editor.focus();
 });
 
@@ -315,15 +362,16 @@ exampleSelect.addEventListener("change", () => {
   const example = examples.find((e) => e.name === exampleSelect.value);
   if (!example) return;
   setDefinition(exampleText(example));
-  clearTimeout(timer);
-  render({ followDate: true });
+  pendingFollowDate = true;
+  flush();
 });
 
-dateInput.addEventListener("input", () => render({ followDate: true }));
-yearInput.addEventListener("input", () => render({ followDate: false }));
+dateInput.addEventListener("input", () => schedule({ followDate: true }));
+yearInput.addEventListener("input", () => schedule({ followDate: false }));
 
 $("pg-copy").addEventListener("click", async () => {
   const status = $("pg-copy-status");
+  flush();
   try {
     await navigator.clipboard.writeText(location.href);
     status.textContent = "Link copied.";
