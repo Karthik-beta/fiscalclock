@@ -1,10 +1,13 @@
 import { defineConfig } from "astro/config";
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import starlightLlmsTxt from "starlight-llms-txt";
 import { PAGE_SEPARATOR, llmsPostbuild } from "./src/agents/llms-postbuild.ts";
 
 const site = "https://fiscalclock.karthik.nz";
 const repo = "https://github.com/Karthik-beta/fiscalclock";
+// Pages that ask search engines not to index them (robots noindex) stay out of the sitemap.
+const unlisted = new Set([`${site}/guides/style-check/`]);
 
 export default defineConfig({
   site,
@@ -82,5 +85,7 @@ export default defineConfig({
       ],
     }),
     llmsPostbuild(),
+    // Starlight adds its own sitemap only when this integration is absent, so the filter takes effect.
+    sitemap({ filter: (page) => !unlisted.has(page) }),
   ],
 });

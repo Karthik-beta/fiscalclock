@@ -16,7 +16,7 @@ Run these in `website/`.
 | `npm run dev` | Copies the generated files (see below), then serves the site with live reload. |
 | `npm run build` | Copies the generated files, then builds the static site into `dist/`. |
 | `npm run check` | Type-checks the site with `astro check`. |
-| `npm test` | Runs the unit tests in `tests/unit/` with `node --test`, then the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs, the skip link, internal links and their anchors, the spec import, and the files for AI agents. It also checks the deployment configuration (see [Deployment](#deployment)). Run `npm run build` first. |
+| `npm test` | Runs the unit tests in `tests/unit/` with `node --test`, then the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs, the skip link, internal links and their anchors, the spec import, the sitemap and the files for AI agents. It also checks the deployment configuration (see [Deployment](#deployment)). Run `npm run build` first. |
 | `npm run test:examples` | Runs every code example in `examples/` in Python, JavaScript and Rust against fiscalclock 0.1.0, and fails unless each prints exactly its `.out` file. Needs Python 3 and Cargo; Python runs in `website/.venv`, which the script creates. |
 | `npm run shots` | Saves full-page screenshots of every built page, light and dark, at 1280 and 375 pixels wide, into `test-results/shots/` for review. |
 
