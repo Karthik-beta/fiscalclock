@@ -33,3 +33,11 @@ The font files are served unmodified, as the packages ship them. The SIL Open Fo
 ## Install scripts
 
 `@ibm/plex-sans` and `@ibm/plex-mono` declare a `postinstall` script, `ibmtelemetry --config=telemetry.yml`, in their `package.json`. No other dependency has an install script (`npm install-scripts ls` lists only these two), so `package.json` denies them in `allowScripts`, which npm 11.7.0 honours, and [`vercel.json`](vercel.json) installs with `npm ci --ignore-scripts`.
+
+## Landing page and playground
+
+Both pages run the published `fiscalclock` npm package, pinned to an exact version in `package.json` (DD-032).
+
+- The landing page draws NRF fiscal 2023 from the package's output at build time ([`src/lib/landing.ts`](src/lib/landing.ts)). The build fails unless that output matches the cited NRF vector in `conformance/vectors/cited/` and the independent oracle's dates in `conformance/vectors/oracle/nrf-4-5-4.json`, so the picture cannot drift from its sources.
+- The playground ([`src/pages/playground.astro`](src/pages/playground.astro)) loads the package's WebAssembly build and the CodeMirror editor. No other page loads either. Its state lives in the URL fragment (DD-036), and its example list is every file in `conformance/vectors/cited/`.
+- One function, [`src/lib/year-strip.ts`](src/lib/year-strip.ts), draws the to-scale year strip on both pages. It draws only the periods it is given and computes no dates.

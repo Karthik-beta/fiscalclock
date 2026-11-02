@@ -36,7 +36,10 @@ export default defineConfig({
       // Each group lists the pages in its folder under src/content/docs/, so
       // later work adds a page by adding a file.
       sidebar: [
-        { label: "Start here", items: [{ autogenerate: { directory: "start-here" } }] },
+        {
+          label: "Start here",
+          items: [{ autogenerate: { directory: "start-here" } }, { label: "Playground", link: "/playground/" }],
+        },
         { label: "Guides", items: [{ autogenerate: { directory: "guides" } }] },
         { label: "Reference", items: [{ autogenerate: { directory: "reference" } }] },
         { label: "Project", items: [{ autogenerate: { directory: "project" } }] },
