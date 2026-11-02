@@ -34,6 +34,9 @@ export default defineEcConfig({
   // Token colours already meet 4.5:1; a higher floor would make Expressive
   // Code shift them away from the token values.
   minSyntaxHighlightingColorContrast: 0,
+  // Wrapped lines never scroll sideways, so no code block needs keyboard
+  // scrolling (WCAG scrollable-region-focusable) at any width or font timing.
+  defaultProps: { wrap: true, preserveIndent: true },
   styleOverrides: {
     borderRadius: "var(--fc-radius-md)",
     borderColor: "var(--fc-color-border-default)",
