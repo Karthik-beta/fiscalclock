@@ -47,7 +47,7 @@ Decision DD-033 makes AI agents part of the audience. The build publishes:
 
 Both pages run the published `fiscalclock` npm package, pinned to an exact version in `package.json` (DD-032).
 
-- The landing page draws NRF fiscal 2023 from the package's output at build time ([`src/lib/landing.ts`](src/lib/landing.ts)). The build fails unless that output matches the cited NRF vector in `conformance/vectors/cited/` and the independent oracle's dates in `conformance/vectors/oracle/nrf-4-5-4.json`, so the picture cannot drift from its sources.
+- The landing page draws fiscal 2023 of its illustrative 4-5-4 definition from the package's output at build time ([`src/lib/landing.ts`](src/lib/landing.ts)). The build fails unless that output matches the cited NRF vector in `conformance/vectors/cited/` and the independent oracle's dates in `conformance/vectors/oracle/nrf-4-5-4.json`, so the picture cannot drift from its sources.
 - The playground ([`src/pages/playground.astro`](src/pages/playground.astro)) loads the package's WebAssembly build and the CodeMirror editor. No other page loads either. Its state lives in the URL fragment (DD-036), and its example list is every file in `conformance/vectors/cited/`.
 - One function, [`src/lib/year-strip.ts`](src/lib/year-strip.ts), draws the to-scale year strip on both pages. It draws only the periods it is given and computes no dates.
 

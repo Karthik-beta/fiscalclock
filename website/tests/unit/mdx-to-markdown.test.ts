@@ -61,14 +61,14 @@ test("code and links can come from values a module exports", async () => {
   const markdown = await mdxToMarkdown(
     page(`import * as fy from "../../lib/landing";
 
-<Code code={fy.definitionText} lang="json" title="nrf-4-5-4.json" />
+<Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" />
 
 <RawOutput text={fy.output} label="Output" />
 
 <p class="summary">See{" "}<a href={fy.sourceUrl}>NRF</a>.</p>
 `),
   );
-  assert.ok(markdown.includes('*nrf-4-5-4.json*\n\n```json\n{"spec_version": 1}\n```'), markdown);
+  assert.ok(markdown.includes('*retail-4-5-4.json*\n\n```json\n{"spec_version": 1}\n```'), markdown);
   assert.ok(markdown.includes("*Output*\n\n```text\nQ4 FY2023\n```"), markdown);
   assert.ok(markdown.includes("See [NRF](https://nrf.com/)."), markdown);
 });

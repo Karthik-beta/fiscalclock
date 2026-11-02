@@ -37,7 +37,7 @@ import "../../styles/landing.css";
 </div>
 <div class="landing-definition">
 
-<p class="landing-label">An example: the NRF 4-5-4 retail calendar. fiscalclock has no built-in calendars.</p>
+<p class="landing-label">An illustrative 4-5-4 definition, not any organisation's published calendar. Its year rule gives the 53-week years NRF publishes. fiscalclock has no built-in calendars.</p>
 
 <Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
 
@@ -50,8 +50,8 @@ import "../../styles/landing.css";
   Fiscal 2023 under that definition, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
   Each period is a half-open interval, so the date under a boundary line is the first day of the period to its right.
   The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock 0.1.0 npm package
-  when this page was built, and the build fails unless they match{" "}
-  <a href={fy.sourceUrl}>NRF's list of 53-week years</a> and the{" "}
+  when this page was built, and the build fails unless the year has the 53 weeks that{" "}
+  <a href={fy.sourceUrl}>NRF's list of 53-week years</a> gives it and the dates match the{" "}
   <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
 </YearStripFigure>
 
