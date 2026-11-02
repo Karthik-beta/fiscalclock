@@ -37,6 +37,7 @@ export default defineConfig({
         }),
       ],
       routeMiddleware: "./src/agents/route-middleware.ts",
+      components: { PageTitle: "./src/components/PageTitle.astro" },
       editLink: { baseUrl: `${repo}/edit/main/website/` },
       customCss: [
         "./src/styles/generated/tokens.css",
