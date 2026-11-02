@@ -9,7 +9,7 @@
  */
 import { FiscalCalendar, type Period } from "fiscalclock";
 import oracle from "../../../conformance/vectors/oracle/nrf-4-5-4.json";
-import retail454 from "../../examples/retail-4-5-4.json";
+import retail454 from "../../../docs/examples/retail-4-5-4.json";
 import askPy from "../../examples/python/ask_quarter.out?raw";
 import askJs from "../../examples/js/ask_quarter.out?raw";
 import askRs from "../../examples/rust/src/bin/ask_quarter.out?raw";
@@ -62,8 +62,8 @@ function crossCheck(): void {
   // The page prints definitionText, so it must be the definition the dates came from.
   if (JSON.stringify(JSON.parse(definitionText)) !== JSON.stringify(definition)) problems.push("the printed definition differs from the cited vector's definition");
 
-  // The examples read examples/retail-4-5-4.json, which the page tells readers to save from the printed definition.
-  if (JSON.stringify(retail454) !== JSON.stringify(definition)) problems.push("examples/retail-4-5-4.json differs from the cited vector's definition");
+  // The examples read docs/examples/retail-4-5-4.json, which the page tells readers to save from the printed definition.
+  if (JSON.stringify(retail454) !== JSON.stringify(definition)) problems.push("docs/examples/retail-4-5-4.json differs from the cited vector's definition");
 
   // The page says all three languages print the same lines, and shows them once.
   const here = cal.locate("2024-02-03");
