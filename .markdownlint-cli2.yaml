@@ -13,4 +13,5 @@ ignores:
   - "bindings/js/pkg/**"
   - "website/dist/**"
   - ".venv/**"
+  - "website/.venv/**"
   - "CODE_OF_CONDUCT.md"

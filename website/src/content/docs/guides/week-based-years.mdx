@@ -1,0 +1,57 @@
+---
+title: Week-based years
+description: How 52- and 53-week fiscal years are bounded by a weekday rule, where the extra week goes, and how to check a definition against published 53-week years.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import longYearsPy from "../../../../examples/python/long_years.py?raw";
+import longYearsPyOut from "../../../../examples/python/long_years.out?raw";
+import longYearsJs from "../../../../examples/js/long_years.mjs?raw";
+import longYearsJsOut from "../../../../examples/js/long_years.out?raw";
+import longYearsRs from "../../../../examples/rust/src/bin/long_years.rs?raw";
+import longYearsRsOut from "../../../../examples/rust/src/bin/long_years.out?raw";
+
+A week-based fiscal year is made of whole weeks, so it cannot always end on the same date. Instead it ends on a weekday chosen by a rule, such as "the Saturday nearest 31 January". Such a year has 52 weeks (364 days) or 53 weeks (371 days); the 53rd week is called the extra week.
+
+## The anchor rule
+
+A `week_based` year has an `anchor` with four fields ([spec](/reference/spec/definition-v1/#type-week_based)):
+
+- `edge`: whether the rule fixes the year's last day (`end`) or its first day (`start`).
+- `month` and `day`: the target date, where `day` is 1 to 28 or `"last"` for the month's last day.
+- `rule`: `last` takes the latest qualifying weekday on or before the target date, `first` the earliest on or after it, and `nearest` the one closest to it. `nearest` can never tie, because the closest qualifying weekday is at most three days away.
+
+The anchor has no weekday field. The year's last day is always the weekday before `week.starts_on`, so a calendar whose weeks start on Sunday has years that end on a Saturday.
+
+The two rules for 52- and 53-week tax years that [IRS Publication 538](https://www.irs.gov/publications/p538) describes, a weekday that last occurs in a month or the one nearest the month's last day, are `rule: "last"` and `rule: "nearest"` with `day: "last"`. Apple's fiscal year, for example, ends on the last Saturday of September ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/apple-10q-2023-12-30.json)).
+
+## Which years have 53 weeks
+
+Every week-based rule gives 53-week years, 71 in every 400 years ([spec](/reference/spec/definition-v1/#type-week_pattern)). Check C01 of [`verify_claims.py`](https://github.com/Karthik-beta/fiscalclock/blob/main/research/verification/README.md) confirms the count for all 168 `last` and `nearest` rules over two 400-year windows. Which years have 53 weeks depends on the rule.
+
+The example definition from [the quick start](/start-here/quick-start/) ends each year on the Saturday nearest 31 January. Its 53-week years from 2006 to 2023 are 2006, 2012, 2017 and 2023, which are the years that the [NRF lists as 53-week years](https://nrf.com/resources/4-5-4-calendar) for its 4-5-4 calendar. The conformance vector [`nrf-53-week-years.json`](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/nrf-53-week-years.json) checks the same years on every test run.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={longYearsPy} lang="python" title="long_years.py" />
+    <Code code={longYearsPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={longYearsJs} lang="js" title="long_years.mjs" />
+    <Code code={longYearsJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={longYearsRs} lang="rust" title="long_years.rs" />
+    <Code code={longYearsRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## Where the extra week goes
+
+`subdivision.extra_week.period` names the period that gains the extra week as its last week. It is required, because organisations put it in different places; [Write a definition](/guides/write-a-definition/#no-defaults-for-your-organisations-choices) gives examples. In the example definition it is period 12, so in fiscal year 2023 period 12 has 5 weeks instead of 4, and week 53 runs from 28 Jan to 3 Feb 2024, as the output above shows.
+
+Every period that contains the extra week reports `has_extra_week`: the year, its quarter and its period are true, and so is the week itself.
+
+## Numbering week-based years
+
+When the year boundary can fall on either side of 1 January, numbering years by their `start` or `end` calendar year can give two fiscal years the same number. Validation checks every fiscal year in the supported range and rejects such a scheme with `YEAR_NUMBER_COLLISION`, with a hint that names a `year_number` that works ([spec](/reference/spec/definition-v1/#year-numbers-must-be-unique)). ISO 8601 week years, for example, must use `majority`.

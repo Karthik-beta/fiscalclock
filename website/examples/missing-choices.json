@@ -1,0 +1,21 @@
+{
+  "spec_version": 1,
+  "year": {
+    "type": "week_based",
+    "anchor": { "edge": "end", "month": 1, "day": "last", "rule": "nearest" }
+  },
+  "week": { "starts_on": "sunday", "numbering": "contains_start" },
+  "subdivision": {
+    "type": "week_pattern",
+    "periods": [4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4],
+    "quarters": [3, 3, 3, 3]
+  },
+  "naming": {
+    "default": "nrf",
+    "schemes": {
+      "nrf": {
+        "templates": { "year": "FY{yyyy}" }
+      }
+    }
+  }
+}

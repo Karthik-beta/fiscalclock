@@ -1,0 +1,108 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+import { THEMES, storeTheme } from "./site";
+
+const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+const results = (page: Page) => page.locator("#pg-location");
+const errors = (page: Page) => page.locator("#pg-errors");
+const editor = (page: Page) => page.getByRole("textbox", { name: "Definition" });
+
+/** Opens the playground once its script has drawn the first results, so typing is not lost to the initial load. */
+async function openPlayground(page: Page): Promise<void> {
+  await page.goto("/playground/");
+  await expect(results(page).getByRole("table")).toBeVisible();
+}
+
+async function replaceDefinition(page: Page, text: string): Promise<void> {
+  await editor(page).click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.insertText(text);
+}
+
+async function currentDefinition(page: Page): Promise<Record<string, any>> {
+  return JSON.parse((await editor(page).locator(".cm-line").allTextContents()).join("\n"));
+}
+
+test("the first example and the fixed example date are loaded", async ({ page }) => {
+  await openPlayground(page);
+  await expect(page.getByLabel("Example")).toHaveValue("nrf-53-week-years");
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveValue("2024-02-03");
+  await expect(results(page).getByRole("row", { name: /^quarter FY2023 Q4/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: "FY2023: 371 days, 53 weeks" })).toBeVisible();
+});
+
+test("entering a date shows where it falls, and the strip follows its fiscal year", async ({ page }) => {
+  await openPlayground(page);
+  const date = page.getByLabel("Date (YYYY-MM-DD)");
+  await date.fill("2022-06-01");
+  await expect(page.getByLabel("Fiscal year to draw")).toHaveValue("2022");
+  await expect(page.getByRole("img", { name: "FY2022: 364 days, 52 weeks" })).toBeVisible();
+
+  await date.fill("2024-02-03");
+  await expect(page.getByLabel("Fiscal year to draw")).toHaveValue("2023");
+  await expect(results(page).getByRole("row", { name: /^quarter FY2023 Q4 \[2023-10-29, 2024-02-04\) 2024-02-03 14$/ })).toBeVisible();
+  await expect(results(page).getByRole("row", { name: /^week FY2023 W53 / })).toBeVisible();
+});
+
+test("a definition without extra_week shows the library's error with its path, marked in the editor", async ({ page }) => {
+  await openPlayground(page);
+  const definition = await currentDefinition(page);
+  delete definition.subdivision.extra_week;
+  await replaceDefinition(page, JSON.stringify(definition, null, 2));
+
+  await expect(errors(page).getByText("EXTRA_WEEK_MISSING", { exact: true })).toBeVisible();
+  const path = errors(page).getByRole("button", { name: "subdivision.extra_week" });
+  await expect(path).toBeVisible();
+  await expect(page.locator(".cm-fc-error")).toHaveText('"subdivision"');
+  await expect(page.getByLabel("Example")).toHaveValue("");
+  await expect(results(page).getByRole("table")).toHaveCount(0);
+});
+
+test("an invalid date shows the library's error for the date argument", async ({ page }) => {
+  await openPlayground(page);
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2024-02-30");
+  await expect(errors(page).getByText("INVALID_DATE", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("the state survives a reload through the URL fragment", async ({ page }) => {
+  await openPlayground(page);
+  await page.getByLabel("Example").selectOption("apple-10q-2023-12-30");
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2023-12-30");
+  const definition = await currentDefinition(page);
+  await expect(page).toHaveURL(/#s=/);
+
+  await page.reload();
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveValue("2023-12-30");
+  await expect(page.getByLabel("Example")).toHaveValue("apple-10q-2023-12-30");
+  expect(await currentDefinition(page)).toEqual(definition);
+});
+
+test("an unreadable fragment falls back to the first example with a notice", async ({ page }) => {
+  await page.goto("/playground/#s=not-a-state");
+  await expect(page.getByRole("status").filter({ hasText: "could not be read" })).toBeVisible();
+  await expect(page.getByLabel("Example")).toHaveValue("nrf-53-week-years");
+});
+
+test("the keyboard can leave the editor with Tab", async ({ page }) => {
+  await openPlayground(page);
+  await editor(page).click();
+  await expect(editor(page)).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(editor(page)).toBeFocused();
+});
+
+for (const theme of THEMES) {
+  test(`the playground has no WCAG 2.2 AA violations with results and with errors, in ${theme}`, async ({ page }) => {
+    await storeTheme(page, theme);
+    await openPlayground(page);
+    expect((await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()).violations).toEqual([]);
+
+    await page.getByLabel("Date (YYYY-MM-DD)").fill("not a date");
+    await expect(errors(page).getByRole("listitem")).toHaveCount(1);
+    expect((await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()).violations).toEqual([]);
+  });
+}

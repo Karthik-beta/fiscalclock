@@ -12,7 +12,8 @@ for (const path of builtPages()) {
       test(name, async ({ page }) => {
         await storeTheme(page, theme);
         await page.setViewportSize({ width, height: 900 });
-        await page.goto(path);
+        // networkidle: the playground draws its results after the WebAssembly module loads.
+        await page.goto(path, { waitUntil: "networkidle" });
         await page.evaluate(() => document.fonts.ready);
         await page.screenshot({ path: join(outDir, `${name}.png`), fullPage: true });
       });

@@ -1,0 +1,76 @@
+---
+title: Dates and intervals
+description: Why fiscalclock takes only calendar dates and rejects timestamps, why every period has an exclusive end, and why it never reads the clock.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import timestampsPy from "../../../../examples/python/timestamps.py?raw";
+import timestampsPyOut from "../../../../examples/python/timestamps.out?raw";
+import timestampsJs from "../../../../examples/js/timestamps.mjs?raw";
+import timestampsJsOut from "../../../../examples/js/timestamps.out?raw";
+import timestampsRs from "../../../../examples/rust/src/bin/timestamps.rs?raw";
+import timestampsRsOut from "../../../../examples/rust/src/bin/timestamps.out?raw";
+import halfOpenPy from "../../../../examples/python/half_open.py?raw";
+import halfOpenPyOut from "../../../../examples/python/half_open.out?raw";
+import halfOpenJs from "../../../../examples/js/half_open.mjs?raw";
+import halfOpenJsOut from "../../../../examples/js/half_open.out?raw";
+import halfOpenRs from "../../../../examples/rust/src/bin/half_open.rs?raw";
+import halfOpenRsOut from "../../../../examples/rust/src/bin/half_open.out?raw";
+
+Three rules decide how dates go in and out of fiscalclock. Each one is a design rule of the project ([`AGENTS.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/AGENTS.md#design-rules)).
+
+## Calendar dates only
+
+Every date argument is a civil date: a year, month and day, with no time and no time zone. Each language accepts:
+
+| Language | Accepted | Rejected with `TIMESTAMP_REJECTED` |
+| --- | --- | --- |
+| Python | an object whose type is exactly `datetime.date`, or an ISO `YYYY-MM-DD` string | `datetime.datetime`, including a pandas `Timestamp` |
+| JavaScript | an ISO `YYYY-MM-DD` string or a `Temporal.PlainDate` | `Date`, and Temporal `PlainDateTime`, `ZonedDateTime` and `Instant` |
+| Rust | `fiscalclock::Date` | Not applicable: no function takes a timestamp type |
+
+A timestamp is rejected because its calendar day depends on the time zone: late evening on 3 Feb in one zone is already 4 Feb in a zone a few hours ahead, and 3 Feb 2024 and 4 Feb 2024 are in different fiscal years in the example calendar. The right day depends on a zone that only you know, so convert the timestamp to a date in the zone you mean before you pass it. A string with a time or a zone suffix is not a date either, and returns `INVALID_DATE` ([API spec](/reference/spec/api-v1/#conventions)).
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={timestampsPy} lang="python" title="timestamps.py" />
+    <Code code={timestampsPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={timestampsJs} lang="js" title="timestamps.mjs" />
+    <Code code={timestampsJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={timestampsRs} lang="rust" title="timestamps.rs" />
+    <Code code={timestampsRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## Half-open intervals
+
+Every period is the half-open interval `[start, end_exclusive)`: it contains `start` and every day up to, but not including, `end_exclusive`. `last_day` is the day before `end_exclusive`, and is given for display ([API spec](/reference/spec/api-v1/#period)).
+
+With exclusive ends, one period's `end_exclusive` is the next period's `start`, so periods meet without a gap or an overlap. The number of days in a period is `end_exclusive` minus `start`, and a date `d` is in a period when `start <= d < end_exclusive`. The same comparison works for ISO date strings, because they sort in date order.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={halfOpenPy} lang="python" title="half_open.py" />
+    <Code code={halfOpenPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={halfOpenJs} lang="js" title="half_open.mjs" />
+    <Code code={halfOpenJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={halfOpenRs} lang="rust" title="half_open.rs" />
+    <Code code={halfOpenRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## No clock
+
+No operation reads the clock, the time zone of the machine, the environment or any other global state. A question about "now", such as the current fiscal week, takes the date as an argument, so the same call gives the same answer on every machine and in every test. To ask about today, pass today's date in the time zone you mean.
+
+## Supported range
+
+The API covers fiscal years that lie wholly between 2 Jan 0001 and 30 Dec 9999. A date in, or a request for, any other fiscal year returns `OUT_OF_RANGE` ([spec](/reference/spec/definition-v1/#supported-range)).
