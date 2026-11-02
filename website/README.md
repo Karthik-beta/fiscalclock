@@ -4,7 +4,7 @@
 
 The source of the fiscalclock website at `https://fiscalclock.karthik.nz`, which will hold the documentation, a landing page and a playground. It has the documentation pages and a placeholder landing page. It is built with [Astro Starlight](https://starlight.astro.build/) as a static site. The choice of framework and host is recorded in decisions DD-030 to DD-036 in [`design/DECISIONS.md`](../design/DECISIONS.md).
 
-Node.js 22.23.4 or later is required, because Astro 7.4.4 declares `"node": ">=22.23.4"` in its `package.json` `engines` field.
+Use Node.js 24. `package.json` sets `engines.node` to `24.x`, so Vercel builds with the newest Node.js 24 release, the same major version as the [`website.yml`](../.github/workflows/website.yml) workflow. Astro 7.4.4 needs Node.js 22.23.4 or later (the `engines` field of its `package.json`).
 
 ## Commands
 
@@ -83,7 +83,7 @@ Set these by hand. Links are to Vercel's documentation as of 2 November 2026.
 | --- | --- |
 | Root Directory ([build settings](https://vercel.com/docs/builds/configure-a-build#root-directory)) | `website` |
 | Framework Preset ([project settings](https://vercel.com/docs/project-configuration/project-settings)) | Astro |
-| Node.js Version ([Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)) | 24.x. Vercel uses the `engines.node` range in `package.json` instead when one is set; its table maps `>=22.0.0` to the newest major it offers. |
+| Node.js Version ([Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)) | 24.x. Vercel uses the `engines.node` range in `package.json` instead when one is set, and `24.x` there maps to the latest 24.x release; an open range such as `>=22.0.0` would map to the newest major it offers, 26.x as of 2 Nov 2026. |
 | Ignored Build Step | Leave the default; `ignoreCommand` in `vercel.json` overrides it. |
 | Git Fork Protection ([security settings](https://vercel.com/docs/project-configuration/security-settings#git-fork-protection)) | On. A pull request from a fork then deploys only after you authorise it. |
 
