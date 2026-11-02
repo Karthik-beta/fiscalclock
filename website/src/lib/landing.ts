@@ -10,10 +10,11 @@
 import { FiscalCalendar, type Period } from "fiscalclock";
 import oracle from "../../../conformance/vectors/oracle/nrf-4-5-4.json";
 import { nrf, type VectorFile } from "./examples";
-import { formatJson } from "./json-format";
+import { formatJsonBlocks } from "./json-format";
 
 export const definition = nrf.definition;
-export const definitionText = formatJson(definition, 76);
+// 70 columns fit the definition's column at 1280 pixels wide without wrapping.
+export const definitionText = formatJsonBlocks(definition, 70);
 export const sourceUrl = nrf.source.url!;
 
 const cal = new FiscalCalendar(definition);
@@ -81,6 +82,9 @@ function crossCheck(): void {
       same(`fiscal 2023 ${want.level} ${want.index ?? ""} ${key} (oracle)`, got?.[key], want[key]);
     }
   }
+
+  // The page prints definitionText, so it must be the definition the dates came from.
+  if (JSON.stringify(JSON.parse(definitionText)) !== JSON.stringify(definition)) problems.push("the printed definition differs from the cited vector's definition");
 
   // The 4-5-4 pattern with the extra week in period 12, as drawn by design/scripts/build_brand_assets.py.
   same("period lengths in weeks", periods.map((p) => p.weeks), [4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 5]);

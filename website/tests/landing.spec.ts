@@ -15,6 +15,19 @@ test("the landing page draws fiscal 2023 to scale with its 12 periods and the ex
   await expect(page.locator(".strip-figure tbody tr")).toHaveCount(12);
 });
 
+test("at 1280 by 800 pixels the year strip starts on the first screen, beside a definition that is not wrapped", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/");
+  await page.evaluate(() => document.fonts.ready);
+  const strip = page.getByRole("img", { name: /^FY2023: / });
+  expect((await strip.boundingBox())!.y).toBeLessThan(800);
+
+  const code = page.locator(".landing-definition pre");
+  const heights = await code.locator(".ec-line").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height));
+  expect(new Set(heights).size, "every line of the definition is one row high").toBe(1);
+  expect(JSON.parse((await code.locator(".ec-line").allTextContents()).join("\n"))).toMatchObject({ spec_version: 1, subdivision: { extra_week: { period: 12 } } });
+});
+
 test("the question's three snippets share one output block with the label and the core's JSON", async ({ page }) => {
   await page.goto("/");
   const output = page.locator("figure.raw-output", { has: page.getByText("Output", { exact: true }) });
