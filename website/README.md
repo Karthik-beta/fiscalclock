@@ -59,6 +59,8 @@ Both pages run the published `fiscalclock` npm package, pinned to an exact versi
 
 Every code example in the documentation is a file in [`examples/`](examples/): `python/<name>.py`, `js/<name>.mjs` and `rust/src/bin/<name>.rs`, each next to a `<name>.out` file holding its exact output. A page imports both with a `?raw` import and shows them with Starlight's `<Code>` component in `<Tabs syncKey="lang">`, Python first, so the page shows the same files that `npm run test:examples` runs. The expected outputs are written from the spec and the cited sources, not copied from a run, except where the text is not part of the API (the wording of `explain`, and pandas' table layout). The Rust examples are their own Cargo workspace, outside the repository's workspace.
 
+The example definitions the code opens, such as `retail-4-5-4.json`, live in [`docs/examples/`](../docs/examples/), because example definitions belong in `docs/` (design rule 1 in [`AGENTS.md`](../AGENTS.md)). `npm run test:examples` runs every example from that folder, so each opens its definition by bare file name, as the page shows.
+
 ## Deployment
 
 Vercel builds and serves the site. [`vercel.json`](vercel.json) holds the install command, the build-skip check, the redirects and the response headers. The other settings are made by hand in the Vercel project.

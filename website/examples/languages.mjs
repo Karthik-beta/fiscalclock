@@ -17,3 +17,10 @@ export function sourcePath(language, name) {
 export function outputPath(language, name) {
   return `${language.dir}/${name}.out`;
 }
+
+/**
+ * The folder, relative to the repository root, that holds the definitions the
+ * examples open by bare file name. Example definitions live in docs/ (AGENTS.md,
+ * design rule 1), and scripts/test-examples.mjs runs every example from there.
+ */
+export const DEFINITIONS = "docs/examples";
