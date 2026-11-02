@@ -1,0 +1,93 @@
+/* Landing page only: imported by src/content/docs/index.mdx. */
+
+/* The splash template has no sidebar; give the hero and the year strip the width. */
+:root:has(.landing-top) {
+  --sl-content-width: 70rem;
+}
+
+/* The title and the content sit in two panels; on this page they read as one. */
+:root:has(.landing-top) .content-panel + .content-panel {
+  border-top: 0;
+  padding-top: 0;
+}
+
+:root:has(.landing-top) h1#_top {
+  max-width: 15em;
+  margin-top: var(--fc-space-6);
+  font-size: clamp(var(--fc-font-size-3xl), 2rem + 2vw, var(--fc-font-size-4xl));
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.landing-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fc-space-6);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .landing-top {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--fc-space-7);
+  }
+}
+
+.landing-intro > * + * {
+  margin-top: var(--fc-space-5);
+}
+
+.landing-summary {
+  max-width: 34em;
+  font-size: var(--fc-font-size-lg);
+  line-height: var(--fc-font-line-height-body);
+  color: var(--fc-color-text-default);
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fc-space-4) var(--fc-space-5);
+}
+
+.landing-actions a {
+  color: var(--fc-color-text-default);
+  text-decoration-line: underline;
+  text-decoration-color: var(--fc-color-accent-default);
+  text-decoration-thickness: var(--fc-border-width-thin);
+  text-underline-offset: 0.2em;
+}
+
+.landing-actions a.landing-primary {
+  padding: var(--fc-space-2) var(--fc-space-4);
+  border-radius: var(--fc-radius-md);
+  background: var(--fc-color-accent-default);
+  color: var(--fc-color-text-on-accent);
+  font-weight: var(--fc-font-weight-semibold);
+  text-decoration: none;
+}
+
+.landing-actions a.landing-primary:hover {
+  background: var(--fc-color-accent-hover);
+}
+
+.landing-label {
+  margin-bottom: var(--fc-space-3);
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-type-small-font-size);
+  line-height: var(--fc-type-small-line-height);
+}
+
+.landing-strip {
+  margin-top: var(--fc-space-6);
+}
+
+.landing-prose {
+  max-width: var(--fc-layout-prose);
+  margin-top: var(--fc-space-8);
+}
+
+.landing-prose td code {
+  white-space: nowrap;
+}

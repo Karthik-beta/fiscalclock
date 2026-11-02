@@ -1,0 +1,54 @@
+{
+  "name": "fiscalclock-website",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "sync": "node scripts/sync.mjs && node scripts/import-docs.mjs",
+    "predev": "npm run sync",
+    "dev": "astro dev",
+    "prebuild": "npm run sync",
+    "build": "astro build",
+    "precheck": "npm run sync",
+    "check": "astro check",
+    "preview": "astro preview",
+    "test": "node --test \"tests/unit/*.test.ts\" && playwright test --project=checks",
+    "shots": "playwright test --project=shots",
+    "test:examples": "node scripts/test-examples.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.4",
+    "@astrojs/starlight": "0.42.8",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/lang-json": "6.0.2",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "@lezer/highlight": "1.2.5",
+    "astro": "7.4.4",
+    "fiscalclock": "0.1.0",
+    "starlight-llms-txt": "0.12.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@ibm/plex-mono": "2.5.0",
+    "@ibm/plex-sans": "1.1.0",
+    "@playwright/test": "1.64.1",
+    "@types/mdast": "4.0.4",
+    "@vercel/routing-utils": "6.6.0",
+    "mdast-util-mdx-jsx": "3.2.0",
+    "remark-gfm": "4.0.1",
+    "remark-mdx": "3.1.1",
+    "remark-parse": "11.0.0",
+    "remark-stringify": "11.0.0",
+    "typescript": "6.0.3",
+    "unified": "11.0.5"
+  },
+  "allowScripts": {
+    "@ibm/plex-mono": false,
+    "@ibm/plex-sans": false
+  }
+}

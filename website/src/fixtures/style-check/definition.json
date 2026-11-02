@@ -1,0 +1,10 @@
+{
+  "spec_version": 1,
+  "year": {"type": "week_based",
+           "anchor": {"edge": "end", "month": 1, "day": "last", "rule": "nearest"}},
+  "week": {"starts_on": "sunday", "numbering": "contains_start"},
+  "subdivision": {"type": "week_pattern", "periods": [4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4],
+                  "quarters": [3, 3, 3, 3], "extra_week": {"period": 12}},
+  "naming": {"default": "fy", "schemes": {"fy": {"year_number": "start",
+             "templates": {"year": "FY{yyyy}", "quarter": "Q{q} FY{yyyy}"}}}}
+}

@@ -1,0 +1,274 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import { examples, shortLabel } from "../lib/examples";
+
+const EXAMPLE_DATE = "2024-02-03";
+const EXAMPLE_YEAR = 2023;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "Playground",
+    description: "Edit a fiscal calendar definition and see where a date falls, with fiscalclock running in your browser.",
+    tableOfContents: false,
+    editUrl: false,
+  }}
+>
+  <div class="playground not-content" data-example-date={EXAMPLE_DATE} data-example-year={EXAMPLE_YEAR}>
+    <p class="pg-intro">
+      Edit a definition and enter a date. fiscalclock 0.1.0 runs in this page as WebAssembly and answers with its own
+      results and error messages. The page starts at <time datetime={EXAMPLE_DATE}>{EXAMPLE_DATE}</time>, a fixed
+      example date: fiscalclock never reads today's date. Everything you change is kept in the page's address, so a
+      copied link opens the same state.
+    </p>
+
+    <p id="pg-notice" class="pg-notice" role="status"></p>
+
+    <section class="pg-definition" aria-labelledby="pg-definition-heading">
+      <h2 id="pg-definition-heading">Definition</h2>
+      <div class="pg-field">
+        <label for="pg-example">Example</label>
+        <select id="pg-example">
+          <option value="">Your own definition</option>
+          {examples.map((e) => <option value={e.name}>{shortLabel(e)}</option>)}
+        </select>
+      </div>
+      <p id="pg-example-source" class="pg-source"></p>
+      <div id="pg-editor" class="pg-editor"></div>
+      <p id="pg-editor-hint" class="pg-hint">
+        JSON, in the format of the definition spec. Tab moves on to the next control rather than indenting.
+      </p>
+    </section>
+
+    <section class="pg-answers" aria-labelledby="pg-answers-heading">
+      <h2 id="pg-answers-heading">Where the date falls</h2>
+      <div class="pg-controls">
+        <div class="pg-field">
+          <label for="pg-date">Date (YYYY-MM-DD)</label>
+          <input id="pg-date" type="text" autocomplete="off" spellcheck="false" value={EXAMPLE_DATE} />
+        </div>
+        <div class="pg-field">
+          <label for="pg-year">Fiscal year to draw</label>
+          <input id="pg-year" type="number" step="1" value={EXAMPLE_YEAR} />
+        </div>
+        <div class="pg-copy">
+          <button id="pg-copy" type="button">Copy link</button>
+          <span id="pg-copy-status" role="status"></span>
+        </div>
+      </div>
+      <p id="pg-status" class="sr-only" role="status"></p>
+      <div id="pg-errors" class="pg-errors"></div>
+      <div id="pg-location" class="pg-location"><p class="pg-hint">Loading fiscalclock…</p></div>
+    </section>
+
+    <section class="pg-strip" aria-labelledby="pg-strip-heading">
+      <h2 id="pg-strip-heading">The fiscal year, to scale</h2>
+      <div id="pg-strip"></div>
+    </section>
+  </div>
+
+  <script is:inline type="application/json" id="pg-examples" set:html={JSON.stringify(examples).replaceAll("<", "\\u003c")} />
+</StarlightPage>
+
+<script>
+  import "../scripts/playground";
+</script>
+
+<style>
+  :root:has(.playground) {
+    --sl-content-width: 76rem;
+  }
+  .playground {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--fc-space-6);
+  }
+  @media (min-width: 72rem) {
+    .playground {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: var(--fc-space-7);
+    }
+    .pg-intro,
+    .pg-notice,
+    .pg-strip {
+      grid-column: 1 / -1;
+    }
+  }
+  .pg-intro {
+    max-width: var(--fc-layout-prose);
+  }
+  .pg-notice:empty {
+    display: none;
+  }
+  .pg-notice {
+    padding: var(--fc-space-3) var(--fc-space-4);
+    border-inline-start: var(--fc-border-width-thick) solid var(--fc-color-status-warning);
+    background: var(--fc-color-bg-subtle);
+  }
+  h2 {
+    font-size: var(--fc-type-heading-3-font-size);
+    line-height: var(--fc-type-heading-3-line-height);
+    font-weight: var(--fc-font-weight-semibold);
+    margin-bottom: var(--fc-space-4);
+  }
+  .pg-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fc-space-1);
+  }
+  label {
+    font-size: var(--fc-type-small-font-size);
+    color: var(--fc-color-text-muted);
+  }
+  select,
+  input,
+  button {
+    font: inherit;
+    color: var(--fc-color-text-default);
+    background: var(--fc-color-bg-raised);
+    border: var(--fc-border-width-thin) solid var(--fc-color-border-strong);
+    border-radius: var(--fc-radius-sm);
+    padding: var(--fc-space-1) var(--fc-space-2);
+  }
+  input {
+    font-variant-numeric: tabular-nums lining-nums;
+    width: 10em;
+  }
+  input[aria-invalid="true"] {
+    border-color: var(--fc-color-status-danger);
+    border-width: var(--fc-border-width-thick);
+  }
+  button {
+    cursor: pointer;
+  }
+  button:hover {
+    border-color: var(--fc-color-text-default);
+  }
+  .playground :global(.pg-source),
+  .playground :global(.pg-hint) {
+    margin-top: var(--fc-space-2);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
+    color: var(--fc-color-text-muted);
+  }
+  .playground :global(.pg-source a) {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--fc-color-accent-default);
+    text-underline-offset: 0.2em;
+  }
+  .pg-editor {
+    margin-top: var(--fc-space-3);
+  }
+  .pg-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--fc-space-4);
+  }
+  .pg-copy {
+    display: flex;
+    align-items: center;
+    gap: var(--fc-space-3);
+    font-size: var(--fc-type-small-font-size);
+  }
+  .pg-errors:empty {
+    display: none;
+  }
+  .pg-errors,
+  .pg-location {
+    margin-top: var(--fc-space-5);
+  }
+  .pg-errors :global(ul) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--fc-space-3);
+  }
+  .pg-errors :global(li) {
+    padding: var(--fc-space-3) var(--fc-space-4);
+    border-inline-start: var(--fc-border-width-thick) solid var(--fc-color-status-danger);
+    background: var(--fc-color-bg-subtle);
+  }
+  .pg-errors :global(.pg-error-head) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fc-space-1) var(--fc-space-3);
+    align-items: baseline;
+  }
+  .pg-errors :global(code) {
+    font-family: var(--fc-type-code-font-family);
+    font-size: var(--fc-type-code-font-size);
+  }
+  .pg-errors :global(.pg-error-code) {
+    font-weight: var(--fc-font-weight-semibold);
+    color: var(--fc-color-status-danger);
+  }
+  .pg-errors :global(.pg-path) {
+    padding: 0 var(--fc-space-1);
+  }
+  .pg-errors :global(.pg-hint-text) {
+    color: var(--fc-color-text-muted);
+  }
+  .pg-location :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fc-type-small-font-size);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .pg-location :global(th),
+  .pg-location :global(td) {
+    text-align: start;
+    padding: var(--fc-space-2) var(--fc-space-3) var(--fc-space-2) 0;
+    border-bottom: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    font-weight: var(--fc-font-weight-regular);
+    vertical-align: top;
+  }
+  /* A date or a label never breaks; an interval breaks after its comma when the column is narrow. */
+  .pg-location :global(time),
+  .pg-location :global(.pg-label) {
+    white-space: nowrap;
+  }
+  .pg-location :global(.pg-table-scroll) {
+    overflow-x: auto;
+  }
+  .pg-location :global(thead th) {
+    color: var(--fc-color-text-muted);
+    border-bottom-color: var(--fc-color-border-strong);
+  }
+  .pg-location :global(th:last-child),
+  .pg-location :global(td:last-child) {
+    padding-inline-end: 0;
+    text-align: end;
+  }
+  .pg-location :global(.pg-level) {
+    font-weight: var(--fc-font-weight-semibold);
+  }
+  .pg-location :global(.pg-label-missing) {
+    color: var(--fc-color-text-muted);
+  }
+  .pg-location :global(.pg-day) {
+    margin-top: var(--fc-space-3);
+    font-size: var(--fc-type-small-font-size);
+    color: var(--fc-color-text-muted);
+  }
+  .pg-strip :global(.strip-scroll) {
+    overflow-x: auto;
+    width: fit-content;
+    max-width: 100%;
+    border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    border-radius: var(--fc-radius-md);
+    background: var(--fc-color-diagram-surface);
+    padding-block: var(--fc-space-3);
+  }
+  .pg-strip :global(svg) {
+    display: block;
+  }
+  .pg-strip :global(.strip-hint) {
+    margin-top: var(--fc-space-2);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
+  }
+</style>

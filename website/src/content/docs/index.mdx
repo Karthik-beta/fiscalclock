@@ -1,0 +1,97 @@
+---
+title: Compute fiscal calendars from a JSON definition
+description: fiscalclock is an open-source fiscal calendar engine for Rust, Python and JavaScript. Describe a fiscal calendar as JSON, and it tells you which fiscal year, quarter, period and week any date falls in.
+template: splash
+editUrl: false
+---
+
+import { Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import RawOutput from "../../components/RawOutput.astro";
+import YearStripFigure from "../../components/YearStripFigure.astro";
+import * as fy from "../../lib/landing";
+import askQuarterPy from "../../../examples/python/ask_quarter.py?raw";
+import askQuarterJs from "../../../examples/js/ask_quarter.mjs?raw";
+import askQuarterRs from "../../../examples/rust/src/bin/ask_quarter.rs?raw";
+import "../../styles/landing.css";
+
+<div class="landing-top not-content">
+<div class="landing-intro">
+
+<p class="landing-summary">
+  Describe your organisation's fiscal calendar as a JSON definition, and fiscalclock tells you which fiscal year,
+  quarter, period and week any date falls in, the bounds of every period, and the labels you use for them. One Rust
+  core gives the same answers in Python, JavaScript and Rust.
+</p>
+
+<Tabs syncKey="lang">
+  <TabItem label="Python"><Code code="pip install fiscalclock" lang="sh" frame="none" /></TabItem>
+  <TabItem label="JavaScript"><Code code="npm install fiscalclock" lang="sh" frame="none" /></TabItem>
+  <TabItem label="Rust"><Code code="cargo add fiscalclock" lang="sh" frame="none" /></TabItem>
+</Tabs>
+
+<p class="landing-actions">
+  <a class="landing-primary" href="/start-here/quick-start/">Get started</a>
+  <a href="/playground/">Try it in the playground</a>
+</p>
+
+</div>
+<div class="landing-definition">
+
+<p class="landing-label">An illustrative 4-5-4 definition, not any organisation's published calendar. Its year rule gives the 53-week years NRF publishes. fiscalclock has no built-in calendars.</p>
+
+<Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
+
+</div>
+</div>
+
+<div class="landing-strip">
+
+<YearStripFigure id="fy2023" title={`${fy.yearLabel}: ${fy.year.days} days, ${fy.year.weeks} weeks`} periods={fy.periods} quarters={fy.quarters}>
+  Fiscal 2023 under that definition, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
+  Each period is a half-open interval, so the date under a boundary line is the first day of the period to its right.
+  The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock 0.1.0 npm package
+  when this page was built, and the build fails unless the year has the 53 weeks that{" "}
+  <a href={fy.sourceUrl}>NRF's list of 53-week years</a> gives it and the dates match the{" "}
+  <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
+</YearStripFigure>
+
+</div>
+
+<div class="landing-prose">
+
+## Ask it a question
+
+Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition above as `retail-4-5-4.json` and ask:
+
+<Tabs syncKey="lang">
+  <TabItem label="Python"><Code code={askQuarterPy} lang="python" /></TabItem>
+  <TabItem label="JavaScript"><Code code={askQuarterJs} lang="js" /></TabItem>
+  <TabItem label="Rust"><Code code={askQuarterRs} lang="rust" /></TabItem>
+</Tabs>
+
+All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package, and it must print exactly the output below.
+
+<RawOutput text={fy.askOutput} label="Output" />
+
+## Why you can check the results
+
+- **Shared conformance vectors.** The vector files in [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output.
+- **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years [NRF publishes](https://nrf.com/resources/4-5-4-calendar) (2006, 2012, 2017 and 2023).
+- **A second implementation.** A deliberately slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 across 960 generated definitions.
+- **Property tests.** Periods tile their year without gaps or overlaps, nest correctly, and round-trip through `shift` and through `format` and `parse`. Week-based years have 364 or 371 days and 71 long years in every 400.
+- **Identical output in every language.** On every push, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows, and requires the raw outputs to match the Rust output byte for byte.
+- **Reproducible verification.** Every date-arithmetic claim in the design documents is reproduced by a standard-library script in [`research/verification/`](https://github.com/Karthik-beta/fiscalclock/tree/main/research/verification), which CI reruns on every pull request.
+
+These statements are taken from the [project README](https://github.com/Karthik-beta/fiscalclock#why-you-can-check-the-results).
+
+## Packages
+
+All three packages are built from the same Rust core and return the same JSON for the same input. Version 0.1.0 is the first release; the definition format and API are version 1 drafts and may change before 1.0.
+
+| Package | Install | Supports |
+| --- | --- | --- |
+| [Python package](https://pypi.org/project/fiscalclock/) | `pip install fiscalclock` | CPython 3.10 and later, and free-threaded 3.14; wheels for Linux, macOS and Windows |
+| [npm package](https://www.npmjs.com/package/fiscalclock) | `npm install fiscalclock` | Node.js 22 and later, and browsers (WebAssembly) |
+| [Rust crate](https://crates.io/crates/fiscalclock) | `cargo add fiscalclock` | Rust 1.85 and later, `no_std` with `alloc` |
+
+</div>

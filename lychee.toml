@@ -3,7 +3,7 @@ max_retries = 3
 timeout = 30
 accept = ["200..=299", "429"]
 user_agent = "Mozilla/5.0 (compatible; fiscalclock-linkcheck; +https://github.com/Karthik-beta/fiscalclock)"
-exclude_path = ["target", "node_modules", "bindings/js/pkg", ".venv"]
+exclude_path = ["target", "node_modules", "bindings/js/pkg", "website/dist", ".venv"]
 
 exclude = [
   # Placeholders in templates, not real links.
@@ -15,4 +15,7 @@ exclude = [
   # packages.ecosyste.ms answers link checkers with 402; both pages exist.
   '^https://(www\.)?sec\.gov/',
   '^https://packages\.ecosyste\.ms/',
+  # The website is not deployed yet. Its own pages are checked offline in the
+  # built site by the website workflow; remove this once the domain serves it.
+  '^https://fiscalclock\.karthik\.nz(/|$)',
 ]
