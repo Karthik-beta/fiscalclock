@@ -1,0 +1,140 @@
+/*
+ * Maps Starlight's --sl-* variables onto fiscalclock's semantic --fc-* tokens.
+ * Loaded after generated/tokens.css. Starlight's own styles sit in cascade
+ * layers, so these unlayered declarations win without raising specificity.
+ *
+ * Both themes are covered by one block: the --fc-* tokens already switch on
+ * <html data-theme>, which Starlight sets before first paint. Starlight's grey
+ * scale is inverted between themes, but its meaning is not: "white" and gray-1
+ * are always the strongest text, "black" is always the page background. So each
+ * step maps to the token with the same role, and the inversion comes for free.
+ */
+
+:root {
+  --sl-color-white: var(--fc-color-text-default);
+  --sl-color-gray-1: var(--fc-color-text-default);
+  --sl-color-gray-2: var(--fc-color-text-default);
+  --sl-color-gray-3: var(--fc-color-text-muted);
+  --sl-color-gray-4: var(--fc-color-border-strong);
+  --sl-color-gray-5: var(--fc-color-border-default);
+  --sl-color-gray-6: var(--fc-color-bg-subtle);
+  --sl-color-gray-7: var(--fc-color-bg-subtle);
+  --sl-color-black: var(--fc-color-bg-default);
+
+  --sl-color-accent-low: var(--fc-color-bg-accent-subtle);
+  --sl-color-accent: var(--fc-color-accent-default);
+  --sl-color-accent-high: var(--fc-color-accent-hover);
+
+  --sl-color-text: var(--fc-color-text-default);
+  --sl-color-text-accent: var(--fc-color-accent-default);
+  --sl-color-text-invert: var(--fc-color-text-on-accent);
+  --sl-color-bg: var(--fc-color-bg-default);
+  --sl-color-bg-nav: var(--fc-color-bg-default);
+  --sl-color-bg-sidebar: var(--fc-color-bg-default);
+  --sl-color-bg-inline-code: var(--fc-color-code-bg);
+  --sl-color-bg-accent: var(--fc-color-accent-default);
+  --sl-color-hairline-light: var(--fc-color-border-default);
+  --sl-color-hairline: var(--fc-color-border-default);
+  --sl-color-hairline-shade: var(--fc-color-border-default);
+  --sl-color-backdrop-overlay: color-mix(in srgb, var(--fc-color-bg-default) 80%, transparent);
+
+  /* Asides and badges. Every aside sits on the subtle background; its border
+     and title carry the status colour, and the icon and title name the type,
+     so colour is never the only cue. There is no purple token: tips use the
+     accent. */
+  --sl-color-blue-low: var(--fc-color-bg-subtle);
+  --sl-color-blue: var(--fc-color-status-info);
+  --sl-color-blue-high: var(--fc-color-status-info);
+  --sl-color-purple-low: var(--fc-color-bg-subtle);
+  --sl-color-purple: var(--fc-color-accent-default);
+  --sl-color-purple-high: var(--fc-color-accent-default);
+  --sl-color-orange-low: var(--fc-color-bg-subtle);
+  --sl-color-orange: var(--fc-color-status-warning);
+  --sl-color-orange-high: var(--fc-color-status-warning);
+  --sl-color-red-low: var(--fc-color-bg-subtle);
+  --sl-color-red: var(--fc-color-status-danger);
+  --sl-color-red-high: var(--fc-color-status-danger);
+  --sl-color-green-low: var(--fc-color-bg-subtle);
+  --sl-color-green: var(--fc-color-status-success);
+  --sl-color-green-high: var(--fc-color-status-success);
+
+  /* DD-019: no shadows; raised surfaces use a border. */
+  --sl-shadow-sm: none;
+  --sl-shadow-md: none;
+  --sl-shadow-lg: none;
+
+  --sl-font: var(--fc-type-body-font-family);
+  --sl-font-mono: var(--fc-type-code-font-family);
+  --sl-text-body: var(--fc-type-body-font-size);
+  --sl-text-body-sm: var(--fc-type-small-font-size);
+  --sl-text-code: var(--fc-type-code-font-size);
+  --sl-text-code-sm: var(--fc-type-code-font-size);
+  --sl-text-h1: var(--fc-type-heading-1-font-size);
+  --sl-text-h2: var(--fc-type-heading-2-font-size);
+  --sl-text-h3: var(--fc-type-heading-3-font-size);
+  --sl-text-h4: var(--fc-type-body-font-size);
+  --sl-text-h5: var(--fc-type-body-font-size);
+  --sl-line-height: var(--fc-type-body-line-height);
+  --sl-line-height-headings: var(--fc-type-heading-1-line-height);
+
+  --sl-nav-height: var(--fc-layout-header);
+  /* The logo is as tall as the header minus this padding twice: 24 px, the
+     smallest size DD-026 allows for the lockup. Larger, it outweighs the page. */
+  --sl-nav-pad-y: var(--fc-space-4);
+  --sl-sidebar-width: var(--fc-layout-sidebar);
+  --sl-content-width: var(--fc-layout-prose);
+}
+
+/* DD-027: links in running text are underlined, in the accent colour. */
+.sl-markdown-content a:not(:where(.not-content *)) {
+  text-decoration-line: underline;
+  text-decoration-color: var(--fc-color-accent-default);
+  text-decoration-thickness: var(--fc-border-width-thin);
+  text-underline-offset: 0.2em;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-thickness: var(--fc-border-width-thick);
+}
+
+/* DD-020: equal-width lining digits wherever dates and numbers are compared. */
+table,
+time,
+output {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* An ISO date broken at a hyphen reads as two values. */
+time {
+  white-space: nowrap;
+}
+
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: var(--fc-border-width-thick) solid var(--fc-color-border-strong);
+  color: var(--fc-color-text-muted);
+}
+
+.sl-markdown-content th:not(:where(.not-content *)) {
+  border-bottom-color: var(--fc-color-border-strong);
+}
+
+/*
+ * The search button's accessible name is "Search", so the visible "Ctrl K"
+ * hint fails WCAG 2.5.3 (label in name). The shortcut still works and is
+ * announced through aria-keyshortcuts.
+ */
+site-search button[data-open-modal] > kbd {
+  display: none !important;
+}
+
+/*
+ * Focus ring. Placed in Starlight's lowest layer, not unlayered, so that the
+ * components which pull the outline inside a scrolling container (tabs, the
+ * table of contents) keep their own outline-offset.
+ */
+@layer starlight.base {
+  :focus-visible {
+    outline: var(--fc-border-width-thick) solid var(--fc-color-focus-ring);
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "fiscalclock-website",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "sync": "node scripts/sync.mjs",
+    "predev": "npm run sync",
+    "dev": "astro dev",
+    "prebuild": "npm run sync",
+    "build": "astro build",
+    "precheck": "npm run sync",
+    "check": "astro check",
+    "preview": "astro preview",
+    "test": "playwright test --project=checks",
+    "shots": "playwright test --project=shots"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.8",
+    "astro": "7.4.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@ibm/plex-mono": "2.5.0",
+    "@ibm/plex-sans": "1.1.0",
+    "@playwright/test": "1.64.1",
+    "typescript": "6.0.3"
+  },
+  "allowScripts": {
+    "@ibm/plex-mono": false,
+    "@ibm/plex-sans": false
+  }
+}

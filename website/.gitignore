@@ -1,0 +1,16 @@
+# Build output
+dist/
+.astro/
+
+# Copied by scripts/sync.mjs; the sources live in design/ and assets/brand/
+src/styles/generated/
+src/assets/brand/
+public/favicon.svg
+public/favicon.ico
+public/apple-touch-icon.png
+public/og-image.png
+public/fonts/
+
+# Playwright
+test-results/
+playwright-report/
