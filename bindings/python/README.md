@@ -66,7 +66,7 @@ Date arguments accept only an object whose type is exactly `datetime.date`, or a
 
 ## How the results are checked
 
-- 112 shared conformance vector files (4,070 cases) are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
+- 282 shared conformance vector files (10,483 cases) are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
 - Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
 - Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
 - On every push, CI runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.

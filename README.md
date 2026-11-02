@@ -62,7 +62,7 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 
 ## Why you can check the results
 
-- **Shared conformance vectors.** 112 vector files with 4,070 cases in [`conformance/`](conformance/README.md) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output. CI regenerates the generated vectors and fails if they drift.
+- **Shared conformance vectors.** 282 vector files with 10,483 cases in [`conformance/`](conformance/README.md) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output. CI regenerates the generated vectors and fails if they drift.
 - **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years NRF publishes (2006, 2012, 2017 and 2023).
 - **A second implementation.** A deliberately slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 across 960 generated definitions.
 - **Property tests.** Periods tile their year without gaps or overlaps, nest correctly, and round-trip through `shift` and through `format` and `parse`; week-based years have 364 or 371 days and 71 long years in every 400.
