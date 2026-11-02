@@ -79,6 +79,22 @@ test("the state survives a reload through the URL fragment", async ({ page }) =>
   expect(await currentDefinition(page)).toEqual(definition);
 });
 
+test("examples have short labels, with the full description and its source under the select", async ({ page }) => {
+  await openPlayground(page);
+  const example = page.getByLabel("Example");
+  await expect(example.locator("option")).toHaveText([
+    "Your own definition",
+    "NRF, 52/53-week year",
+    "Apple, 52/53-week year",
+    "Costco, 52/53-week year",
+    "Kroger, 52/53-week year",
+  ]);
+  await example.selectOption({ label: "Costco, 52/53-week year" });
+  const source = page.locator("#pg-example-source");
+  await expect(source).toContainText("Costco Wholesale Corporation 2017 Annual Report");
+  await expect(source.getByRole("link", { name: "Source" })).toHaveAttribute("href", /q4cdn\.com/);
+});
+
 test("an unreadable fragment falls back to the first example with a notice", async ({ page }) => {
   await page.goto("/playground/#s=not-a-state");
   await expect(page.getByRole("status").filter({ hasText: "could not be read" })).toBeVisible();
