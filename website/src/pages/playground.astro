@@ -216,6 +216,7 @@ const firstSentence = (text: string) => text.split(/\.\s(?=The\s)/)[0]!.replace(
     width: 100%;
     border-collapse: collapse;
     font-size: var(--fc-type-small-font-size);
+    font-variant-numeric: tabular-nums lining-nums;
   }
   .pg-location :global(th),
   .pg-location :global(td) {
@@ -224,6 +225,10 @@ const firstSentence = (text: string) => text.split(/\.\s(?=The\s)/)[0]!.replace(
     border-bottom: var(--fc-border-width-thin) solid var(--fc-color-border-default);
     font-weight: var(--fc-font-weight-regular);
     vertical-align: top;
+  }
+  /* A date or a label never breaks; an interval breaks after its comma when the column is narrow. */
+  .pg-location :global(time),
+  .pg-location :global(.pg-label) {
     white-space: nowrap;
   }
   .pg-location :global(.pg-table-scroll) {
@@ -233,7 +238,12 @@ const firstSentence = (text: string) => text.split(/\.\s(?=The\s)/)[0]!.replace(
     color: var(--fc-color-text-muted);
     border-bottom-color: var(--fc-color-border-strong);
   }
-  .pg-location :global(tbody th) {
+  .pg-location :global(th:last-child),
+  .pg-location :global(td:last-child) {
+    padding-inline-end: 0;
+    text-align: end;
+  }
+  .pg-location :global(.pg-level) {
     font-weight: var(--fc-font-weight-semibold);
   }
   .pg-location :global(.pg-label-missing) {

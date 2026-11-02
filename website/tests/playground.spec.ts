@@ -95,6 +95,19 @@ test("the keyboard can leave the editor with Tab", async ({ page }) => {
   await expect(editor(page)).toBeFocused();
 });
 
+for (const width of [1280, 375]) {
+  test(`the results table fits its column without scrolling at ${width} pixels wide`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openPlayground(page);
+    await page.evaluate(() => document.fonts.ready);
+    const box = page.locator(".pg-table-scroll");
+    expect(await box.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    const weeks = (await box.getByRole("columnheader", { name: "Weeks" }).boundingBox())!;
+    expect(weeks.x + weeks.width).toBeLessThanOrEqual(width);
+  });
+}
+
 for (const theme of THEMES) {
   test(`the playground has no WCAG 2.2 AA violations with results and with errors, in ${theme}`, async ({ page }) => {
     await storeTheme(page, theme);

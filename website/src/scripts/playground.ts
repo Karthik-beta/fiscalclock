@@ -245,14 +245,14 @@ function showLocation(cal: FiscalCalendar | undefined, here: Location | undefine
     return el(
       "tr",
       {},
-      el("th", { scope: "row" }, level),
-      el("td", {}, labelOf(cal, p)),
+      // The level and its label share a cell, so the table fits a phone's width.
+      el("th", { scope: "row" }, el("span", { class: "pg-level" }, level), " ", el("span", { class: "pg-label" }, labelOf(cal, p))),
       el("td", {}, "[", time(p.start), ", ", time(p.end_exclusive), ")"),
       el("td", {}, time(p.last_day)),
       el("td", {}, p.weeks === null ? `${p.days} days` : `${p.weeks}`),
     );
   });
-  const head = el("tr", {}, ...["Level", "Label", "[start, end_exclusive)", "Last day", "Weeks"].map((h) => el("th", { scope: "col" }, h)));
+  const head = el("tr", {}, ...["Level and label", "[start, end_exclusive)", "Last day", "Weeks"].map((h) => el("th", { scope: "col" }, h)));
   locationBox.replaceChildren(
     el("div", { class: "pg-table-scroll", tabindex: "0", role: "group", "aria-label": `Where ${state.date} falls; scrolls sideways` }, el("table", {}, el("caption", { class: "sr-only" }, `Where ${state.date} falls`), el("thead", {}, head), el("tbody", {}, ...rows))),
     el(
