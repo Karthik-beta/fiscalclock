@@ -66,6 +66,11 @@ test("an invalid date shows the library's error for the date argument", async ({
   await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "true");
 });
 
+test("the date field does not ask for a numeric keypad, which has no hyphen on iOS", async ({ page }) => {
+  await openPlayground(page);
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).not.toHaveAttribute("inputmode");
+});
+
 test("the state survives a reload through the URL fragment", async ({ page }) => {
   await openPlayground(page);
   await page.getByLabel("Example").selectOption("apple-10q-2023-12-30");
