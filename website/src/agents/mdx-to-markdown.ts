@@ -95,7 +95,8 @@ const PARSERS = {
   md: unified().use(remarkParse).use(remarkGfm),
 };
 // No remark-mdx here: an MDX node that survives conversion makes stringify throw.
-const printer = unified().use(remarkGfm).use(remarkStringify, { bullet: "-", emphasis: "*", fences: true, rule: "-" });
+// Unaligned tables: padding cells to align pipes doubled the size of the spec pages.
+const printer = unified().use(remarkGfm, { tablePipeAlign: false }).use(remarkStringify, { bullet: "-", emphasis: "*", fences: true, rule: "-" });
 
 /** Converts a docs page to plain Markdown, headed by its title and description. */
 export async function mdxToMarkdown(page: MdxPage): Promise<string> {
