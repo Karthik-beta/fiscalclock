@@ -1,0 +1,73 @@
+---
+title: Labels
+description: Turn periods into labels such as "FY2023 Q4" and labels back into periods, and what happens when a label could mean more than one period.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import twoSchemesJson from "../../../../examples/two-schemes.json?raw";
+import labelsPy from "../../../../examples/python/labels.py?raw";
+import labelsPyOut from "../../../../examples/python/labels.out?raw";
+import labelsJs from "../../../../examples/js/labels.mjs?raw";
+import labelsJsOut from "../../../../examples/js/labels.out?raw";
+import labelsRs from "../../../../examples/rust/src/bin/labels.rs?raw";
+import labelsRsOut from "../../../../examples/rust/src/bin/labels.out?raw";
+import ambiguousLabelPy from "../../../../examples/python/ambiguous_label.py?raw";
+import ambiguousLabelPyOut from "../../../../examples/python/ambiguous_label.out?raw";
+import ambiguousLabelJs from "../../../../examples/js/ambiguous_label.mjs?raw";
+import ambiguousLabelJsOut from "../../../../examples/js/ambiguous_label.out?raw";
+import ambiguousLabelRs from "../../../../examples/rust/src/bin/ambiguous_label.rs?raw";
+import ambiguousLabelRsOut from "../../../../examples/rust/src/bin/ambiguous_label.out?raw";
+
+A label is the name your organisation writes for a period, such as `FY2023 Q4`. The `naming` block of a definition holds one or more schemes, and each scheme has a template for some of the levels `year`, `quarter`, `period` and `week` ([spec](/reference/spec/definition-v1/#naming)).
+
+## Templates
+
+A template is literal text with placeholders. `{yyyy}` is the year number, `{yy}` its last two digits, `{yy_next}` the last two digits of the next year number, `{q}` the quarter, `{pp}` the period and `{ww}` the week. Every template must contain `{yyyy}` or `{yy}`, and a quarter, period or week template must contain its own index, so that every label names exactly one period of one year. The [templates table](/reference/spec/definition-v1/#templates) in the spec gives the padding of each placeholder and the levels it is allowed in.
+
+A template that uses `{yy}` without `{yyyy}` needs a `century_pivot`, which says which century a two-digit year belongs to when a label is parsed.
+
+## Format and parse
+
+`format` gives the label of a period under the default scheme, or under the scheme you name. `parse` reads a label back and returns its period. With the example definition from [the quick start](/start-here/quick-start/):
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={labelsPy} lang="python" title="labels.py" />
+    <Code code={labelsPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={labelsJs} lang="js" title="labels.mjs" />
+    <Code code={labelsJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={labelsRs} lang="rust" title="labels.rs" />
+    <Code code={labelsRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+`parse` matches the whole label, case-sensitively, against every template of every scheme. A label that matches nothing returns `LABEL_NOT_RECOGNISED`.
+
+## Ambiguous labels
+
+When a label matches more than one period, `parse` does not pick one. It returns `AMBIGUOUS_LABEL` with every candidate in the error's `details`, ordered by start date, then scheme name, then level ([spec](/reference/spec/api-v1/#parse)).
+
+This happens, for example, when two schemes use the same template but number years differently. This illustrative definition has the 4-5-4 years of the quick start and two schemes that both write `FY{yyyy}`, one numbering each year by the calendar year it starts in and one by the calendar year it ends in:
+
+<Code code={twoSchemesJson} lang="json" title="two-schemes.json" />
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={ambiguousLabelPy} lang="python" title="ambiguous_label.py" />
+    <Code code={ambiguousLabelPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={ambiguousLabelJs} lang="js" title="ambiguous_label.mjs" />
+    <Code code={ambiguousLabelJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={ambiguousLabelRs} lang="rust" title="ambiguous_label.rs" />
+    <Code code={ambiguousLabelRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+`FY2024` is the year that starts on 4 Feb 2024 under `by_start`, and the year that ends on 3 Feb 2024 under `by_end`. Each candidate's `year` is its number under the default scheme, `by_start`, so the `by_end` reading appears as year 2023. To make every label unambiguous, give each scheme a template that the others cannot match, such as `FY{yyyy}` and `FYE{yyyy}`.

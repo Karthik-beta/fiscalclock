@@ -33,13 +33,36 @@ export default defineConfig({
         "./src/styles/fonts.css",
         "./src/styles/theme.css",
       ],
-      // Each group lists the pages in its folder under src/content/docs/, so
-      // later work adds a page by adding a file.
+      // Pages are listed by slug, in reading order. A new page needs an entry here.
       sidebar: [
-        { label: "Start here", items: [{ autogenerate: { directory: "start-here" } }] },
-        { label: "Guides", items: [{ autogenerate: { directory: "guides" } }] },
-        { label: "Reference", items: [{ autogenerate: { directory: "reference" } }] },
-        { label: "Project", items: [{ autogenerate: { directory: "project" } }] },
+        { label: "Start here", items: ["start-here/install", "start-here/quick-start"] },
+        {
+          label: "Guides",
+          items: [
+            "guides/write-a-definition",
+            "guides/week-based-years",
+            "guides/labels",
+            "guides/dates-and-intervals",
+            "guides/date-dimension",
+          ],
+        },
+        {
+          label: "Reference",
+          items: [
+            { label: "API reference", slug: "reference/api" },
+            { label: "Definition format spec", slug: "reference/spec/definition-v1" },
+            { label: "API spec", slug: "reference/spec/api-v1" },
+          ],
+        },
+        {
+          label: "Project",
+          items: [
+            "project/changelog",
+            { label: "GitHub", link: repo },
+            { label: "Design decisions (ADRs)", link: `${repo}/wiki/ADR-Index` },
+            { label: "Roadmap", link: `${repo}/wiki/Roadmap` },
+          ],
+        },
       ],
     }),
   ],
