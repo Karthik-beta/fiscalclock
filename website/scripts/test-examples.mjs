@@ -6,15 +6,19 @@
 // Python runs in website/.venv with the pinned examples/python/requirements.txt,
 // JavaScript uses the fiscalclock package pinned in website/package.json, and
 // Rust builds examples/rust against the crate pinned in its Cargo.lock.
+//
+// Each example runs in the DEFINITIONS folder, so it opens a definition by its
+// bare file name, as a reader who saved the file next to their script would.
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LANGUAGES, outputPath, sourcePath } from "../examples/languages.mjs";
+import { DEFINITIONS, LANGUAGES, outputPath, sourcePath } from "../examples/languages.mjs";
 
 const website = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const examples = join(website, "examples");
+const definitions = resolve(website, "..", DEFINITIONS);
 const windows = process.platform === "win32";
 
 function run(command, args, options = {}) {
@@ -56,11 +60,11 @@ const RUNNERS = {
       "pip install -r examples/python/requirements.txt",
     );
     const version = check(run(python, ["-c", "import fiscalclock; print(fiscalclock.__version__)"]), "importing fiscalclock").trim();
-    return { version, run: (name) => run(python, ["-I", sourcePath(language, name)]) };
+    return { version, run: (name) => run(python, ["-I", join(examples, sourcePath(language, name))], { cwd: definitions }) };
   },
   js(language) {
     const pkg = JSON.parse(readFileSync(join(website, "node_modules/fiscalclock/package.json"), "utf8"));
-    return { version: pkg.version, run: (name) => run(process.execPath, [sourcePath(language, name)]) };
+    return { version: pkg.version, run: (name) => run(process.execPath, [join(examples, sourcePath(language, name))], { cwd: definitions }) };
   },
   rust() {
     const manifest = join(examples, "rust/Cargo.toml");
@@ -68,7 +72,7 @@ const RUNNERS = {
     const lock = readFileSync(join(examples, "rust/Cargo.lock"), "utf8");
     const version = lock.match(/name = "fiscalclock"\nversion = "([^"]+)"/)[1];
     const bin = (name) => join(examples, "rust/target/debug", windows ? `${name}.exe` : name);
-    return { version, run: (name) => run(bin(name), []) };
+    return { version, run: (name) => run(bin(name), [], { cwd: definitions }) };
   },
 };
 

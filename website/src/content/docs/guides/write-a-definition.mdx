@@ -4,7 +4,7 @@ description: The five blocks of a calendar definition, what each decides, which 
 ---
 
 import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
-import missingChoicesJson from "../../../../examples/missing-choices.json?raw";
+import missingChoicesJson from "../../../../../docs/examples/missing-choices.json?raw";
 import definitionErrorsPy from "../../../../examples/python/definition_errors.py?raw";
 import definitionErrorsPyOut from "../../../../examples/python/definition_errors.out?raw";
 import definitionErrorsJs from "../../../../examples/js/definition_errors.mjs?raw";
@@ -35,7 +35,7 @@ Some fields record a choice that organisations make differently, so the format g
 - **`year_number`**, which numbers a fiscal year by the calendar year of its first day (`start`), of its last day (`end`), or of most of its days (`majority`). Kroger calls the fiscal year that ended on 2 Feb 2019 "2018", which is numbering by the start year ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/kroger-annual-report-2018.json)). Costco calls the fiscal year that ended on 3 Sep 2017 "2017", which is numbering by the end year ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/costco-annual-report-2017.json)).
 - **`extra_week`**, which says which period gains the 53rd week of a long year. Costco puts it in the thirteenth period ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/costco-annual-report-2017.json)), and Apple's first quarter of fiscal 2023 had 14 weeks ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/apple-10q-2023-12-30.json)).
 
-A default would give a wrong answer, without any warning, to every organisation that made the other choice. A missing choice is an error instead, and the error names the field. This definition leaves out both:
+A default would give a wrong answer, without any warning, to every organisation that made the other choice. A missing choice is an error instead, and the error names the field. This illustrative definition leaves out both:
 
 <Code code={missingChoicesJson} lang="json" title="missing-choices.json" />
 

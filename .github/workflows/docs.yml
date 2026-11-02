@@ -37,6 +37,7 @@ jobs:
           # Prose and configuration only; code identifiers are not English words.
           files: |
             **/*.md
+            **/*.mdx
             **/*.yml
             **/*.yaml
             **/*.toml
@@ -50,6 +51,16 @@ jobs:
       - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: --config lychee.toml --no-progress "./**/*.md"
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Links in the website's MDX pages
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          # Root-relative links such as /guides/labels/ are the site's own pages.
+          # The base URL resolves them to the site, which lychee.toml excludes;
+          # the website workflow checks them offline in the built site.
+          args: --config lychee.toml --no-progress --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

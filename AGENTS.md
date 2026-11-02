@@ -21,7 +21,8 @@ The source of truth for behaviour is the [PDR](https://github.com/Karthik-beta/f
 | `spec/` | The normative definition format and API contract. | Implementation notes. |
 | `conformance/` | Shared vectors loaded by every test suite, their JSON Schema, and the independent generators. | Expected values produced by running fiscalclock. |
 | `research/verification/` | Standard-library scripts that reproduce claims made in prose, and their committed output. | Library code. |
-| `docs/` | User documentation and the cookbook of example definitions. | Normative rules (those go in `spec/`). |
+| `docs/` | User documentation and the cookbook of example definitions, including `docs/examples/`, the illustrative definitions the website shows and its code examples read. | Normative rules (those go in `spec/`). |
+| `website/` | The documentation site at `https://fiscalclock.karthik.nz`: its pages, the code of its examples with their expected output, and its tests. | Calendar logic; example definitions (those go in `docs/`); hand edits to the files its scripts copy or generate. |
 | `.github/` | Workflows, issue and discussion forms, templates. | Secrets. |
 
 ## Design rules
@@ -103,7 +104,13 @@ python -I conformance/generators/check.py
 python -I scripts/check_versions.py
 ```
 
-Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md"`, `lychee --config lychee.toml "./**/*.md"` and `yamllint --strict .`.
+Website (Node.js 24; `test:examples` also needs Python 3 and Cargo):
+
+```sh
+cd website && npm ci --ignore-scripts && npm run build && npm run check && npm test && npm run test:examples
+```
+
+Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
 
 ## Commits and pull requests
 

@@ -15,4 +15,7 @@ exclude = [
   # packages.ecosyste.ms answers link checkers with 402; both pages exist.
   '^https://(www\.)?sec\.gov/',
   '^https://packages\.ecosyste\.ms/',
+  # The website is not deployed yet. Its own pages are checked offline in the
+  # built site by the website workflow; remove this once the domain serves it.
+  '^https://fiscalclock\.karthik\.nz(/|$)',
 ]
