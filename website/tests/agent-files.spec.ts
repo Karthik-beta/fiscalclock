@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 
 const SITE = "https://fiscalclock.karthik.nz";
-const HOME_TITLE = "Compute any fiscal calendar from a JSON definition";
+const HOME_TITLE = "Compute fiscal calendars from a JSON definition";
 const definition = readFileSync(join(import.meta.dirname, "..", "src", "fixtures", "style-check", "definition.json"), "utf8");
 
 test("llms.txt lists the home page's Markdown copy and leaves out the style check", async ({ request }) => {

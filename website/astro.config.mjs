@@ -15,7 +15,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "fiscalclock",
-      description: "Fiscal calendar engine: compute any fiscal calendar from a JSON definition.",
+      description: "Fiscal calendar engine: compute fiscal calendars from a JSON definition.",
       logo: {
         light: "./src/assets/brand/fiscalclock-lockup.svg",
         dark: "./src/assets/brand/fiscalclock-lockup-dark.svg",
