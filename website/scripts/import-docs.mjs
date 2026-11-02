@@ -13,8 +13,11 @@ import { fileURLToPath } from "node:url";
 
 const GITHUB = "https://github.com/Karthik-beta/fiscalclock";
 
+/** @typedef {Record<string, { route: string, description: string }>} ImportTable */
+
 // One row per imported file, keyed by its repository path. `route` is the
 // page's URL path; the output file is derived from it.
+/** @type {ImportTable} */
 export const IMPORTS = {
   "spec/definition-v1.md": {
     route: "/reference/spec/definition-v1/",
@@ -124,7 +127,12 @@ export function toPage(markdown, source, repo, imports = IMPORTS) {
   return { page, broken };
 }
 
-/** Imports every file in `imports`; writes nothing and throws if any link is broken. */
+/**
+ * Imports every file in `imports`; writes nothing and throws if any link is broken.
+ * @param {string} repo
+ * @param {string} website
+ * @param {ImportTable} [imports]
+ */
 export function importDocs(repo, website, imports = IMPORTS) {
   const pages = [];
   const broken = [];
