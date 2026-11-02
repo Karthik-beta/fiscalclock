@@ -1,0 +1,350 @@
+---
+title: API reference
+description: Every fiscalclock operation, what it returns, and how to call it in Python, JavaScript and Rust.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import validatePy from "../../../../examples/python/validate.py?raw";
+import validatePyOut from "../../../../examples/python/validate.out?raw";
+import validateJs from "../../../../examples/js/validate.mjs?raw";
+import validateJsOut from "../../../../examples/js/validate.out?raw";
+import validateRs from "../../../../examples/rust/src/bin/validate.rs?raw";
+import validateRsOut from "../../../../examples/rust/src/bin/validate.out?raw";
+import locatePy from "../../../../examples/python/locate.py?raw";
+import locatePyOut from "../../../../examples/python/locate.out?raw";
+import locateJs from "../../../../examples/js/locate.mjs?raw";
+import locateJsOut from "../../../../examples/js/locate.out?raw";
+import locateRs from "../../../../examples/rust/src/bin/locate.rs?raw";
+import locateRsOut from "../../../../examples/rust/src/bin/locate.out?raw";
+import periodPy from "../../../../examples/python/period.py?raw";
+import periodPyOut from "../../../../examples/python/period.out?raw";
+import periodJs from "../../../../examples/js/period.mjs?raw";
+import periodJsOut from "../../../../examples/js/period.out?raw";
+import periodRs from "../../../../examples/rust/src/bin/period.rs?raw";
+import periodRsOut from "../../../../examples/rust/src/bin/period.out?raw";
+import shiftPy from "../../../../examples/python/shift.py?raw";
+import shiftPyOut from "../../../../examples/python/shift.out?raw";
+import shiftJs from "../../../../examples/js/shift.mjs?raw";
+import shiftJsOut from "../../../../examples/js/shift.out?raw";
+import shiftRs from "../../../../examples/rust/src/bin/shift.rs?raw";
+import shiftRsOut from "../../../../examples/rust/src/bin/shift.out?raw";
+import parentPy from "../../../../examples/python/parent.py?raw";
+import parentPyOut from "../../../../examples/python/parent.out?raw";
+import parentJs from "../../../../examples/js/parent.mjs?raw";
+import parentJsOut from "../../../../examples/js/parent.out?raw";
+import parentRs from "../../../../examples/rust/src/bin/parent.rs?raw";
+import parentRsOut from "../../../../examples/rust/src/bin/parent.out?raw";
+import childrenPy from "../../../../examples/python/children.py?raw";
+import childrenPyOut from "../../../../examples/python/children.out?raw";
+import childrenJs from "../../../../examples/js/children.mjs?raw";
+import childrenJsOut from "../../../../examples/js/children.out?raw";
+import childrenRs from "../../../../examples/rust/src/bin/children.rs?raw";
+import childrenRsOut from "../../../../examples/rust/src/bin/children.out?raw";
+import yearsPy from "../../../../examples/python/years.py?raw";
+import yearsPyOut from "../../../../examples/python/years.out?raw";
+import yearsJs from "../../../../examples/js/years.mjs?raw";
+import yearsJsOut from "../../../../examples/js/years.out?raw";
+import yearsRs from "../../../../examples/rust/src/bin/years.rs?raw";
+import yearsRsOut from "../../../../examples/rust/src/bin/years.out?raw";
+import formatPy from "../../../../examples/python/format.py?raw";
+import formatPyOut from "../../../../examples/python/format.out?raw";
+import formatJs from "../../../../examples/js/format.mjs?raw";
+import formatJsOut from "../../../../examples/js/format.out?raw";
+import formatRs from "../../../../examples/rust/src/bin/format.rs?raw";
+import formatRsOut from "../../../../examples/rust/src/bin/format.out?raw";
+import parsePy from "../../../../examples/python/parse.py?raw";
+import parsePyOut from "../../../../examples/python/parse.out?raw";
+import parseJs from "../../../../examples/js/parse.mjs?raw";
+import parseJsOut from "../../../../examples/js/parse.out?raw";
+import parseRs from "../../../../examples/rust/src/bin/parse.rs?raw";
+import parseRsOut from "../../../../examples/rust/src/bin/parse.out?raw";
+import dimensionPy from "../../../../examples/python/dimension.py?raw";
+import dimensionPyOut from "../../../../examples/python/dimension.out?raw";
+import dimensionJs from "../../../../examples/js/dimension.mjs?raw";
+import dimensionJsOut from "../../../../examples/js/dimension.out?raw";
+import dimensionRs from "../../../../examples/rust/src/bin/dimension.rs?raw";
+import dimensionRsOut from "../../../../examples/rust/src/bin/dimension.out?raw";
+import dimensionCsvPy from "../../../../examples/python/dimension_csv.py?raw";
+import dimensionCsvPyOut from "../../../../examples/python/dimension_csv.out?raw";
+import dimensionCsvJs from "../../../../examples/js/dimension_csv.mjs?raw";
+import dimensionCsvJsOut from "../../../../examples/js/dimension_csv.out?raw";
+import dimensionCsvRs from "../../../../examples/rust/src/bin/dimension_csv.rs?raw";
+import dimensionCsvRsOut from "../../../../examples/rust/src/bin/dimension_csv.out?raw";
+import explainPy from "../../../../examples/python/explain.py?raw";
+import explainPyOut from "../../../../examples/python/explain.out?raw";
+import explainJs from "../../../../examples/js/explain.mjs?raw";
+import explainJsOut from "../../../../examples/js/explain.out?raw";
+import explainRs from "../../../../examples/rust/src/bin/explain.rs?raw";
+import explainRsOut from "../../../../examples/rust/src/bin/explain.out?raw";
+
+This page lists the operations of API version 1 and how each language names them. The normative contract, with every argument rule and error path, is the [API spec](/reference/spec/api-v1/); the Rust crate's full API is on [docs.rs](https://docs.rs/fiscalclock/0.1.0/fiscalclock/).
+
+Every operation is defined once, in the Rust core. The Python and npm packages convert their native values to the core's JSON API and back, so they return the same results as the crate.
+
+Each example uses the definition `retail-4-5-4.json` from [the quick start](/start-here/quick-start/), and prints exactly the output shown under it.
+
+## Names in each language
+
+| Operation | Python | JavaScript | Rust |
+| --- | --- | --- | --- |
+| Build a calendar | `FiscalCalendar` | `new FiscalCalendar` | `FiscalCalendar::from_json` |
+| [`validate`](#validate) | `validate` | `validate` | `FiscalCalendar::from_json` |
+| [`locate`](#locate) | `locate` | `locate` | `locate` |
+| [`period`](#period) | `period` | `period` | `period` |
+| [`shift`](#shift) | `shift` | `shift` | `shift` |
+| [`parent`](#parent) | `parent` | `parent` | `parent` |
+| [`children`](#children) | `children` | `children` | `children` |
+| [`years`](#years) | `years` | `years` | `years` |
+| [`format`](#format) | `format` | `format` | `format` |
+| [`parse`](#parse) | `parse` | `parse` | `parse` |
+| [`dimension`](#dimension) | `dimension` | `dimension` | `dimension` |
+| [`dimension_csv`](#dimension_csv) | `dimension_csv` | `dimensionCsv` | `dimension_csv` |
+| [`explain`](#explain) | `explain` | `explain` | `explain` |
+
+All operations except `validate` are methods of a calendar, and take their arguments in the same order in every language, as the examples below show. Optional arguments are keyword arguments with a default of `None` in Python, optional parameters in JavaScript, and `Option` values in Rust, where `period` takes `Option<u32>` and `format` takes `Option<&str>`. In Rust, periods are passed as `&Period`, levels as `Level` and dates as `Date`.
+
+In Python and JavaScript, a definition is JSON text or the equivalent dict or object. A `level` is one of `"year"`, `"quarter"`, `"period"` and `"week"`; in Rust it is a `Level`. A `period` argument is a period returned by another operation, or just its coordinates `level`, `year` and `index`: the core recomputes the period from them ([API spec](/reference/spec/api-v1/#operations)). Dates follow [Dates and intervals](/guides/dates-and-intervals/#calendar-dates-only).
+
+## Values
+
+A **period** has `level`, `year` (the fiscal year number under the default scheme), `index` (1-based within the year, and empty for a year), `start`, `end_exclusive`, `last_day`, `days`, `weeks` (empty unless the year is week-based) and `has_extra_week`. In Python it is a frozen dataclass with `datetime.date` fields, in JavaScript a plain object with ISO date strings, and in Rust a `Period` struct whose `last_day()` is a method ([API spec](/reference/spec/api-v1/#period)).
+
+A **location** has the `date`, the `year`, `quarter`, `period` and `week` periods that contain it, and its 1-based `day_of_year`, `day_of_quarter`, `day_of_period` and `day_of_week` ([API spec](/reference/spec/api-v1/#location)).
+
+## Errors
+
+A failed operation raises `FiscalclockError` in Python (a subclass of `ValueError`), throws `FiscalclockError` in JavaScript, and returns an `Err` in Rust. Every error has a stable `code`, the JSON `path` of the offending field or argument, a `message` and, where one helps, a `hint`. Some codes carry `details`, such as the candidates of an ambiguous label. In Python and JavaScript, the error's attributes describe the first error and `errors` holds them all; in Rust, building a calendar returns every error as `Errors`, and the other operations return one `Error`.
+
+The codes, and the operations that raise each one, are listed in the [error catalogue](/reference/spec/api-v1/#error-catalogue).
+
+## The JSON API
+
+Each package also exposes the core's JSON API, which takes and returns JSON text exactly as the core produces it: `call_json` and `validate_json` in Python, `callJson` and `validateJson` in JavaScript, and `fiscalclock::json::call` and `fiscalclock::json::validate` in Rust. For the same definition and arguments, the three return the same bytes ([API spec](/reference/spec/api-v1/)).
+
+## validate
+
+Checks a definition and reports every error it finds, sorted by path and then by code. For a valid definition, Python and JavaScript return `ok`, the `calendar_id` and the canonical form; Rust's `from_json` returns the calendar, whose `calendar_id()` and `canonical_json()` give the same values. The Python and JavaScript `validate` functions return the errors instead of raising them. [Write a definition](/guides/write-a-definition/#no-defaults-for-your-organisations-choices) shows an invalid definition.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={validatePy} lang="python" title="validate.py" />
+    <Code code={validatePyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={validateJs} lang="js" title="validate.mjs" />
+    <Code code={validateJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={validateRs} lang="rust" title="validate.rs" />
+    <Code code={validateRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## locate
+
+Returns the location of a date: the year, quarter, period and week that contain it, and its position in each.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={locatePy} lang="python" title="locate.py" />
+    <Code code={locatePyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={locateJs} lang="js" title="locate.mjs" />
+    <Code code={locateJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={locateRs} lang="rust" title="locate.rs" />
+    <Code code={locateRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## period
+
+Returns the period with the given coordinates. Leave out `index` for a year. Coordinates that name no period return `PERIOD_NOT_FOUND`.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={periodPy} lang="python" title="period.py" />
+    <Code code={periodPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={periodJs} lang="js" title="period.mjs" />
+    <Code code={periodJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={periodRs} lang="rust" title="period.rs" />
+    <Code code={periodRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## shift
+
+Returns the period `n` steps away at the same level, crossing fiscal years as needed. `n` may be negative.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={shiftPy} lang="python" title="shift.py" />
+    <Code code={shiftPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={shiftJs} lang="js" title="shift.mjs" />
+    <Code code={shiftJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={shiftRs} lang="rust" title="shift.rs" />
+    <Code code={shiftRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## parent
+
+Returns the period one level up that contains the given one: a quarter's year, a period's quarter, and a week's period in a week-based year or its year in a fixed-date year. A year has no parent, and returns `INVALID_ARGUMENT`.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={parentPy} lang="python" title="parent.py" />
+    <Code code={parentPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={parentJs} lang="js" title="parent.mjs" />
+    <Code code={parentJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={parentRs} lang="rust" title="parent.rs" />
+    <Code code={parentRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## children
+
+Returns the periods at a level inside a period, in order. In a fixed-date year, weeks cross month boundaries, so asking for the weeks of a quarter or a period returns `LEVEL_NOT_NESTED`.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={childrenPy} lang="python" title="children.py" />
+    <Code code={childrenPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={childrenJs} lang="js" title="children.mjs" />
+    <Code code={childrenJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={childrenRs} lang="rust" title="children.rs" />
+    <Code code={childrenRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## years
+
+Returns the fiscal years numbered `first` to `last`, both included, at most 10,000 of them.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={yearsPy} lang="python" title="years.py" />
+    <Code code={yearsPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={yearsJs} lang="js" title="years.mjs" />
+    <Code code={yearsJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={yearsRs} lang="rust" title="years.rs" />
+    <Code code={yearsRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## format
+
+Returns the label of a period under the default scheme, or under the named scheme. A scheme with no template for the period's level returns `TEMPLATE_MISSING`, and an unknown scheme returns `SCHEME_NOT_FOUND`. See [Labels](/guides/labels/).
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={formatPy} lang="python" title="format.py" />
+    <Code code={formatPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={formatJs} lang="js" title="format.mjs" />
+    <Code code={formatJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={formatRs} lang="rust" title="format.rs" />
+    <Code code={formatRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## parse
+
+Returns the period that a label names. A label that matches no template returns `LABEL_NOT_RECOGNISED`, and one that matches several periods returns `AMBIGUOUS_LABEL` with every candidate ([Labels](/guides/labels/#ambiguous-labels)).
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={parsePy} lang="python" title="parse.py" />
+    <Code code={parsePyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={parseJs} lang="js" title="parse.mjs" />
+    <Code code={parseJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={parseRs} lang="rust" title="parse.rs" />
+    <Code code={parseRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## dimension
+
+Returns one row per day from `start` up to but not including `end_exclusive`, at most 146,097 days. Python returns a list of dicts and JavaScript an array of objects, with dates as ISO strings; Rust returns `DimensionRow` values with a `location` and the `labels`, in the order of `label_columns()`. The columns are listed in [Date dimension](/guides/date-dimension/#columns).
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={dimensionPy} lang="python" title="dimension.py" />
+    <Code code={dimensionPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={dimensionJs} lang="js" title="dimension.mjs" />
+    <Code code={dimensionJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={dimensionRs} lang="rust" title="dimension.rs" />
+    <Code code={dimensionRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## dimension_csv
+
+Returns the same rows as RFC 4180 CSV text, with a header row.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={dimensionCsvPy} lang="python" title="dimension_csv.py" />
+    <Code code={dimensionCsvPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={dimensionCsvJs} lang="js" title="dimension_csv.mjs" />
+    <Code code={dimensionCsvJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={dimensionCsvRs} lang="rust" title="dimension_csv.rs" />
+    <Code code={dimensionCsvRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+## explain
+
+Returns the rules the definition applies to a date, one step per level, from the year down to the week. The `rule` and `result` text is English for people to read; its wording is not part of the API and may change in any release ([API spec](/reference/spec/api-v1/#operations)).
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={explainPy} lang="python" title="explain.py" />
+    <Code code={explainPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={explainJs} lang="js" title="explain.mjs" />
+    <Code code={explainJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={explainRs} lang="rust" title="explain.rs" />
+    <Code code={explainRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>

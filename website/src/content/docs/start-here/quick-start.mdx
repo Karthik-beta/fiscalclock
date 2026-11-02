@@ -1,0 +1,52 @@
+---
+title: Quick start
+description: Write a calendar definition, find where a date falls in it, read a period's bounds and print its label, in Python, JavaScript or Rust.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import retail454Json from "../../../../examples/retail-4-5-4.json?raw";
+import quickStartPy from "../../../../examples/python/quick_start.py?raw";
+import quickStartPyOut from "../../../../examples/python/quick_start.out?raw";
+import quickStartJs from "../../../../examples/js/quick_start.mjs?raw";
+import quickStartJsOut from "../../../../examples/js/quick_start.out?raw";
+import quickStartRs from "../../../../examples/rust/src/bin/quick_start.rs?raw";
+import quickStartRsOut from "../../../../examples/rust/src/bin/quick_start.out?raw";
+
+fiscalclock has no built-in calendars. You describe your calendar as a JSON definition, and every answer comes from that definition.
+
+## Write a definition
+
+Save this definition as `retail-4-5-4.json`. It describes a 4-5-4 retail calendar: each fiscal year ends on the Saturday nearest 31 January, each quarter has periods of 4, 5 and 4 weeks, a 53-week year puts its extra week at the end of period 12, and labels look like `FY2023 Q4`.
+
+<Code code={retail454Json} lang="json" title="retail-4-5-4.json" />
+
+This is an example, not a published calendar of any organisation. It is the definition of the conformance vector [`nrf-53-week-years.json`](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/nrf-53-week-years.json), whose year rule gives the 53-week years that the [NRF publishes for its 4-5-4 calendar](https://nrf.com/resources/4-5-4-calendar). The period that takes the extra week and the label templates are this example's own choices.
+
+[Write a definition](/guides/write-a-definition/) explains each block.
+
+## Ask it about a date
+
+The example locates 3 Feb 2024, prints the labels of its fiscal year, quarter and week, and then prints the bounds of fiscal year 2023 and its number of weeks.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={quickStartPy} lang="python" title="quick_start.py" />
+    <Code code={quickStartPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={quickStartJs} lang="js" title="quick_start.mjs" />
+    <Code code={quickStartJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={quickStartRs} lang="rust" title="quick_start.rs" />
+    <Code code={quickStartRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+3 Feb 2024 is the last day of fiscal year 2023, in its fourth quarter and in week 53, the extra week. Fiscal year 2023 starts on 29 Jan 2023 and ends before 4 Feb 2024: every period is a half-open interval with an exclusive end, as [Dates and intervals](/guides/dates-and-intervals/) explains.
+
+## Next steps
+
+- [Write a definition](/guides/write-a-definition/) for your own calendar.
+- [Week-based years](/guides/week-based-years/) explains 52- and 53-week years.
+- The [API reference](/reference/api/) lists every operation in each language.

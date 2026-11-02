@@ -1,0 +1,52 @@
+---
+title: Install
+description: Install fiscalclock for Python, JavaScript or Rust, and the language versions each package supports.
+---
+
+import { TabItem, Tabs } from "@astrojs/starlight/components";
+
+fiscalclock is published as three packages built from one Rust core: a Python package, an npm package and a Rust crate. The Python and npm packages call the core and return its JSON unchanged, so the same definition and inputs give the same results in every language ([API spec](/reference/spec/api-v1/)).
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+```sh
+pip install fiscalclock
+```
+
+</TabItem>
+<TabItem label="JavaScript">
+
+```sh
+npm install fiscalclock
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```sh
+cargo add fiscalclock
+```
+
+</TabItem>
+</Tabs>
+
+## Supported versions
+
+As of 2 Nov 2026, the latest release of all three packages is 0.1.0, published on 31 Oct 2026 ([changelog](/project/changelog/)). The definition format and the API are version 1 drafts and may change before 1.0.
+
+| Package | Supports | Source |
+| --- | --- | --- |
+| Python | CPython 3.10 and later, with one stable-ABI wheel per platform, and free-threaded CPython 3.14. Wheels for Linux (x86-64 and Arm64, including musl-based distributions), macOS (x86-64 and Arm64) and Windows (x86-64). | `requires-python` in [`pyproject.toml`](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/python/pyproject.toml); the files of [fiscalclock 0.1.0 on PyPI](https://pypi.org/project/fiscalclock/0.1.0/#files) |
+| JavaScript | Node.js 22 and later, and browsers, through WebAssembly. The package is an ES module with TypeScript types. | `engines` in [`package.json`](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/package.json); the [npm package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/README.md#install) |
+| Rust | Rust 1.85 and later. The crate is `no_std` with `alloc`. | `rust-version` in [`Cargo.toml`](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/Cargo.toml); the [crate README](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/README.md#properties) |
+
+In Node.js the npm package loads its WebAssembly module from disk when it is imported. In other environments its entry point fetches the module relative to its own URL with top-level `await` ([npm package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/README.md#install)).
+
+Every code example on this site is a file in the `website/examples/` folder of the repository, and `npm run test:examples` in `website/` runs each one against version 0.1.0 of the package for its language and checks that it prints the output shown.
+
+## Check a download
+
+Every release file has a build provenance attestation. The [README](https://github.com/Karthik-beta/fiscalclock#supply-chain) explains how to check a downloaded wheel, npm tarball or crate with `gh attestation verify`.
+
+Next, [the quick start](/start-here/quick-start/) writes a definition and asks it about a date.

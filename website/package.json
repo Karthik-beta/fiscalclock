@@ -6,7 +6,7 @@
     "node": ">=22.23.4"
   },
   "scripts": {
-    "sync": "node scripts/sync.mjs",
+    "sync": "node scripts/sync.mjs && node scripts/import-docs.mjs",
     "predev": "npm run sync",
     "dev": "astro dev",
     "prebuild": "npm run sync",
@@ -15,7 +15,8 @@
     "check": "astro check",
     "preview": "astro preview",
     "test": "playwright test --project=checks",
-    "shots": "playwright test --project=shots"
+    "shots": "playwright test --project=shots",
+    "test:examples": "node scripts/test-examples.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.8",

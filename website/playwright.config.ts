@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 4321;
+// SITE_PORT lets two checkouts run their tests at the same time.
+const port = Number(process.env.SITE_PORT ?? 4321);
 
 // Tests run against `astro preview` of dist/, so run `npm run build` first.
 export default defineConfig({
