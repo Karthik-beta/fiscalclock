@@ -28,3 +28,9 @@ test("the landing page links its Markdown copy but shows no copy controls under 
   await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveAttribute("href", /index\.md$/);
   await expect(page.getByRole("button", { name: "Copy page as Markdown" })).toHaveCount(0);
 });
+
+test("the playground, which has no Markdown copy, neither links nor offers one", async ({ page }) => {
+  await page.goto("/playground/");
+  await expect(page.locator('link[rel="alternate"][type="text/markdown"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Copy page as Markdown" })).toHaveCount(0);
+});
