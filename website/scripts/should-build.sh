@@ -9,16 +9,21 @@
 
 set -u
 
-# The paths the site reads. ":/" makes each one relative to the repository
-# root, so the script works from website/, which is where Vercel runs it.
+# The repository paths the site reads, and only those. ":/" makes each one
+# relative to the repository root, so the script works from website/, which is
+# where Vercel runs it. tests/build-inputs.spec.ts fails when this list misses
+# a path the site reads, names one it does not, or differs from the paths in
+# .github/workflows/website.yml.
 set -- \
   ":/website" \
-  ":/design/tokens" \
+  ":/design/tokens/generated" \
   ":/assets/brand" \
-  ":/spec" \
+  ":/spec/definition-v1.md" \
+  ":/spec/api-v1.md" \
   ":/CHANGELOG.md" \
   ":/conformance/vectors/cited" \
-  ":/bindings/js/package.json"
+  ":/conformance/vectors/oracle/nrf-4-5-4.json" \
+  ":/docs/examples"
 
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
 if [ -z "$base" ]; then

@@ -2,17 +2,20 @@
 name: website
 
 # The paths match the ones website/scripts/should-build.sh checks before a
-# Vercel build, plus this workflow and the link-checker config.
+# Vercel build, plus this workflow and the link-checker config;
+# website/tests/build-inputs.spec.ts fails when they differ.
 on:
   pull_request:
     paths: &site-inputs
       - "website/**"
-      - "design/tokens/**"
+      - "design/tokens/generated/**"
       - "assets/brand/**"
-      - "spec/**"
+      - "spec/definition-v1.md"
+      - "spec/api-v1.md"
       - "CHANGELOG.md"
       - "conformance/vectors/cited/**"
-      - "bindings/js/package.json"
+      - "conformance/vectors/oracle/nrf-4-5-4.json"
+      - "docs/examples/**"
       - "lychee.toml"
       - ".github/workflows/website.yml"
   push:
