@@ -123,7 +123,9 @@ function applyState(state: PlaygroundState): void {
 function loadFromUrl(): void {
   notice.textContent = "";
   try {
-    applyState(decodeState(location.hash) ?? fallback);
+    // Without a fragment, keep a date or year typed while the page was still loading.
+    const typed = { date: dateInput.value.trim() || fallback.date, year: Number(yearInput.value) || fallback.year };
+    applyState(decodeState(location.hash) ?? { ...fallback, ...typed });
   } catch {
     notice.textContent = "The playground state in this link could not be read, so the first example is shown instead.";
     applyState(fallback);
