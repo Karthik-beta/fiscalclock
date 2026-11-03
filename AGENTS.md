@@ -133,6 +133,8 @@ uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependab
 uvx zizmor==1.32.0 --offline .github/workflows
 ```
 
+A pull request that changes how the packages are built also runs the release workflow as a dry run. [RELEASING.md](RELEASING.md) describes releases, which only the maintainer makes.
+
 ## Commits and pull requests
 
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`, `refactor:`, `perf:`; `!` and a `BREAKING CHANGE:` footer for breaking changes.
