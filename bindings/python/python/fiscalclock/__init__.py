@@ -65,7 +65,7 @@ class FiscalclockError(ValueError):
 class Period:
     """A fiscal period: the half-open interval ``[start, end_exclusive)``."""
 
-    level: str
+    level: Level
     year: int
     index: Optional[int]
     start: _dt.date
