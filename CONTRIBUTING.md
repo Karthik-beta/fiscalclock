@@ -39,6 +39,10 @@ A real company's or government's calendar is the most valuable contribution. It 
 
 Add the vector as a function in `conformance/generators/spec_cited_vectors.py` (copy `kroger_vector()`), type the expected values in from the source, list it in `cited_vectors()`, and run `python -I conformance/generators/generate.py` to write the file under `conformance/vectors/cited/`; the [vector format](conformance/README.md) describes the file and the [generators README](conformance/generators/README.md) the scripts. Do not hand-write a JSON file there: the generator deletes any file it did not produce, and `check.py` fails CI on one. Or open a [Wrong result for a real calendar](https://github.com/Karthik-beta/fiscalclock/issues/new?template=wrong_result.yml) issue if you are not ready to write the generator code. Use the filing's own period dates, not SEC EDGAR "frames", which align facts to calendar periods and can mix different reporting dates in one frame.
 
+## Run the checks
+
+[AGENTS.md](AGENTS.md#build-test-and-lint) lists the tools to install and the checks CI runs. `python -I scripts/check.py` runs every check and prints one PASS or FAIL line per command; `python -I scripts/check.py rust python` runs only the named groups, and AGENTS.md has a table of which groups cover which paths. The pull request template asks which ones you ran.
+
 ## Evidence rules
 
 These apply to code, documentation, tests and issue text.

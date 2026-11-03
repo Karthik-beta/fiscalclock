@@ -3,6 +3,7 @@ ignore: |
   target/
   node_modules/
   .venv/
+  .claude/worktrees/
 rules:
   document-start: disable
   line-length: disable

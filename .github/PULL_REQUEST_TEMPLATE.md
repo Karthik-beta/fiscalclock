@@ -17,5 +17,5 @@ Closes #
 - [ ] Every new factual claim in code, docs or tests has a source link or a reproducible check, and time-sensitive facts carry "as of <date>".
 - [ ] Documentation (README, spec, wiki) is updated where behaviour changed.
 - [ ] `CHANGELOG.md` has an entry under "Unreleased" for any user-visible change.
-- [ ] The checks in AGENTS.md that cover the change were run, and the description lists the commands and their results.
+- [ ] The checks in AGENTS.md that cover the change were run (for example `python -I scripts/check.py rust python`), and the description lists the commands and their results.
 - [ ] Commits follow Conventional Commits and carry no AI or model attribution lines.
