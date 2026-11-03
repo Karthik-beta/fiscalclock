@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Cited conformance vectors for Indian listed companies (Reliance Industries, Procter & Gamble Hygiene and Health Care, Siemens Limited and ABB India), each quoting the company's own annual report, and filer records that also cover the transition periods of P&G Hygiene, Siemens Limited, Linde India and Thomas Cook (India).
 
+### Fixed
+
+- Website: when fiscalclock cannot load in the browser, the date lookup and the playground say so, instead of keeping an old answer or showing "Loading fiscalclock…" forever.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
