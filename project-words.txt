@@ -21,6 +21,7 @@ npmjs
 proptest
 pypa
 pypistats
+ruleset
 streetsidesoftware
 textarea
 truthy
