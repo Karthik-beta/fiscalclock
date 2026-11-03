@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The release workflow publishes to crates.io and npm with trusted publishing, as it already did to PyPI. The API tokens used to publish 0.1.0 have been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The package READMEs list every member with its arguments and show how to read `FiscalclockError`, and the API spec documents `details.years`, more error paths and the type of each dimension column.
 - Python: `Period.level` is typed as the `Level` literal instead of `str`, and the TypeScript `details` of an error as its documented shapes instead of `unknown`. Only type checkers see the difference.
+- Python: `validate`, `validate_json`, `call_json` and the `FiscalCalendar` constructor release the GIL while the core runs, as `FiscalCalendar.call_json` and the methods already did.
 
 ### Fixed
 
@@ -27,10 +28,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Python and JavaScript raised a bare `TypeError`, `ValueError` or `UnicodeEncodeError`, instead of `FiscalclockError`, for an argument or definition with no JSON form: for example a numpy integer, `Decimal`, `bytes` or `BigInt`, a period given as a tuple or `null`, a period mapping that also holds dates, a cyclic definition, or a lone surrogate in a mapping or argument. They now raise `FiscalclockError` with the core's code and path, the same in both languages. A period mapping that also holds other values, such as `dataclasses.asdict(period)`, now works.
 - Python: a `FiscalclockError` can be pickled and copied, so it can cross a process pool.
 - Python: a definition given as any `Mapping`, such as a `MappingProxyType`, is accepted like a `dict`. Before, a non-`dict` mapping failed with `MISSING_FIELD` and `UNKNOWN_FIELD` errors.
-
-### Changed
-
-- Python: `validate`, `validate_json`, `call_json` and the `FiscalCalendar` constructor release the GIL while the core runs, as `FiscalCalendar.call_json` and the methods already did.
 
 ## [0.1.0] - 2026-10-31
 
