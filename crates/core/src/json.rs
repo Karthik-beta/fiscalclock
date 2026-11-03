@@ -305,7 +305,6 @@ pub(crate) fn write_str(out: &mut String, s: &str) {
     out.push('"');
 }
 
-/// Writes `items` separated by commas, each through `each`.
 pub(crate) fn write_list<T>(
     out: &mut String,
     items: impl IntoIterator<Item = T>,
