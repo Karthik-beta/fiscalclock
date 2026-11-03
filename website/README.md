@@ -1,8 +1,8 @@
-<!-- cspell:words lockups plugin WCAG -->
+<!-- cspell:words fontsource lockups Mona plugin WCAG -->
 
 # fiscalclock website
 
-The source of the fiscalclock website at `https://fiscalclock.karthik.nz`, which will hold the documentation, a landing page and a playground. It has the documentation pages and a placeholder landing page. It is built with [Astro Starlight](https://starlight.astro.build/) as a static site. The choice of framework and host is recorded in decisions DD-030 to DD-036 in [`design/DECISIONS.md`](../design/DECISIONS.md).
+The source of the fiscalclock website at `https://fiscalclock.karthik.nz`, which holds the documentation, a landing page with a live date lookup, and a playground. It is built with [Astro Starlight](https://starlight.astro.build/) as a static site. The choice of framework and host is recorded in decisions DD-030 to DD-036 in [`design/DECISIONS.md`](../design/DECISIONS.md).
 
 Use Node.js 24. `package.json` sets `engines.node` to `24.x`, so Vercel builds with the newest Node.js 24 release, the same major version as the [`website.yml`](../.github/workflows/website.yml) workflow. Astro 7.4.4 needs Node.js 22.23.4 or later (the `engines` field of its `package.json`).
 
@@ -17,13 +17,13 @@ Run these in `website/`.
 | `npm run build` | Copies the generated files, then builds the static site into `dist/`. |
 | `npm run check` | Type-checks the site with `astro check`. |
 | `npm test` | Runs the unit tests in `tests/unit/` with `node --test`, then the Playwright checks against `astro preview` of `dist/`: accessibility (WCAG 2.2 AA, with axe) on every built page in both themes, theme colours, fonts, language tabs, the skip link, internal links and their anchors, the spec import, the sitemap and the files for AI agents. It also checks the deployment configuration (see [Deployment](#deployment)). Run `npm run build` first. |
-| `npm run test:examples` | Runs every code example in `examples/` in Python, JavaScript and Rust against fiscalclock 0.1.0, and fails unless each prints exactly its `.out` file. Needs Python 3 and Cargo; Python runs in `website/.venv`, which the script creates. |
+| `npm run test:examples` | Runs every code example in `examples/` in Python, JavaScript and Rust against the fiscalclock versions pinned for each language (see [Code examples](#code-examples)), and fails unless each prints exactly its `.out` file. Needs Python 3 and Cargo; Python runs in `website/.venv`, which the script creates. |
 | `npm run shots` | Saves full-page screenshots of every built page, light and dark, at 1280 and 375 pixels wide, into `test-results/shots/` for review. |
 
 ## How the theme gets its values
 
 1. The design tokens live in [`design/tokens/`](../design/tokens/). Their build writes `design/tokens/generated/tokens.css` and a resolved JSON file per theme.
-2. [`scripts/sync.mjs`](scripts/sync.mjs) runs before `dev`, `build` and `check`. It copies, without changing them, the generated token files into `src/styles/generated/`, the favicon, Apple touch icon, Open Graph image and logo lockups from [`assets/brand/`](../assets/brand/), and the IBM Plex font files and their licences from the `@ibm/plex-sans` and `@ibm/plex-mono` packages. It stops with an error if any source file is missing. The copy list is one table at the top of the script.
+2. [`scripts/sync.mjs`](scripts/sync.mjs) runs before `dev`, `build` and `check`. It copies, without changing them, the generated token files into `src/styles/generated/`, the favicon, Apple touch icon, Open Graph image and logo lockups from [`assets/brand/`](../assets/brand/), and the Mona Sans and IBM Plex Mono font files with their licences from the `@fontsource-variable/mona-sans` and `@ibm/plex-mono` packages. It stops with an error if any source file is missing. The copy list is one table at the top of the script.
 3. [`src/styles/theme.css`](src/styles/theme.css) maps Starlight's `--sl-*` variables onto the semantic `--fc-*` tokens, for both themes at once.
 4. [`ec.config.mjs`](ec.config.mjs) builds the syntax-highlighting colours for code blocks from the four code tokens in the copied JSON files.
 
@@ -35,7 +35,7 @@ The font files are served unmodified, as the packages ship them. The SIL Open Fo
 
 Decision DD-033 makes AI agents part of the audience. The build publishes:
 
-- `/llms.txt`, `/llms-full.txt` and `/llms-small.txt`, written by the [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/) plugin. A build step in [`src/agents/llms-postbuild.ts`](src/agents/llms-postbuild.ts) then adds a list of every page's Markdown copy to `llms.txt` and drops the pages in `LLMS_EXCLUDE` ([`src/agents/paths.ts`](src/agents/paths.ts)), because the plugin can do neither.
+- `/llms.txt`, `/llms-full.txt` and `/llms-small.txt`, written by the [`starlight-llms-txt`](https://delucis.github.io/starlight-llms-txt/) plugin. A build step in [`src/agents/llms-postbuild.ts`](src/agents/llms-postbuild.ts) then adds a list of every page's Markdown copy to `llms.txt` and drops the pages in `HIDDEN_PAGES` ([`src/agents/paths.ts`](src/agents/paths.ts)), because the plugin can do neither.
 - A Markdown copy of every docs page at the page's path plus `.md`, with the home page at `/index.md`. [`src/pages/[...slug].md.ts`](src/pages/[...slug].md.ts) converts each page's MDX with [`src/agents/mdx-to-markdown.ts`](src/agents/mdx-to-markdown.ts). Its `COMPONENTS` table says how each MDX component becomes Markdown. A page that uses a component missing from the table fails the build, so add an entry when a page needs a new component. Expressions in braces may be comments, strings, `?raw` imports or dotted names exported by a module in `src/lib/`; any other expression also fails the build.
 - A `<link rel="alternate" type="text/markdown">` to that copy in each page's head, and a "Copy page as Markdown" button and a "View as Markdown" link under the page title. Pages with a `hero` show no title, so they have no button.
 
@@ -57,7 +57,7 @@ Both pages run the published `fiscalclock` npm package, pinned to an exact versi
 
 ## Code examples
 
-Every code example in the documentation is a file in [`examples/`](examples/): `python/<name>.py`, `js/<name>.mjs` and `rust/src/bin/<name>.rs`, each next to a `<name>.out` file holding its exact output. A page imports both with a `?raw` import and shows them with Starlight's `<Code>` component in `<Tabs syncKey="lang">`, Python first, so the page shows the same files that `npm run test:examples` runs. The expected outputs are written from the spec and the cited sources, not copied from a run, except where the text is not part of the API (the wording of `explain`, and pandas' table layout). The Rust examples are their own Cargo workspace, outside the repository's workspace.
+Every code example in the documentation is a file in [`examples/`](examples/): `python/<name>.py`, `js/<name>.mjs` and `rust/src/bin/<name>.rs`, each next to a `<name>.out` file holding its exact output. A page imports both with a `?raw` import and shows them with Starlight's `<Code>` component in `<Tabs syncKey="lang">`, Python first, so the page shows the same files that `npm run test:examples` runs. The expected outputs are written from the spec and the cited sources, not copied from a run, except where the text is not part of the API (the wording of `explain`, and pandas' table layout). The Rust examples are their own Cargo workspace, outside the repository's workspace. The package versions the examples run against are pinned per language: `examples/python/requirements.txt`, the `fiscalclock` dependency in `package.json`, and `examples/rust/Cargo.toml` with its `Cargo.lock`. [`examples/languages.mjs`](examples/languages.mjs) lists each language's folder and file extension and the folder of example definitions; the pages do not read it, only `scripts/test-examples.mjs` and `tests/build-inputs.spec.ts` do.
 
 The example definitions the code opens, such as `retail-4-5-4.json`, live in [`docs/examples/`](../docs/examples/), because example definitions belong in `docs/` (design rule 1 in [`AGENTS.md`](../AGENTS.md)). `npm run test:examples` runs every example from that folder, so each opens its definition by bare file name, as the page shows.
 

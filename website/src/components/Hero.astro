@@ -7,9 +7,10 @@
  */
 import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
 import * as fiscalclock from "fiscalclock";
-import site from "../../package.json";
 import { examples, shortLabel } from "../lib/examples";
+import { HERO_SUMMARY, INSTALL_COMMANDS } from "../lib/hero";
 import { lookup, renderLookup } from "../lib/lookup";
+import { FISCALCLOCK_VERSION } from "../lib/site";
 
 const DATE = "2024-02-03";
 const first = examples[0]!;
@@ -20,14 +21,9 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
 <section class="hero not-content" aria-labelledby="_top">
   <div class="hero-copy">
     <h1 id="_top">Fiscal calendars, defined as data.</h1>
-    <p class="hero-summary">
-      Describe your fiscal calendar as JSON. fiscalclock tells you which fiscal year, quarter, period and week any date
-      falls in, with the bounds and labels of each. One Rust core gives the same answer in Python, JavaScript and Rust.
-    </p>
+    <p class="hero-summary">{HERO_SUMMARY}</p>
     <Tabs syncKey="lang">
-      <TabItem label="Python"><Code code="pip install fiscalclock" lang="sh" frame="none" /></TabItem>
-      <TabItem label="JavaScript"><Code code="npm install fiscalclock" lang="sh" frame="none" /></TabItem>
-      <TabItem label="Rust"><Code code="cargo add fiscalclock" lang="sh" frame="none" /></TabItem>
+      {INSTALL_COMMANDS.map(({ label, command }) => <TabItem label={label}><Code code={command} lang="sh" frame="none" /></TabItem>)}
     </Tabs>
     <p class="hero-actions">
       <a class="hero-primary" href="/start-here/quick-start/">Get started</a>
@@ -51,7 +47,7 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
     </div>
     <div class="lookup-answer" role="status" aria-live="polite" set:html={answer} />
     <p class="lookup-note">
-      Computed by fiscalclock {site.dependencies.fiscalclock}, in your browser as WebAssembly once you change a
+      Computed by fiscalclock {FISCALCLOCK_VERSION}, in your browser as WebAssembly once you change a
       value.{" "}<a class="lookup-source" href={first.url}>Source of this calendar</a>.
       These are example definitions, not built in.
     </p>
@@ -60,7 +56,7 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
 </section>
 
 <script>
-  import { lookup, renderLookup } from "../lib/lookup";
+  import { lookup, renderLoadFailure, renderLookup } from "../lib/lookup";
 
   interface Choice {
     name: string;
@@ -77,7 +73,11 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
 
   let timer: number | undefined;
   async function update(): Promise<void> {
-    const fiscalclock = await import("fiscalclock");
+    const fiscalclock = await import("fiscalclock").catch(() => null);
+    if (!fiscalclock) {
+      answer.innerHTML = renderLoadFailure();
+      return;
+    }
     const choice = choices.find((c) => c.name === calendar.value)!;
     source.href = choice.url;
     const result = lookup(fiscalclock, choice.definition, date.value.trim());

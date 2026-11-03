@@ -10,6 +10,7 @@ import Hero from "../../components/Hero.astro";
 import RawOutput from "../../components/RawOutput.astro";
 import YearStripFigure from "../../components/YearStripFigure.astro";
 import * as fy from "../../lib/landing";
+import * as site from "../../lib/site";
 import askQuarterPy from "../../../examples/python/ask_quarter.py?raw";
 import askQuarterJs from "../../../examples/js/ask_quarter.mjs?raw";
 import askQuarterRs from "../../../examples/rust/src/bin/ask_quarter.rs?raw";
@@ -40,7 +41,7 @@ Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definitio
   <TabItem label="Rust"><Code code={askQuarterRs} lang="rust" /></TabItem>
 </Tabs>
 
-All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package, and it must print exactly the output below.
+All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version {site.FISCALCLOCK_VERSION} of its package, and it must print exactly the output below.
 
 <RawOutput text={fy.askOutput} label="Output" />
 
@@ -49,7 +50,7 @@ All three print the same two lines: the label, then the core's JSON for the date
 <YearStripFigure id="fy2023" title={`${fy.yearLabel}: ${fy.year.days} days, ${fy.year.weeks} weeks`} periods={fy.periods} quarters={fy.quarters}>
   Fiscal 2023 under the definition above, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
   Each period is a half-open interval, so the date under a boundary line is the first day of the period to its right.
-  The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock 0.1.0 npm package
+  The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock {site.FISCALCLOCK_VERSION} npm package
   when this page was built, and the build fails unless the year has the 53 weeks that{" "}
   <a href={fy.sourceUrl}>NRF's list of 53-week years</a> gives it and the dates match the{" "}
   <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
@@ -64,7 +65,7 @@ Every page has a plain Markdown copy, so an agent can read the docs without pars
 - Errors are objects with a stable `code`, a JSON `path` into the definition, a `message` and, where one helps, a `hint`, listed in the [API spec](/reference/spec/api-v1/). An agent can act on the code instead of parsing a sentence.
 - Ambiguous input is an error that lists every candidate reading. fiscalclock never picks one silently.
 
-A command-line interface and an MCP server are planned for version 0.4, as the [roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) describes. Neither exists yet.
+As of 3 Nov 2026, a command-line interface and an MCP server are planned for version 0.4, as the [roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) describes. Neither exists yet.
 
 ## Why you can check the results
 

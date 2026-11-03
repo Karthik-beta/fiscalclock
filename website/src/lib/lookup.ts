@@ -6,6 +6,7 @@
  * in, so importing this file never loads it.
  */
 import type { ErrorObject, FiscalCalendar, Period } from "fiscalclock";
+import { esc } from "./escape.ts";
 
 type Fiscalclock = Pick<typeof import("fiscalclock"), "FiscalCalendar" | "FiscalclockError">;
 
@@ -59,7 +60,6 @@ export function lookup(fc: Fiscalclock, definition: Record<string, unknown>, dat
   }
 }
 
-const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const time = (d: string) => `<time datetime="${esc(d)}">${esc(d)}</time>`;
 
 function ribbon(segments: Segment[]): string {
@@ -69,6 +69,14 @@ function ribbon(segments: Segment[]): string {
     return `<span class="lookup-segment${s.here ? " is-here" : ""}" style="flex-grow:${s.days}">${marks}</span>`;
   });
   return `<div class="lookup-ribbon" aria-hidden="true">${cells.join("")}</div>`;
+}
+
+/** What the page says when the WebAssembly module cannot be loaded, so it never keeps a stale answer. */
+export const LOAD_FAILED = "fiscalclock could not be loaded";
+export const LOAD_FAILED_HINT = "Reload the page to try again.";
+
+export function renderLoadFailure(): string {
+  return `<p class="lookup-headline is-error">${LOAD_FAILED}</p><p>${LOAD_FAILED_HINT}</p>`;
 }
 
 /** The answer as HTML. Every value in it is fiscalclock's own output, escaped. */

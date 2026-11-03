@@ -16,7 +16,7 @@ import askRs from "../../examples/rust/src/bin/ask_quarter.out?raw";
 import { nrf, type VectorFile } from "./examples";
 import { formatJsonBlocks } from "./json-format";
 
-export const definition = nrf.definition;
+const definition = nrf.definition;
 // 70 columns fit the definition's column at 1280 pixels wide without wrapping.
 export const definitionText = formatJsonBlocks(definition, 70);
 export const sourceUrl = nrf.source.url!;

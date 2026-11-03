@@ -4,6 +4,7 @@ description: Install fiscalclock for Python, JavaScript or Rust, and the languag
 ---
 
 import { TabItem, Tabs } from "@astrojs/starlight/components";
+import * as site from "../../../lib/site";
 
 fiscalclock is published as three packages built from one Rust core: a Python package, an npm package and a Rust crate. The Python and npm packages call the core and return its JSON unchanged, so the same definition and inputs give the same results in every language ([API spec](/reference/spec/api-v1/)).
 
@@ -43,7 +44,7 @@ As of 2 Nov 2026, the latest release of all three packages is 0.1.0, published o
 
 In Node.js the npm package loads its WebAssembly module from disk when it is imported. In other environments its entry point fetches the module relative to its own URL with top-level `await` ([npm package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/README.md#install)).
 
-Every code example on this site is a file in the `website/examples/` folder of the repository, and `npm run test:examples` in `website/` runs each one against version 0.1.0 of the package for its language and checks that it prints the output shown.
+Every code example on this site is a file in the `website/examples/` folder of the repository, and `npm run test:examples` in `website/` runs each one against version {site.FISCALCLOCK_VERSION} of the package for its language and checks that it prints the output shown.
 
 ## Check a download
 

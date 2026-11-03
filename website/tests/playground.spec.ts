@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { THEMES, storeTheme } from "./site";
+import { THEMES, citedExamples, storeTheme } from "./site";
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -73,6 +73,46 @@ test("a definition without extra_week shows the library's error with its path, m
   await expect(results(page).getByRole("table")).toHaveCount(0);
 });
 
+test("text that is not JSON shows INVALID_JSON for the whole definition, with no path to select", async ({ page }) => {
+  await openPlayground(page);
+  await replaceDefinition(page, "{");
+
+  await expect(errors(page).getByText("INVALID_JSON", { exact: true })).toBeVisible();
+  await expect(errors(page).getByText("in the whole definition")).toBeVisible();
+  await expect(errors(page).getByRole("button")).toHaveCount(0);
+  await expect(page.locator(".cm-fc-error")).toHaveCount(0);
+  await expect(status(page)).toHaveText("fiscalclock reported 1 error: INVALID_JSON in the whole definition.");
+  await expect(results(page).getByRole("table")).toHaveCount(0);
+});
+
+test("a fiscal year that does not exist shows the library's error for the year input only", async ({ page }) => {
+  await openPlayground(page);
+  await page.getByLabel("Fiscal year to draw").fill("0");
+
+  await expect(errors(page).getByText("OUT_OF_RANGE", { exact: true })).toBeVisible();
+  await expect(errors(page).getByText("in the fiscal year you entered")).toBeVisible();
+  await expect(page.getByLabel("Fiscal year to draw")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "false");
+  // The date is still located, so the table stays; only the strip has nothing to draw.
+  await expect(results(page).getByRole("table")).toBeVisible();
+  await expect(page.locator("#pg-strip svg")).toHaveCount(0);
+
+  await page.getByLabel("Fiscal year to draw").fill("2023");
+  await expect(errors(page).getByRole("listitem")).toHaveCount(0);
+  await expect(page.getByLabel("Fiscal year to draw")).toHaveAttribute("aria-invalid", "false");
+});
+
+test("clicking an error's path selects that text in the editor", async ({ page }) => {
+  await openPlayground(page);
+  const definition = await currentDefinition(page);
+  delete definition.subdivision.extra_week;
+  await replaceDefinition(page, JSON.stringify(definition, null, 2));
+
+  await errors(page).getByRole("button", { name: "subdivision.extra_week" }).click();
+  await expect(editor(page)).toBeFocused();
+  expect(await page.evaluate(() => window.getSelection()!.toString())).toBe('"subdivision"');
+});
+
 test("an invalid date shows the library's error for the date argument", async ({ page }) => {
   await openPlayground(page);
   await page.getByLabel("Date (YYYY-MM-DD)").fill("2024-02-30");
@@ -138,19 +178,9 @@ test("the state survives a reload through the URL fragment", async ({ page }) =>
 test("examples have short labels, with the full description and its source under the select", async ({ page }) => {
   await openPlayground(page);
   const example = page.getByLabel("Example");
-  await expect(example.locator("option")).toHaveText([
-    "Your own definition",
-    "NRF, 52/53-week year",
-    "ABB, year from 1 January",
-    "Apple, 52/53-week year",
-    "Costco, 52/53-week year",
-    "Kroger, 52/53-week year",
-    "PGHH, year from 1 July",
-    "PGHH, year from 1 April",
-    "Reliance, year from 1 April",
-    "Siemens, year from 1 April",
-    "Siemens, year from 1 October",
-  ]);
+  const expected = citedExamples();
+  await expect(example.locator("option")).toHaveText(["Your own definition", ...expected.map((e) => e.label)]);
+  expect(await example.locator("option").evaluateAll((options) => options.map((o) => (o as HTMLOptionElement).value))).toEqual(["", ...expected.map((e) => e.name)]);
   await example.selectOption({ label: "Costco, 52/53-week year" });
   const source = page.locator("#pg-example-source");
   await expect(source).toContainText("Costco Wholesale Corporation 2017 Annual Report");
@@ -161,6 +191,13 @@ test("an unreadable fragment falls back to the first example with a notice", asy
   await page.goto("/playground/#s=not-a-state");
   await expect(page.getByRole("status").filter({ hasText: "could not be read" })).toBeVisible();
   await expect(page.getByLabel("Example")).toHaveValue("nrf-53-week-years");
+});
+
+test("when the WebAssembly module cannot load, the results say so instead of loading forever", async ({ page }) => {
+  await page.route("**/*.wasm", (route) => route.abort());
+  await page.goto("/playground/");
+  await expect(results(page)).toContainText("fiscalclock could not be loaded");
+  await expect(results(page)).not.toContainText("Loading fiscalclock");
 });
 
 test("the keyboard can leave the editor with Tab", async ({ page }) => {

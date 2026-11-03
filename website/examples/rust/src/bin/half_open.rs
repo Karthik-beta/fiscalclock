@@ -8,10 +8,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let quarters = cal.children(&cal.period(Level::Year, 2023, None)?, Level::Quarter)?;
     for quarter in &quarters {
-        println!("{} {} {}", quarter.start, quarter.end_exclusive, quarter.days);
+        println!(
+            "{} {} {}",
+            quarter.start, quarter.end_exclusive, quarter.days
+        );
     }
 
-    println!("{}", quarters.windows(2).all(|pair| pair[0].end_exclusive == pair[1].start));
+    println!(
+        "{}",
+        quarters
+            .windows(2)
+            .all(|pair| pair[0].end_exclusive == pair[1].start)
+    );
 
     Ok(())
 }

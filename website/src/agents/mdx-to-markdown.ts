@@ -5,6 +5,7 @@ import remarkMdx from "remark-mdx";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import { unified } from "unified";
+import { HERO_SUMMARY, INSTALL_COMMANDS } from "../lib/hero.ts";
 
 export interface MdxPage {
   /** Names the page in error messages. */
@@ -64,21 +65,6 @@ export const COMPONENTS: Record<string, ToMarkdown> = {
       },
     ];
   },
-  CardGrid: (_element, children) => children,
-  LinkCard(element, _children, context) {
-    const title = requiredValueProp(element, "title", context);
-    const href = requiredValueProp(element, "href", context);
-    const description = valueProp(element, "description", context);
-    return [
-      {
-        type: "paragraph",
-        children: [
-          { type: "link", url: absolute(href, context.page), children: [{ type: "text", value: title }] },
-          ...(description ? [{ type: "text" as const, value: `: ${description}` }] : []),
-        ],
-      },
-    ];
-  },
   a(element, children, context) {
     const href = requiredValueProp(element, "href", context);
     return [{ type: "link", url: absolute(href, context.page), children: inline(children) }];
@@ -90,12 +76,8 @@ export const COMPONENTS: Record<string, ToMarkdown> = {
   YearStripFigure: (_element, children) => children,
   // The hero's lookup needs a browser; its Markdown is the summary and the install commands.
   Hero: (_element, _children, context) => [
-    paragraph({
-      type: "text",
-      value:
-        "Describe your fiscal calendar as JSON. fiscalclock tells you which fiscal year, quarter, period and week any date falls in, with the bounds and labels of each. One Rust core gives the same answer in Python, JavaScript and Rust.",
-    }),
-    { type: "code", lang: "sh", value: ["pip install fiscalclock", "npm install fiscalclock", "cargo add fiscalclock"].join("\n") },
+    paragraph({ type: "text", value: HERO_SUMMARY }),
+    { type: "code", lang: "sh", value: INSTALL_COMMANDS.map(({ command }) => command).join("\n") },
     paragraph({ type: "link", url: absolute("/playground/", context.page), children: [{ type: "text", value: "Try a date in the playground" }] }),
   ],
 };
