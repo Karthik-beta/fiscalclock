@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The release workflow publishes to crates.io and npm with trusted publishing, as it already did to PyPI. The API tokens used to publish 0.1.0 have been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
+- The package READMEs list every member with its arguments and show how to read `FiscalclockError`, and the API spec documents `details.years`, more error paths and the type of each dimension column.
 
 ## [0.1.0] - 2026-10-31
 
