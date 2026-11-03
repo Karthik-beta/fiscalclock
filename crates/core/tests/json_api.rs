@@ -359,6 +359,15 @@ fn out_of_range() {
         "OUT_OF_RANGE",
         "period",
     );
+    for n in [i64::MIN, i64::MAX] {
+        assert_err(
+            &be,
+            "shift",
+            json!({"period": {"level": "week", "year": 2000, "index": 1}, "n": n}),
+            "OUT_OF_RANGE",
+            "n",
+        );
+    }
 }
 
 #[test]
@@ -574,13 +583,15 @@ fn explain_has_one_step_per_level() {
         serde_json::from_str(&c.call_json("explain", r#"{"date":"2024-02-03"}"#)).unwrap();
     assert_eq!(out["date"], "2024-02-03");
     assert_eq!(out["calendar_id"], c.calendar_id());
-    let levels: Vec<&str> = out["steps"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|s| s["level"].as_str().unwrap())
-        .collect();
+    let steps = out["steps"].as_array().unwrap();
+    let levels: Vec<&str> = steps.iter().map(|s| s["level"].as_str().unwrap()).collect();
     assert_eq!(levels, ["year", "quarter", "period", "week"]);
+    for step in steps {
+        assert_eq!(step.as_object().unwrap().len(), 3, "{step}");
+        for key in ["rule", "result"] {
+            assert!(!step[key].as_str().unwrap().is_empty(), "{step}");
+        }
+    }
     let text = out.to_string();
     assert!(
         text.contains("Saturday nearest the last day of January"),
@@ -591,7 +602,13 @@ fn explain_has_one_step_per_level() {
 
 #[test]
 fn any_input_returns_json_and_never_panics() {
-    let defs = [nrf().to_string(), "{".into(), "[]".into(), "null".into()];
+    let defs = [
+        nrf().to_string(),
+        fixed_date(4, 1, None, "monday", &[3, 3, 3, 3], "start").to_string(),
+        "{".into(),
+        "[]".into(),
+        "null".into(),
+    ];
     let ops = [
         "validate",
         "locate",
@@ -613,6 +630,7 @@ fn any_input_returns_json_and_never_panics() {
         "null",
         r#"{"date":"2024-02-29","level":"week","year":2024,"index":1,"period":{"level":"week","year":2024,"index":1},"n":-5,"from":2020,"to":2021,"label":"W01 FY2024","start":"2024-01-01","end_exclusive":"2024-01-08","scheme":"fy"}"#,
         r#"{"period":{"level":"year","year":-2147483648},"n":-9223372036854775808,"date":"9999-12-31"}"#,
+        r#"{"period":{"level":"week","year":2024,"index":1},"n":-9223372036854775808}"#,
     ];
     for d in &defs {
         for op in ops {

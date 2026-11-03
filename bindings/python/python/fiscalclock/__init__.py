@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json as _json
+import re as _re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Union
@@ -55,12 +56,16 @@ class FiscalclockError(ValueError):
             text += f"; and {len(errors) - 1} more"
         super().__init__(text)
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        # The default rebuilds from ``args``, the message text, not the errors.
+        return (type(self), (self.errors,), self.__dict__)
+
 
 @dataclass(frozen=True)
 class Period:
     """A fiscal period: the half-open interval ``[start, end_exclusive)``."""
 
-    level: str
+    level: Level
     year: int
     index: Optional[int]
     start: _dt.date
@@ -114,10 +119,37 @@ class Location:
         )
 
 
+_LONE_SURROGATE = _re.compile(r"[\ud800-\udfff]")
+
+
+def _unsupported(value: Any) -> Any:
+    # json.dumps serialises only dict, so other mappings are converted here.
+    if isinstance(value, Mapping):
+        return dict(value)
+    return {"unsupported_type": type(value).__name__}
+
+
+def _json_text(value: Any, separators: Optional[tuple[str, str]] = None) -> str:
+    # A value JSON cannot carry becomes {"unsupported_type": ...}, which the
+    # core reports at its path. Input JSON cannot represent at all (a cycle, a
+    # key that is not a string) becomes empty text, which the core rejects at
+    # path "". A lone surrogate cannot cross into Rust as UTF-8, so it is
+    # escaped as JSON.stringify escapes it, and the core reports it.
+    try:
+        text = _json.dumps(value, ensure_ascii=False, separators=separators, default=_unsupported)
+    except (TypeError, ValueError, RecursionError):
+        return ""
+    return _LONE_SURROGATE.sub(lambda m: f"\\u{ord(m.group()):04x}", text)
+
+
 def _definition_text(definition: Union[str, Mapping[str, Any]]) -> str:
     if isinstance(definition, str):
         return definition
-    return _json.dumps(definition, ensure_ascii=False, separators=(",", ":"))
+    # Bytes, sets and other objects have no JSON form. JSON null makes the core
+    # report that the definition is not an object, as it does for a list.
+    if not isinstance(definition, (Mapping, list, tuple, int, float)):
+        definition = None
+    return _json_text(definition, separators=(",", ":"))
 
 
 def _raise_if_errors(out: Any) -> Any:
@@ -140,10 +172,15 @@ def _date_arg(value: Any, name: str) -> Any:
     return {"unsupported_type": type(value).__name__}
 
 
-def _period_arg(period: Union[Period, Mapping[str, Any]]) -> dict[str, Any]:
+def _period_arg(period: Union[Period, Mapping[str, Any]]) -> Any:
     if isinstance(period, Period):
         return {"level": period.level, "year": period.year, "index": period.index}
-    return dict(period)
+    # The core reads only these keys, so other values, such as dates, need not
+    # serialise. Anything that is not a mapping goes to the core, which reports
+    # it at "period".
+    if isinstance(period, Mapping):
+        return {k: period[k] for k in ("level", "year", "index") if k in period}
+    return period
 
 
 def validate(definition: Union[str, Mapping[str, Any]]) -> dict[str, Any]:
@@ -195,7 +232,7 @@ class FiscalCalendar:
         return self._cal.call_json(op, args)
 
     def _call(self, op: str, args: dict[str, Any]) -> Any:
-        out = _json.loads(self._cal.call_json(op, _json.dumps(args, ensure_ascii=False)))
+        out = _json.loads(self._cal.call_json(op, _json_text(args)))
         return _raise_if_errors(out)
 
     def locate(self, date: DateLike) -> Location:

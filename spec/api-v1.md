@@ -1,6 +1,6 @@
 # Operations and outputs, API version 1
 
-Status: draft for fiscalclock 0.1.0. Last reviewed: 31 Oct 2026.
+Status: draft for fiscalclock 0.1.0. Last reviewed: 3 Nov 2026.
 
 Every operation is defined once, in the Rust core, as JSON in and JSON out. The Rust crate, the Python package and the npm package expose these operations with native types at the edge, and each also returns the core's JSON unchanged, so the same definition and inputs give byte-identical JSON in every language.
 
@@ -48,7 +48,7 @@ Returned by `locate`.
 
 - `code` is stable and listed in the [error catalogue](#error-catalogue). Code and path must match across languages; `message` and `hint` are produced by the core and are therefore also identical, but tests must not depend on their wording.
 - `path` is the JSON path of the offending field in dotted form with `[i]` for array indexes, such as `naming.schemes.fy.templates.year` or `subdivision.periods[3]`. An empty string means the whole input. For operation arguments, `path` names the argument, such as `date`.
-- `details` is `null` or an object. `AMBIGUOUS_LABEL` puts its candidates here.
+- `details` is `null` or an object. `AMBIGUOUS_LABEL` puts its candidates here as `{"candidates":[…]}` (see [`parse`](#parse)). `YEAR_NUMBER_COLLISION` and `MAJORITY_TIE` put the affected years here as `{"years":[…]}`, as described in [Year numbers must be unique](definition-v1.md#year-numbers-must-be-unique). Every other code has `details: null`.
 
 Paths for common errors:
 
@@ -62,17 +62,23 @@ Paths for common errors:
 | `INVALID_JSON` | `""` (empty string) |
 | An invalid scheme name | `naming.schemes.<name>` |
 | `PERIOD_NOT_FOUND` from `period` | `index` (`OUT_OF_RANGE` from `period` is at `year`) |
-| Any error about a `period` argument, including `PERIOD_NOT_FOUND` from `shift` | `period` |
+| Any error about a `period` argument, including `PERIOD_NOT_FOUND` from `shift` and `INVALID_ARGUMENT` from `parent` for a year | `period` |
 | `OUT_OF_RANGE` from `shift` | `n` |
 | `TEMPLATE_MISSING`, and `OUT_OF_RANGE` from `format` | `period` |
+| `SCHEME_NOT_FOUND` from `format` | `scheme` |
+| `LABEL_NOT_RECOGNISED` and `AMBIGUOUS_LABEL` from `parse` | `label` |
+| `OUT_OF_RANGE` from `locate` and `explain` | `date` |
 | `OUT_OF_RANGE` from `dimension` | `start` if its fiscal year is out of range, otherwise `end_exclusive` when the fiscal year of the range's last day (`end_exclusive` minus one day) is out of range. An empty range returns `[]` without this check. |
 | `INVALID_ARGUMENT` from `dimension` (`start` after `end_exclusive`, or more than 146,097 days) | `end_exclusive` |
 | `LEVEL_NOT_NESTED` and an invalid `level` from `children` | `level` |
 | `INVALID_ARGUMENT` from `years` (`from` after `to`, or more than 10,000 years) | `to` |
+| `OUT_OF_RANGE` from `years` | `from` if that fiscal year is out of range, otherwise `to` |
 | `PERIOD_NOT_FOUND` from `period` for a negative index or one too large to represent | `index` |
-| `INVALID_ARGUMENT` from `period` when an `index` is given for a year | `index` |
+| `INVALID_ARGUMENT` from `period` when an `index` is given for a year, or none is given for a quarter, period or week | `index` |
 | `OUT_OF_RANGE` for a `year` argument that is an integer too large for 32 bits | `year` |
 | `OUT_OF_RANGE` from `parse` when every matching label names a fiscal year outside the supported range | `label` |
+| `INVALID_DATE` | The date argument: `date`, `start` or `end_exclusive` |
+| `INVALID_ARGUMENT` for a missing argument, or one of the wrong JSON type | The argument's name |
 | `INVALID_ARGUMENT` for an unknown operation name | `op` |
 | `INVALID_ARGUMENT` when the arguments are not a JSON object, or repeat a key | `""` (empty string) |
 
@@ -84,7 +90,7 @@ A failed operation returns `{"errors":[Error, …]}`. Validation reports every e
 
 | Operation | Arguments | Result |
 | --- | --- | --- |
-| `validate` | `definition` | `{"ok":true,"calendar_id":"…","canonical":"…"}` or errors |
+| `validate` | `definition` | `{"ok":true,"calendar_id":"…","canonical":"…"}` or errors. `FiscalCalendar::call_json("validate", args)` runs on a definition that is already valid, so it returns the `ok` result and ignores `args` once they parse as a JSON object. |
 | `locate` | `date` | Location |
 | `period` | `level`, `year`, `index` (omit or `null` for a year) | Period, or `PERIOD_NOT_FOUND` |
 | `shift` | `period`, `n` (integer) | The period `n` steps away at the same level, crossing years as needed |
@@ -114,7 +120,19 @@ One row per day in `[start, end_exclusive)`. Columns, in order:
 
 `date, calendar_id, fiscal_year, quarter, period, week, day_of_year, day_of_quarter, day_of_period, day_of_week, year_start, year_last_day, quarter_start, quarter_last_day, period_start, period_last_day, week_start, week_last_day, year_has_extra_week, period_has_extra_week, week_is_extra_week`
 
-followed by one `label_<scheme>_<level>` column for every template, ordered by scheme name and then by level (`year`, `quarter`, `period`, `week`). A label that cannot be formatted, such as a `{yyyy}` year number outside 1–9999, is `null` in JSON and an empty field in CSV.
+| Column | JSON type | Meaning |
+| --- | --- | --- |
+| `date` | string | The day, `YYYY-MM-DD`. |
+| `calendar_id` | string | The calendar's `calendar_id`. |
+| `fiscal_year` | integer | The `year` coordinate of the day's fiscal year: its number under the default scheme, `offset` included. |
+| `quarter`, `period`, `week` | integer | The 1-based `index` of the day's quarter, period and week. |
+| `day_of_year`, `day_of_quarter`, `day_of_period`, `day_of_week` | integer | As in Location. |
+| `year_start`, `quarter_start`, `period_start`, `week_start` | string | The `start` of the day's year, quarter, period and week, `YYYY-MM-DD`. |
+| `year_last_day`, `quarter_last_day`, `period_last_day`, `week_last_day` | string | Their `last_day`, `YYYY-MM-DD`. |
+| `year_has_extra_week`, `period_has_extra_week` | boolean | `has_extra_week` of the day's year and period. |
+| `week_is_extra_week` | boolean | `has_extra_week` of the day's week: true when the day is in the extra week. |
+
+The fixed columns are never `null`. They are followed by one `label_<scheme>_<level>` column for every template, ordered by scheme name and then by level (`year`, `quarter`, `period`, `week`). A label that cannot be formatted, such as a `{yyyy}` year number outside 1–9999, is `null` in JSON and an empty field in CSV.
 
 In JSON each row is an object with those keys in that order. CSV output follows RFC 4180 with a header row (present even when there are no rows), `\n` line endings, a final newline, booleans as `true`/`false`, and fields quoted only when they contain a comma, quote or line break.
 
@@ -142,7 +160,7 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 | `YEAR_NUMBER_COLLISION` | validate | A scheme gives two fiscal years the same number, or skips a number. |
 | `MAJORITY_TIE` | validate | A `majority` scheme meets a fiscal year split evenly between two calendar years. |
 | `INVALID_DATE` | any date argument | Not a valid `YYYY-MM-DD` civil date. |
-| `TIMESTAMP_REJECTED` | bindings | A timestamp type (`datetime.datetime`, pandas `Timestamp`, JS `Date`) was passed. The hint says to convert it to a date in the intended time zone first. |
+| `TIMESTAMP_REJECTED` | bindings | A timestamp type (`datetime.datetime`, pandas `Timestamp`, JS `Date`, `Temporal.PlainDateTime`, `Temporal.ZonedDateTime` or `Temporal.Instant`) was passed. The hint says to convert it to a date in the intended time zone first. |
 | `INVALID_ARGUMENT` | any | An argument is missing, of the wrong type or out of its allowed range. |
 | `OUT_OF_RANGE` | any | The fiscal year involved is outside the supported range. |
 | `PERIOD_NOT_FOUND` | period, shift | No period has those coordinates. |

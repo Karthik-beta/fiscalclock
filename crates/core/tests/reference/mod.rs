@@ -286,6 +286,8 @@ pub fn compute(walk: &Walk, shape: &Shape, numbering: Numbering) -> Result<Vec<R
         m: 12,
         d: 31,
     }];
+    // Every day of a period shares its bounds. Without this cache each day
+    // re-scans its period, which makes the differential test much slower.
     let mut cache: HashMap<(u8, usize, u32), (usize, usize)> = HashMap::new();
     let mut out = Vec::with_capacity(to - from + 1);
     #[allow(clippy::needless_range_loop)] // `i` is also the day passed to `run`.

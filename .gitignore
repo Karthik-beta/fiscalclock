@@ -16,15 +16,17 @@ venv/
 .hypothesis/
 dist/
 build/
+/wheels/
+*.whl
 *.egg-info/
 .coverage
 htmlcov/
 
 # Node
 node_modules/
-bindings/js/pkg/
 bindings/js/dist/
 *.tgz
+/npm-dist/
 .npm/
 
 # Editors and OS

@@ -3,46 +3,53 @@ use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::fmt::Write;
 
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
-use crate::calendar::Level;
+use crate::calendar::{FiscalCalendar, Level};
 use crate::date::Weekday;
 use crate::error::{Error, ErrorCode, Errors};
-use crate::json::write_str;
+use crate::json::{write_list, write_str};
 use crate::label::Template;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ShortMonth {
-    Clamp,
-    Next,
+/// Declares a fieldless enum for a definition field that takes one of a fixed
+/// set of strings. Each variant is listed once with its string, so the parser,
+/// the canonical writer and the error hints cannot disagree.
+macro_rules! named_enum {
+    ($name:ident { $($variant:ident => $text:literal),+ $(,)? }) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub(crate) enum $name {
+            $($variant),+
+        }
+
+        impl $name {
+            /// Every variant, in the order error hints list them.
+            pub(crate) const ALL: &'static [$name] = &[$($name::$variant),+];
+
+            /// The string a definition uses for this variant.
+            pub(crate) const fn name(self) -> &'static str {
+                match self {
+                    $($name::$variant => $text),+
+                }
+            }
+        }
+    };
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Edge {
-    End,
-    Start,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Rule {
-    Last,
-    First,
-    Nearest,
-}
+named_enum!(ShortMonth { Clamp => "clamp", Next => "next" });
+named_enum!(Edge { End => "end", Start => "start" });
+named_enum!(Rule { Last => "last", First => "first", Nearest => "nearest" });
+named_enum!(YearNumber { Start => "start", End => "end", Majority => "majority" });
+named_enum!(YearType { FixedDate => "fixed_date", WeekBased => "week_based" });
+named_enum!(SubdivisionType { CalendarMonths => "calendar_months", WeekPattern => "week_pattern" });
+named_enum!(Numbering { ContainsStart => "contains_start" });
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AnchorDay {
     Day(u32),
     Last,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum YearNumber {
-    Start,
-    End,
-    Majority,
 }
 
 /// A `fixed_date` year with its `calendar_months` subdivision; the only pairing
@@ -104,7 +111,19 @@ const OFFSET_LIMIT: i64 = 1_000_000_000;
 
 impl Definition {
     /// Parses and validates a definition, reporting every error found.
+    ///
+    /// # Errors
+    ///
+    /// Returns every validation error, sorted by path and then code. Any code
+    /// the error catalogue lists as raised by `validate` can appear, from
+    /// `INVALID_JSON` to `MAJORITY_TIE`.
     pub fn from_json(text: &str) -> Result<Definition, Errors> {
+        FiscalCalendar::numbered(Definition::parse(text)?).map(|cal| cal.def)
+    }
+
+    /// Everything `from_json` checks except year numbering, which needs the
+    /// year boundaries of a calendar. Every scheme's `shift` is still 0.
+    pub(crate) fn parse(text: &str) -> Result<Definition, Errors> {
         let value: Value = match crate::strict::parse(text) {
             Ok(v) => v,
             Err(e) => {
@@ -124,14 +143,7 @@ impl Definition {
             )
             .into());
         };
-        let mut def = Validator::default().definition(top)?;
-        let shifts = crate::calendar::FiscalCalendar::new(def.clone())
-            .scheme_shifts()
-            .map_err(Errors::sorted)?;
-        for (scheme, shift) in def.schemes.iter_mut().zip(shifts) {
-            scheme.shift = shift;
-        }
-        Ok(def)
+        Validator::default().definition(top)
     }
 
     /// The canonical JSON form defined in `spec/definition-v1.md`.
@@ -152,22 +164,18 @@ impl Definition {
                 obj([
                     (
                         "short_month",
-                        match f.short_month {
-                            None => Value::Null,
-                            Some(ShortMonth::Clamp) => "clamp".into(),
-                            Some(ShortMonth::Next) => "next".into(),
-                        },
+                        f.short_month.map_or(Value::Null, |s| s.name().into()),
                     ),
                     (
                         "start",
                         obj([("day", f.day.into()), ("month", f.month.into())]),
                     ),
-                    ("type", "fixed_date".into()),
+                    ("type", YearType::FixedDate.name().into()),
                 ]),
                 obj([
                     ("month_start_day", f.day.into()),
                     ("quarters", f.quarters.clone().into()),
-                    ("type", "calendar_months".into()),
+                    ("type", SubdivisionType::CalendarMonths.name().into()),
                 ]),
             ),
             Structure::WeekBased(w) => (
@@ -182,33 +190,18 @@ impl Definition {
                                     AnchorDay::Last => "last".into(),
                                 },
                             ),
-                            (
-                                "edge",
-                                match w.edge {
-                                    Edge::End => "end",
-                                    Edge::Start => "start",
-                                }
-                                .into(),
-                            ),
+                            ("edge", w.edge.name().into()),
                             ("month", w.month.into()),
-                            (
-                                "rule",
-                                match w.rule {
-                                    Rule::Last => "last",
-                                    Rule::First => "first",
-                                    Rule::Nearest => "nearest",
-                                }
-                                .into(),
-                            ),
+                            ("rule", w.rule.name().into()),
                         ]),
                     ),
-                    ("type", "week_based".into()),
+                    ("type", YearType::WeekBased.name().into()),
                 ]),
                 obj([
                     ("extra_week", obj([("period", w.extra_period.into())])),
                     ("periods", w.periods.clone().into()),
                     ("quarters", w.quarters.clone().into()),
-                    ("type", "week_pattern".into()),
+                    ("type", SubdivisionType::WeekPattern.name().into()),
                 ]),
             ),
         };
@@ -229,15 +222,7 @@ impl Definition {
                     ),
                     ("offset", s.offset.into()),
                     ("templates", Value::Object(templates)),
-                    (
-                        "year_number",
-                        match s.year_number {
-                            YearNumber::Start => "start",
-                            YearNumber::End => "end",
-                            YearNumber::Majority => "majority",
-                        }
-                        .into(),
-                    ),
+                    ("year_number", s.year_number.name().into()),
                 ]),
             );
         }
@@ -257,7 +242,7 @@ impl Definition {
             (
                 "week",
                 obj([
-                    ("numbering", "contains_start".into()),
+                    ("numbering", Numbering::ContainsStart.name().into()),
                     ("starts_on", self.week_start.name().into()),
                 ]),
             ),
@@ -270,7 +255,7 @@ pub(crate) fn calendar_id_of(canonical: &str) -> String {
     let digest = Sha256::digest(canonical.as_bytes());
     let mut id = String::with_capacity(16);
     for byte in &digest[..8] {
-        id.push_str(&format!("{byte:02x}"));
+        let _ = write!(id, "{byte:02x}");
     }
     id
 }
@@ -292,28 +277,22 @@ fn write_sorted(out: &mut String, value: &Value) {
             let sorted: BTreeMap<&[u8], (&String, &Value)> =
                 map.iter().map(|(k, v)| (k.as_bytes(), (k, v))).collect();
             out.push('{');
-            for (i, (k, v)) in sorted.values().enumerate() {
-                if i > 0 {
-                    out.push(',');
-                }
+            write_list(out, sorted.values(), |out, &(k, v)| {
                 write_str(out, k);
                 out.push(':');
                 write_sorted(out, v);
-            }
+            });
             out.push('}');
         }
         Value::Array(items) => {
             out.push('[');
-            for (i, v) in items.iter().enumerate() {
-                if i > 0 {
-                    out.push(',');
-                }
-                write_sorted(out, v);
-            }
+            write_list(out, items, write_sorted);
             out.push(']');
         }
         Value::String(s) => write_str(out, s),
-        Value::Number(n) => out.push_str(&format!("{n}")),
+        Value::Number(n) => {
+            let _ = write!(out, "{n}");
+        }
         Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
         Value::Null => out.push_str("null"),
     }
@@ -510,15 +489,11 @@ impl Validator {
         let Some(t) = self.required(m, path, "type") else {
             return (None, None);
         };
-        let Some(kind) = self.choice(
-            t,
-            "year.type",
-            &[("fixed_date", 0), ("week_based", 1)],
-            &["table"],
-        ) else {
+        let Some(kind) = self.choice(t, "year.type", YearType::ALL, YearType::name, &["table"])
+        else {
             return (None, None);
         };
-        if kind == 0 {
+        if kind == YearType::FixedDate {
             self.fields(m, path, &["type", "start", "short_month"], &[]);
             let mut month = None;
             let mut day = None;
@@ -539,7 +514,8 @@ impl Validator {
                     .choice(
                         v,
                         "year.short_month",
-                        &[("clamp", ShortMonth::Clamp), ("next", ShortMonth::Next)],
+                        ShortMonth::ALL,
+                        ShortMonth::name,
                         &[],
                     )
                     .map(Some),
@@ -589,32 +565,18 @@ impl Validator {
                 return (Some(YearKind::Week), None);
             };
             self.fields(am, ap, &["edge", "month", "day", "rule"], &[]);
-            let edge = self.required(am, ap, "edge").and_then(|v| {
-                self.choice(
-                    v,
-                    "year.anchor.edge",
-                    &[("end", Edge::End), ("start", Edge::Start)],
-                    &[],
-                )
-            });
+            let edge = self
+                .required(am, ap, "edge")
+                .and_then(|v| self.choice(v, "year.anchor.edge", Edge::ALL, Edge::name, &[]));
             let month = self
                 .required(am, ap, "month")
                 .and_then(|v| self.int_in(v, "year.anchor.month", 1, 12).map(|n| n as u32));
             let day = self
                 .required(am, ap, "day")
                 .and_then(|v| self.anchor_day(v));
-            let rule = self.required(am, ap, "rule").and_then(|v| {
-                self.choice(
-                    v,
-                    "year.anchor.rule",
-                    &[
-                        ("last", Rule::Last),
-                        ("first", Rule::First),
-                        ("nearest", Rule::Nearest),
-                    ],
-                    &[],
-                )
-            });
+            let rule = self
+                .required(am, ap, "rule")
+                .and_then(|v| self.choice(v, "year.anchor.rule", Rule::ALL, Rule::name, &[]));
             let spec = match (edge, month, day, rule) {
                 (Some(edge), Some(month), Some(day), Some(rule)) => Some(YearSpec::Week {
                     edge,
@@ -696,7 +658,8 @@ impl Validator {
             self.choice(
                 v,
                 "week.numbering",
-                &[("contains_start", ())],
+                Numbering::ALL,
+                Numbering::name,
                 &["first_full"],
             )
         });
@@ -714,12 +677,13 @@ impl Validator {
         let Some(kind) = self.choice(
             t,
             "subdivision.type",
-            &[("calendar_months", 0), ("week_pattern", 1)],
+            SubdivisionType::ALL,
+            SubdivisionType::name,
             &["anchored"],
         ) else {
             return (None, None);
         };
-        if kind == 0 {
+        if kind == SubdivisionType::CalendarMonths {
             self.fields(
                 m,
                 path,
@@ -912,22 +876,18 @@ impl Validator {
         }
         if let (Some(d), Some(names)) = (default, &names) {
             if !names.contains(&d) {
-                let mut hint = String::from("set naming.default to one of:");
-                for n in names {
-                    hint.push(' ');
-                    hint.push_str(n);
-                }
+                let hint = if names.is_empty() {
+                    String::from("add the scheme to naming.schemes")
+                } else {
+                    format!("set naming.default to one of: {}", names.join(" "))
+                };
                 self.push(
                     Error::new(
                         ErrorCode::DefaultSchemeMissing,
                         "naming.default",
                         format!("naming.default \"{d}\" is not a scheme name"),
                     )
-                    .hint(if names.is_empty() {
-                        String::from("add the scheme to naming.schemes")
-                    } else {
-                        hint
-                    }),
+                    .hint(hint),
                 );
                 return None;
             }
@@ -970,11 +930,8 @@ impl Validator {
             self.choice(
                 v,
                 &join(&path, "year_number"),
-                &[
-                    ("start", YearNumber::Start),
-                    ("end", YearNumber::End),
-                    ("majority", YearNumber::Majority),
-                ],
+                YearNumber::ALL,
+                YearNumber::name,
                 &["table"],
             )
         });
@@ -1194,12 +1151,13 @@ impl Validator {
         &mut self,
         v: &Value,
         path: &str,
-        options: &[(&str, T)],
+        options: &[T],
+        name: fn(T) -> &'static str,
         reserved: &[&str],
     ) -> Option<T> {
         let s = self.string(v, path)?;
-        if let Some((_, t)) = options.iter().find(|(name, _)| *name == s) {
-            return Some(*t);
+        if let Some(&t) = options.iter().find(|&&t| name(t) == s) {
+            return Some(t);
         }
         if reserved.contains(&s) {
             self.push(
@@ -1212,15 +1170,11 @@ impl Validator {
             );
             return None;
         }
-        let mut allowed = String::new();
-        for (i, (name, _)) in options.iter().enumerate() {
-            if i > 0 {
-                allowed.push_str(", ");
-            }
-            allowed.push('"');
-            allowed.push_str(name);
-            allowed.push('"');
-        }
+        let allowed = options
+            .iter()
+            .map(|&t| format!("\"{}\"", name(t)))
+            .collect::<Vec<_>>()
+            .join(", ");
         self.push(
             Error::new(
                 ErrorCode::InvalidValue,

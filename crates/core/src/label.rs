@@ -1,6 +1,7 @@
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::fmt::Write;
 
 use crate::calendar::Level;
 
@@ -116,12 +117,20 @@ impl Template {
                     if !(1..=9999).contains(&year_number) {
                         return None;
                     }
-                    out.push_str(&format!("{year_number:04}"));
+                    let _ = write!(out, "{year_number:04}");
                 }
-                Part::Yy => out.push_str(&format!("{:02}", year_number.rem_euclid(100))),
-                Part::YyNext => out.push_str(&format!("{:02}", (year_number + 1).rem_euclid(100))),
-                Part::Q => out.push_str(&format!("{}", index.unwrap_or(0))),
-                Part::Pp | Part::Ww => out.push_str(&format!("{:02}", index.unwrap_or(0))),
+                Part::Yy => {
+                    let _ = write!(out, "{:02}", year_number.rem_euclid(100));
+                }
+                Part::YyNext => {
+                    let _ = write!(out, "{:02}", (year_number + 1).rem_euclid(100));
+                }
+                Part::Q => {
+                    let _ = write!(out, "{}", index.unwrap_or(0));
+                }
+                Part::Pp | Part::Ww => {
+                    let _ = write!(out, "{:02}", index.unwrap_or(0));
+                }
             }
         }
         Some(out)

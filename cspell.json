@@ -31,9 +31,8 @@
   "ignorePaths": [
     "target/**",
     "**/node_modules/**",
-    "bindings/js/pkg/**",
     "website/dist/**",
-    ".venv/**",
+    "**/.venv/**",
     "CODE_OF_CONDUCT.md",
     "LICENSE-*",
     "Cargo.lock",

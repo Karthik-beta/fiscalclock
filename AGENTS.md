@@ -32,7 +32,7 @@ Each rule is phrased so that a reviewer can check it. A change that breaks one n
 1. **Calendar as data, no presets.** No public function, constructor, constant, enum variant or module in any package is named after an organisation, country, standard or calendar family (for example `nrf()`, `iso_calendar()`, `Calendar::retail_454`). Example definitions live only in `docs/`, `conformance/` and the separate registry.
 2. **Independent definition blocks.** `year`, `week`, `subdivision`, `naming` and `exceptions` are parsed and validated as separate blocks. No field in one block changes the meaning of a field in another, except where `spec/definition-v1.md` states the dependency (for example, a week-based year's boundary weekday comes from `week.starts_on`).
 3. **No global state.** No `static mut`, `thread_local!`, lazy global cache, module-level mutable variable or environment-variable read exists in `crates/core` or in any binding. Every operation takes a calendar value.
-4. **Civil dates only.** Every public function that accepts a date accepts only a civil date: the core's `Date`; in Python an object whose `type()` is exactly `datetime.date`, or an ISO `YYYY-MM-DD` string; in JS an ISO `YYYY-MM-DD` string or a `Temporal.PlainDate`. Python `datetime.datetime`, pandas `Timestamp` and JS `Date` are rejected with `TIMESTAMP_REJECTED`. A test for each binding proves the rejection.
+4. **Civil dates only.** Every public function that accepts a date accepts only a civil date: the core's `Date`; in Python an object whose `type()` is exactly `datetime.date`, or an ISO `YYYY-MM-DD` string; in JS an ISO `YYYY-MM-DD` string or a `Temporal.PlainDate`. Python `datetime.datetime`, pandas `Timestamp`, JS `Date` and the Temporal types that carry a time (`PlainDateTime`, `ZonedDateTime`, `Instant`) are rejected with `TIMESTAMP_REJECTED`. A test for each binding proves the rejection.
 5. **Half-open intervals.** Every period exposes `start` and `end_exclusive`; `last_day` is derived. No API returns an inclusive end without also returning `end_exclusive`.
 6. **Deterministic, no clock.** No code in `crates/core` or the bindings calls a clock (`SystemTime`, `Instant`, `datetime.now`, `date.today`, `Date.now`, `new Date()` without arguments) or reads randomness. "Current" queries take the date as an argument.
 7. **Errors carry stable codes, paths and hints.** Every error is an object with `code` from the catalogue in `spec/api-v1.md`, a JSON `path`, a `message`, and a `hint` where one helps. Adding a code means adding it to the catalogue in the same pull request. No code path panics, throws a bare exception, or returns an error without a code.
@@ -73,10 +73,12 @@ Rust core:
 
 ```sh
 cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --release -p fiscalclock
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --release -p fiscalclock --locked
+cargo test -p fiscalclock --locked --test json_api
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p fiscalclock
 cargo build -p fiscalclock --target wasm32-unknown-unknown --release
+cargo package -p fiscalclock --locked
 cargo +1.85 check -p fiscalclock
 ```
 
@@ -101,16 +103,34 @@ Evidence, vectors and versions:
 ```sh
 python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
 python -I conformance/generators/check.py
+uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py --check
+python -I research/evidence/check_quotes.py --offline
+python -I research/evidence/render_evidence.py --check
 python -I scripts/check_versions.py
 ```
+
+`check_quotes.py` without `--offline` fetches every quoted source. CI runs it weekly, so run it when you change a quote.
 
 Website (Node.js 24; `test:examples` also needs Python 3 and Cargo):
 
 ```sh
-cd website && npm ci --ignore-scripts && npm run build && npm run check && npm test && npm run test:examples
+(cd website && npm ci --ignore-scripts && npm run build && npm run check && npm test && npm run test:examples)
+lychee --config website/lychee.toml --no-progress --root-dir "$PWD/website/dist" "website/dist/**/*.html"
 ```
 
-Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
+`npm test` runs Playwright, which needs its browser once: `cd website && npx playwright install --with-deps chromium`.
+
+Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
+
+CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas:
+
+```sh
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-forms $(find .github/ISSUE_TEMPLATE -name '*.yml' ! -name config.yml)
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-config .github/ISSUE_TEMPLATE/config.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-workflows .github/workflows/*.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+```
 
 ## Commits and pull requests
 
