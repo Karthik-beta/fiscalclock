@@ -90,3 +90,14 @@ test("only the playground loads the WebAssembly module and the editor", async ({
   await page.goto("/", { waitUntil: "networkidle" });
   expect(requested.filter((url) => url.endsWith(".wasm") || url.includes("playground"))).toEqual([]);
 });
+
+test("when the WebAssembly module cannot load, the lookup says so instead of keeping the old answer", async ({ page }) => {
+  await page.route("**/*.wasm", (route) => route.abort());
+  await page.goto("/");
+  const lookup = page.getByRole("form", { name: "Try a date" });
+  await expect(lookup.getByRole("row", { name: /^quarter/i })).toBeVisible();
+
+  await lookup.getByLabel("Date (YYYY-MM-DD)").fill("2023-06-01");
+  await expect(lookup.getByRole("status")).toContainText("fiscalclock could not be loaded");
+  await expect(lookup.getByRole("row", { name: /^quarter/i })).toHaveCount(0);
+});

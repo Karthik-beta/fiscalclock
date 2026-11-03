@@ -60,7 +60,7 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
 </section>
 
 <script>
-  import { lookup, renderLookup } from "../lib/lookup";
+  import { lookup, renderLoadFailure, renderLookup } from "../lib/lookup";
 
   interface Choice {
     name: string;
@@ -77,7 +77,11 @@ const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: 
 
   let timer: number | undefined;
   async function update(): Promise<void> {
-    const fiscalclock = await import("fiscalclock");
+    const fiscalclock = await import("fiscalclock").catch(() => null);
+    if (!fiscalclock) {
+      answer.innerHTML = renderLoadFailure();
+      return;
+    }
     const choice = choices.find((c) => c.name === calendar.value)!;
     source.href = choice.url;
     const result = lookup(fiscalclock, choice.definition, date.value.trim());

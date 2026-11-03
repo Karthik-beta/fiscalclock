@@ -71,6 +71,14 @@ function ribbon(segments: Segment[]): string {
   return `<div class="lookup-ribbon" aria-hidden="true">${cells.join("")}</div>`;
 }
 
+/** What the page says when the WebAssembly module cannot be loaded, so it never keeps a stale answer. */
+export const LOAD_FAILED = "fiscalclock could not be loaded";
+export const LOAD_FAILED_HINT = "Reload the page to try again.";
+
+export function renderLoadFailure(): string {
+  return `<p class="lookup-headline is-error">${LOAD_FAILED}</p><p>${LOAD_FAILED_HINT}</p>`;
+}
+
 /** The answer as HTML. Every value in it is fiscalclock's own output, escaped. */
 export function renderLookup(result: Lookup): string {
   if (!result.ok) {
