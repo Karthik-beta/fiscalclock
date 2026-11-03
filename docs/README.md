@@ -1,5 +1,5 @@
 # Documentation
 
-This folder will hold the user documentation and the cookbook of example calendar definitions. Every cookbook definition that describes a real organisation will cite the filing or publication it encodes and will also exist as a conformance vector, so the examples are tested on every release. Normative rules live in [`spec/`](../spec/), and design documents live on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
+This folder holds the example calendar definitions in [`examples/`](examples/). The website's guides show them and its code examples read them. The user guides are on the documentation site at <https://fiscalclock.karthik.nz>, live as of 3 Nov 2026. Normative rules live in [`spec/`](../spec/), and design documents live on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
 
-[`examples/`](examples/) holds the illustrative definitions that the website's guides show and its code examples read. They describe no real organisation.
+The examples are illustrative. Definitions of real organisations' calendars, each with a cited filing or publication, are conformance vectors in [`conformance/vectors/cited/`](../conformance/vectors/cited/), which the test suite of every package runs.

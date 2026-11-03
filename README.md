@@ -20,7 +20,7 @@ fiscalclock is an open-source fiscal calendar engine. You describe your organisa
 
 ## Why it exists
 
-Real fiscal calendars vary in how the year is bounded (a fixed date, or a 52/53-week rule such as "the Saturday nearest 31 January"), how it is subdivided (calendar months, 4-4-5 week patterns, thirteen 4-week periods) and how it is named ("FY2026", "fiscal 2025", "FY 2025-26"). Existing tools each cover part of this inside one ecosystem; the [Analysis](https://github.com/Karthik-beta/fiscalclock/wiki/Analysis) page compares them. fiscalclock aims to be one open, data-defined engine whose answers are identical in Rust, Python and JavaScript.
+Real fiscal calendars vary in how the year is bounded (a fixed date, or a 52/53-week rule such as "the Saturday nearest 31 January"), how it is subdivided (calendar months, 4-4-5 week patterns, thirteen 4-week periods) and how it is named ("FY2026", "fiscal 2025", "FY 2025-26"). The [Analysis](https://github.com/Karthik-beta/fiscalclock/wiki/Analysis) page compares the tools that existed as of 31 Oct 2026. Java, Perl, Power BI, SAP and Elixir tools handle parts of this, but it found no open, data-defined engine shared across Rust, Python and JavaScript. fiscalclock aims to be that engine, with identical answers in all three languages.
 
 ## Packages
 
@@ -38,7 +38,7 @@ The [Roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) lists wh
 
 ## What a definition looks like
 
-This definition describes the NRF 4-5-4 retail calendar: years end on the Saturday nearest 31 January, are named by the calendar year in which they start, and put the 53rd week in period 12. It is an example, not a built-in: fiscalclock has no named calendars.
+This definition has the year and week structure of the NRF 4-5-4 retail calendar: years end on the Saturday nearest 31 January and are named by the calendar year in which they start. The conformance vector [`nrf-53-week-years.json`](conformance/vectors/cited/nrf-53-week-years.json) checks that structure against the 53-week years NRF publishes. Putting the 53rd week in period 12, and the label templates, are illustrative choices. It is an example, not a built-in: fiscalclock has no named calendars.
 
 ```json
 {
@@ -52,8 +52,8 @@ This definition describes the NRF 4-5-4 retail calendar: years end on the Saturd
     "extra_week": { "period": 12 }
   },
   "naming": {
-    "default": "fiscal",
-    "schemes": { "fiscal": { "year_number": "start", "templates": { "year": "FY{yyyy}", "quarter": "FY{yyyy} Q{q}" } } }
+    "default": "fy",
+    "schemes": { "fy": { "year_number": "start", "templates": { "year": "FY{yyyy}", "quarter": "Q{q} FY{yyyy}" } } }
   }
 }
 ```
@@ -62,7 +62,7 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 
 ## Why you can check the results
 
-- **Shared conformance vectors.** 282 vector files with 10,483 cases in [`conformance/`](conformance/README.md) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output. CI regenerates the generated vectors and fails if they drift.
+- **Shared conformance vectors.** The vector files in [`conformance/`](conformance/README.md) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output. CI regenerates the generated vectors and fails if they drift.
 - **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years NRF publishes (2006, 2012, 2017 and 2023).
 - **A second implementation.** A deliberately slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 across 960 generated definitions.
 - **Property tests.** Periods tile their year without gaps or overlaps, nest correctly, and round-trip through `shift` and through `format` and `parse`; week-based years have 364 or 371 days and 71 long years in every 400.
@@ -73,8 +73,9 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 
 - Releases are built and published only by the [release workflow](.github/workflows/release.yml), from a version tag on `main`. Each publish step needs the maintainer's approval in a protected GitHub environment.
 - Before publishing, the workflow installs the built wheel and npm tarball on Linux, macOS and Windows and runs a smoke test.
-- Every release file has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations). Check a downloaded file with `gh attestation verify <file> --repo Karthik-beta/fiscalclock`.
-- All three registries use trusted publishing: the release workflow authenticates with short-lived OIDC credentials, and the repository stores no registry tokens. npm releases also carry npm provenance. Version 0.1.0 was published to crates.io and npm with API tokens, which have since been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
+- As of 3 Nov 2026, every file of the [0.1.0 GitHub release](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.1.0) has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations), and the files on crates.io, PyPI and npm have the same SHA-256 digests as the release files. Check a downloaded file with `gh attestation verify <file> --repo Karthik-beta/fiscalclock`.
+- As of 3 Nov 2026, every 0.1.0 file on PyPI also has PyPI provenance naming the release workflow, and the npm package has npm provenance (`npm view fiscalclock@0.1.0 dist.attestations`).
+- The release workflow publishes to all three registries with trusted publishing: it authenticates with short-lived OIDC credentials, and the repository stores no registry tokens. Version 0.1.0 was published to crates.io and npm with API tokens, which have since been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The core depends only on `serde`, `serde_json` and `sha2`, forbids `unsafe` code, and reads no clock, environment variable or global state.
 
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
