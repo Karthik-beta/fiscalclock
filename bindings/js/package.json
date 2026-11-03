@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Karthik-beta/fiscalclock.git",
     "directory": "bindings/js"
   },
-  "homepage": "https://github.com/Karthik-beta/fiscalclock",
+  "homepage": "https://fiscalclock.karthik.nz",
   "bugs": "https://github.com/Karthik-beta/fiscalclock/issues",
   "keywords": ["fiscal", "calendar", "4-5-4", "retail", "accounting", "webassembly"],
   "type": "module",
