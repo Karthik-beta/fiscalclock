@@ -104,6 +104,12 @@ const OFFSET_LIMIT: i64 = 1_000_000_000;
 
 impl Definition {
     /// Parses and validates a definition, reporting every error found.
+    ///
+    /// # Errors
+    ///
+    /// Returns every validation error, sorted by path and then code. Any code
+    /// the error catalogue lists as raised by `validate` can appear, from
+    /// `INVALID_JSON` to `MAJORITY_TIE`.
     pub fn from_json(text: &str) -> Result<Definition, Errors> {
         let value: Value = match crate::strict::parse(text) {
             Ok(v) => v,
