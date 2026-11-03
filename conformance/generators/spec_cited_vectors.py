@@ -233,14 +233,14 @@ def pg_hygiene_vectors() -> list[dict]:
     )
     return [
         vector(
-            "pg-hygiene-annual-report-2025-26",
-            "Procter & Gamble Hygiene and Health Care Limited Annual Report 2025-26 (financial year ended 31 March 2026), its first full year "
+            "pghh-annual-report-2025-26",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2025-26 (financial year ended 31 March 2026), its first full year "
             "after the change from a July-June year. The week block and the calendar-month subdivision are illustrative; only fields the document states are asserted.",
             source("cited", april_citation, PDF_QUOTES_CHECKED, PGHH_2026_URL), april, april_cases,
         ),
         vector(
-            "pg-hygiene-annual-report-2023-24",
-            "Procter & Gamble Hygiene and Health Care Limited Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. "
+            "pghh-annual-report-2023-24",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. "
             "The week block, the calendar-month subdivision and the label template are illustrative; only fields the document states are asserted.",
             source("cited", july_citation, PDF_QUOTES_CHECKED, PGHH_2024_URL), july, july_cases,
         ),

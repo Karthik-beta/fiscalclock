@@ -141,9 +141,15 @@ test("examples have short labels, with the full description and its source under
   await expect(example.locator("option")).toHaveText([
     "Your own definition",
     "NRF, 52/53-week year",
+    "ABB, year from 1 January",
     "Apple, 52/53-week year",
     "Costco, 52/53-week year",
     "Kroger, 52/53-week year",
+    "PGHH, year from 1 July",
+    "PGHH, year from 1 April",
+    "Reliance, year from 1 April",
+    "Siemens, year from 1 April",
+    "Siemens, year from 1 October",
   ]);
   await example.selectOption({ label: "Costco, 52/53-week year" });
   const source = page.locator("#pg-example-source");

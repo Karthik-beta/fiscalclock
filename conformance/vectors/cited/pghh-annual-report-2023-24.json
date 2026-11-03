@@ -1,6 +1,6 @@
 {
-  "name": "pg-hygiene-annual-report-2023-24",
-  "description": "Procter & Gamble Hygiene and Health Care Limited Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. The week block, the calendar-month subdivision and the label template are illustrative; only fields the document states are asserted.",
+  "name": "pghh-annual-report-2023-24",
+  "description": "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. The week block, the calendar-month subdivision and the label template are illustrative; only fields the document states are asserted.",
   "source": {
     "kind": "cited",
     "citation": "\"The Company’s Financial Year is July 1st to June 30th.\" (Report of the Directors, p. 8) \"Presently, the Company follows July-June Financial Year.\" (Corporate Governance Report, p. 71) \"Financial Year reported July 1, 2023 to June 30, 2024\" (Business Responsibility & Sustainability Report, p. 19). Establishes the 1 July start and the bounds of the year that began on 1 July 2023. The company left this calendar after 30 June 2024; see research/filers/pg-hygiene.md.",

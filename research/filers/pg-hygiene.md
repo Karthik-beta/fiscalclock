@@ -183,8 +183,8 @@ This definition is wrong for the year numbered 2024, which it would run from 1 A
 
 Two vectors from `conformance/generators/spec_cited_vectors.py`, one per calendar. They assert only the year 2025 and later under the April calendar, and the year 2023 under the July calendar.
 
-- `conformance/vectors/cited/pg-hygiene-annual-report-2025-26.json` has 6 cases: validation, the start and last day of 2025-26, the last day of 2026-27, the label `2025-26`, and parsing `2025-26` and `2026-27`.
-- `conformance/vectors/cited/pg-hygiene-annual-report-2023-24.json` has 2 cases: validation and the start and last day of the year that began on 1 July 2023. It asserts no label, because the pairing of "2023-24" with those dates is inferred.
+- `conformance/vectors/cited/pghh-annual-report-2025-26.json` has 6 cases: validation, the start and last day of 2025-26, the last day of 2026-27, the label `2025-26`, and parsing `2025-26` and `2026-27`.
+- `conformance/vectors/cited/pghh-annual-report-2023-24.json` has 2 cases: validation and the start and last day of the year that began on 1 July 2023. It asserts no label, because the pairing of "2023-24" with those dates is inferred.
 
 The nine-month year 2024-25 is a candidate for a 0.2 vector once `exceptions.transitions` exists.
 
