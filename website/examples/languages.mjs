@@ -1,7 +1,8 @@
 // Every example is written once per language. This table says where each
-// language's source and expected output live, relative to examples/, and is
-// read by the pages that show the examples and by scripts/test-examples.mjs.
-// The order is the order of the tabs; Python comes first (DD-034).
+// language's source and expected output live, relative to examples/. Only
+// scripts/test-examples.mjs reads it (and tests/build-inputs.spec.ts reads
+// DEFINITIONS); the pages import their example files directly and list their
+// tabs themselves. Python comes first in both (DD-034).
 export const LANGUAGES = [
   { key: "python", label: "Python", lang: "python", dir: "python", ext: ".py" },
   { key: "js", label: "JavaScript", lang: "js", dir: "js", ext: ".mjs" },

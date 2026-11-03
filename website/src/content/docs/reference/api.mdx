@@ -81,7 +81,7 @@ This page lists the operations of API version 1 and how each language names them
 
 Every operation is defined once, in the Rust core. The Python and npm packages convert their native values to the core's JSON API and back, so they return the same results as the crate.
 
-Each example uses the definition `retail-4-5-4.json` from [the quick start](/start-here/quick-start/), and prints exactly the output shown under it.
+Each example uses the definition `retail-4-5-4.json` from [the quick start](/start-here/quick-start/), except `format`, which needs two naming schemes and uses `two-schemes.json` from [Labels](/guides/labels/#ambiguous-labels). Each prints exactly the output shown under it.
 
 ## Names in each language
 
@@ -119,7 +119,17 @@ The codes, and the operations that raise each one, are listed in the [error cata
 
 ## The JSON API
 
-Each package also exposes the core's JSON API, which takes and returns JSON text exactly as the core produces it: `call_json` and `validate_json` in Python, `callJson` and `validateJson` in JavaScript, and `fiscalclock::json::call` and `fiscalclock::json::validate` in Rust. For the same definition and arguments, the three return the same bytes ([API spec](/reference/spec/api-v1/)).
+Each package also exposes the core's JSON API, which takes and returns JSON text exactly as the core produces it. For the same definition and arguments, the three return the same bytes ([API spec](/reference/spec/api-v1/)). The `definition` and `args` arguments are JSON text, and `op` is an operation's name, such as `locate`. In Rust, `validate` and `call` are in the `fiscalclock::json` module.
+
+| What | Python | JavaScript | Rust |
+| --- | --- | --- | --- |
+| Validate a definition | `validate_json` | `validateJson` | `json::validate` |
+| Run an operation on a definition | `call_json` | `callJson` | `json::call` |
+| Run an operation on a built calendar | `cal.call_json` | `cal.callJson` | `cal.call_json` |
+| The calendar's id | `cal.calendar_id` | `cal.calendarId` | `cal.calendar_id()` |
+| The canonical form of the definition | `cal.canonical_json` | `cal.canonicalJson` | `cal.canonical_json()` |
+
+The calendar's id, `calendar_id`, is the first 16 hex digits of the SHA-256 of the canonical form. The JavaScript package also exports `coreVersion()`, the version of the Rust core compiled into it.
 
 ## validate
 
@@ -256,7 +266,7 @@ Returns the fiscal years numbered `first` to `last`, both included, at most 10,0
 
 ## format
 
-Returns the label of a period under the default scheme, or under the named scheme. A scheme with no template for the period's level returns `TEMPLATE_MISSING`, and an unknown scheme returns `SCHEME_NOT_FOUND`. See [Labels](/guides/labels/).
+Returns the label of a period under the default scheme, or under the named scheme. A scheme with no template for the period's level returns `TEMPLATE_MISSING`, and an unknown scheme returns `SCHEME_NOT_FOUND`. See [Labels](/guides/labels/). The example labels fiscal year 2023 under the default scheme, `by_start`, and under `by_end`, which number a year by the calendar year it starts and ends in.
 
 <Tabs syncKey="lang">
   <TabItem label="Python">

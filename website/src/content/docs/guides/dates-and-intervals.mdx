@@ -46,6 +46,8 @@ A timestamp is rejected because its calendar day depends on the time zone: late 
   </TabItem>
 </Tabs>
 
+The Rust example prints `None` because Rust rejects timestamps at parse time: `Date::parse_iso` accepts only `YYYY-MM-DD`, so text with a time never becomes a `Date`. The Python and JavaScript packages accept timestamp objects as arguments, so they raise `TIMESTAMP_REJECTED`.
+
 ## Half-open intervals
 
 Every period is the half-open interval `[start, end_exclusive)`: it contains `start` and every day up to, but not including, `end_exclusive`. `last_day` is the day before `end_exclusive`, and is given for display ([API spec](/reference/spec/api-v1/#period)).
