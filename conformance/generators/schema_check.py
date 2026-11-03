@@ -15,6 +15,9 @@ TYPES = {
     "array": lambda v: isinstance(v, list),
     "string": lambda v: isinstance(v, str),
     "null": lambda v: v is None,
+    "boolean": lambda v: isinstance(v, bool),
+    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
 }
 
 
