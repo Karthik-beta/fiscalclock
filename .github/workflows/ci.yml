@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,9 +34,9 @@ jobs:
       - name: Formatting
         run: cargo fmt --all --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
-        run: cargo test --release -p fiscalclock
+        run: cargo test --release -p fiscalclock --locked
       - name: Documentation builds without warnings
         run: cargo doc --no-deps -p fiscalclock
         env:
