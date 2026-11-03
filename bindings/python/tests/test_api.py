@@ -7,9 +7,12 @@ import decimal
 import json
 import pickle
 import unittest
+from pathlib import Path
 
 import fiscalclock
 from fiscalclock import FiscalCalendar, FiscalclockError, Location, Period
+
+EXAMPLES = Path(__file__).resolve().parents[3] / "docs" / "examples"
 
 NRF = {
     "spec_version": 1,
@@ -57,6 +60,15 @@ class Basics(unittest.TestCase):
         self.assertEqual(len(self.cal.children(q4, "period")), 3)
         self.assertEqual([y.year for y in self.cal.years(2022, 2024)], [2022, 2023, 2024])
 
+    def test_period_as_a_mapping(self):
+        q4 = self.cal.period("quarter", 2023, 4)
+        coordinates = {"level": "quarter", "year": 2023, "index": 4}
+        self.assertEqual(self.cal.shift(coordinates, 1), self.cal.shift(q4, 1))
+        self.assertEqual(self.cal.parent(coordinates), self.cal.parent(q4))
+        self.assertEqual(self.cal.children(coordinates, "period"), self.cal.children(q4, "period"))
+        self.assertEqual(self.cal.format(coordinates), "Q4 FY2023")
+        self.assertEqual(self.cal.format({"level": "year", "year": 2023}), "FY2023")
+
     def test_call_json_returns_core_json_unchanged(self):
         args = '{"level":"quarter","year":2023,"index":4}'
         expected = (
@@ -88,8 +100,52 @@ class Errors(unittest.TestCase):
         self.assertEqual(cm.exception.path, "subdivision.periods")
         self.assertEqual(fiscalclock.validate(bad)["errors"], cm.exception.errors)
 
+    def test_several_validation_errors(self):
+        bad = json.loads(json.dumps(NRF))
+        bad["subdivision"]["periods"] = [4] * 12
+        bad["week"]["starts_on"] = "sun"
+        with self.assertRaises(FiscalclockError) as cm:
+            FiscalCalendar(bad)
+        self.assertEqual(
+            [(e["code"], e["path"]) for e in cm.exception.errors],
+            [("WEEKS_SUM_MISMATCH", "subdivision.periods"), ("INVALID_VALUE", "week.starts_on")],
+        )
+        self.assertEqual((cm.exception.code, cm.exception.path), ("WEEKS_SUM_MISMATCH", "subdivision.periods"))
+        self.assertTrue(str(cm.exception).endswith("; and 1 more"), str(cm.exception))
+
     def test_validate_does_not_raise(self):
         self.assertTrue(fiscalclock.validate(NRF)["ok"])
+
+    def test_validate_json_returns_core_json_unchanged(self):
+        bad = json.loads(json.dumps(NRF))
+        bad["subdivision"]["periods"] = [4] * 12
+        for definition in [json.dumps(NRF), json.dumps(bad), "{"]:
+            self.assertEqual(fiscalclock.validate_json(definition), fiscalclock.call_json(definition, "validate", "{}"))
+
+    def test_ambiguous_label(self):
+        cal = FiscalCalendar((EXAMPLES / "two-schemes.json").read_text(encoding="utf-8"))
+        with self.assertRaises(FiscalclockError) as cm:
+            cal.parse("FY2023")
+        self.assertEqual((cm.exception.code, cm.exception.path), ("AMBIGUOUS_LABEL", "label"))
+        candidates = cm.exception.details["candidates"]
+        self.assertEqual([(c["scheme"], c["level"], c["period"]["year"]) for c in candidates], [("by_end", "year", 2022), ("by_start", "year", 2023)])
+        raw = json.loads(cal.call_json("parse", '{"label":"FY2023"}'))
+        self.assertEqual(cm.exception.details, raw["errors"][0]["details"])
+
+    def test_wrong_argument_types(self):
+        cal = FiscalCalendar(NRF)
+        q4 = cal.period("quarter", 2023, 4)
+        cases = [
+            (lambda: cal.period("quarter", "2023", 4), "year"),
+            (lambda: cal.years("2022", 2024), "from"),
+            (lambda: cal.shift(q4, "1"), "n"),
+            (lambda: cal.parent(None), "period"),
+            (lambda: cal.parse(2023), "label"),
+        ]
+        for call, path in cases:
+            with self.assertRaises(FiscalclockError) as cm:
+                call()
+            self.assertEqual((cm.exception.code, cm.exception.path), ("INVALID_ARGUMENT", path))
 
     def test_operation_error(self):
         with self.assertRaises(FiscalclockError) as cm:
@@ -209,7 +265,15 @@ class TimestampsAreRejected(unittest.TestCase):
     def test_error_bytes_come_from_the_core(self):
         with self.assertRaises(FiscalclockError) as cm:
             self.cal.locate(dt.datetime(2024, 2, 3))
-        expected = json.loads(fiscalclock._fiscalclock.timestamp_rejected("date"))["errors"]
+        expected = [
+            {
+                "code": "TIMESTAMP_REJECTED",
+                "path": "date",
+                "message": "a timestamp was passed where a civil date (year, month, day) is expected",
+                "hint": "convert the timestamp to a date in the time zone you mean, then pass that date",
+                "details": None,
+            }
+        ]
         self.assertEqual(cm.exception.errors, expected)
 
     def test_date_subclass_that_is_not_a_datetime_is_not_accepted(self):
@@ -218,7 +282,7 @@ class TimestampsAreRejected(unittest.TestCase):
 
         with self.assertRaises(FiscalclockError) as cm:
             self.cal.locate(MyDate(2024, 2, 3))
-        self.assertIn(cm.exception.code, {"INVALID_DATE", "INVALID_ARGUMENT"})
+        self.assertEqual((cm.exception.code, cm.exception.path), ("INVALID_ARGUMENT", "date"))
 
 
 if __name__ == "__main__":
