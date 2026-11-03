@@ -127,7 +127,7 @@ Each scheme:
 | `year_number` | `"start"`, `"end"` or `"majority"` | yes | Number a fiscal year by the calendar year of its first day, of its last day, or that holds more than half of its days. `"table"` is reserved (`UNSUPPORTED_FEATURE`). |
 | `offset` | integer −1,000,000,000 to 1,000,000,000 | no, default 0 | Added to the year number, for example 1 to label each fiscal year by the following calendar year. Outside the range is `INVALID_VALUE`, so that every year number fits a 32-bit integer. |
 | `century_pivot` | integer 100–9999 | see below | Resolves two-digit years when parsing. A two-digit value *yy* means the unique year in [`century_pivot` − 99, `century_pivot`] whose last two digits are *yy*. |
-| `templates` | object | yes | Label templates keyed by level: `year`, `quarter`, `period`, `week`. At least one. Unknown keys are `UNKNOWN_FIELD`. |
+| `templates` | object | yes | Label templates keyed by level: `year`, `quarter`, `period`, `week`. At least one; an empty object is `INVALID_VALUE` at `naming.schemes.<name>.templates`. Unknown keys are `UNKNOWN_FIELD`. |
 | `eras` | any | no | Reserved (`UNSUPPORTED_FEATURE`). |
 
 ### Templates

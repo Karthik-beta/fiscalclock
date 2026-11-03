@@ -168,7 +168,7 @@ def runtime_vectors() -> list[dict]:
     desc = (
         "Runtime errors on the NRF 4-5-4 definition: malformed dates (including year 0000, a time suffix and a zone suffix), missing periods, "
         "bad arguments, unknown scheme, unrecognised labels, and dimension ranges with start after end_exclusive or longer than 146,097 days "
-        "(INVALID_ARGUMENT; the spec does not pin which argument the path names, read here as end_exclusive)."
+        "(INVALID_ARGUMENT at end_exclusive, from the api-v1.md table \"Paths for common errors\")."
     )
     out.append(vector("runtime-nrf", desc, src, nrf, cases))
 
