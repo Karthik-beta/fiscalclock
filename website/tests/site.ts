@@ -17,6 +17,27 @@ export function builtPages(): string[] {
     .sort();
 }
 
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/**
+ * The example definitions the playground and the landing page offer, read from the files in
+ * conformance/vectors/cited/ that both build their lists from. Each has the label its select
+ * must show: the organisation, as the description spells it, then what kind of year it has.
+ */
+export function citedExamples(): { name: string; label: string }[] {
+  const dir = join(website, "..", "conformance", "vectors", "cited");
+  return readdirSync(dir)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => JSON.parse(readFileSync(join(dir, file), "utf8")) as { name: string; description: string; definition: { year: { type: string; start?: { month: number; day: number } } } })
+    .sort((a, b) => Number(b.name.startsWith("nrf-")) - Number(a.name.startsWith("nrf-")) || a.name.localeCompare(b.name))
+    .map(({ name, description, definition }) => {
+      const word = name.split("-")[0]!;
+      const organisation = description.match(new RegExp(`\\b${word}\\b`, "i"))![0];
+      const { type, start } = definition.year;
+      return { name, label: `${organisation}, ${type === "week_based" ? "52/53-week year" : `year from ${start!.day} ${MONTHS[start!.month - 1]}`}` };
+    });
+}
+
 /** Resolved token values, read from the token build in design/, not from the copy the site uses. */
 export function tokens(theme: Theme): Record<string, string> {
   const file = join(website, "..", "design", "tokens", "generated", `tokens.${theme}.json`);

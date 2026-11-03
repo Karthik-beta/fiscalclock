@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 
@@ -45,6 +45,21 @@ test("a Markdown copy has the code from a <Code> import, the tab labels and no M
   expect(text).not.toMatch(/<\/?(Tabs|TabItem|Code|Aside)\b/);
   expect(text).not.toContain("@astrojs/starlight/components");
   expect(text).not.toContain("?raw");
+});
+
+test("every built Markdown copy is plain Markdown: no MDX components or imports, and no unresolved values", () => {
+  const dist = join(import.meta.dirname, "..", "dist");
+  const files = readdirSync(dist, { recursive: true, encoding: "utf8" }).filter((file) => file.endsWith(".md"));
+  expect(files.length).toBeGreaterThan(10);
+  for (const file of files) {
+    const text = readFileSync(join(dist, file), "utf8");
+    // An import line inside a code fence is example code, so only the prose is checked for them.
+    const prose = text.replace(/^```[\s\S]*?^```$/gm, "");
+    expect(prose, `${file} has an MDX import`).not.toMatch(/^import /m);
+    expect(text, `${file} has a <Tabs> element`).not.toContain("<Tabs");
+    expect(text, `${file} has a <Code> element`).not.toContain("<Code");
+    expect(text, `${file} has an unresolved value`).not.toContain("undefined");
+  }
 });
 
 for (const [path, markdown] of [
