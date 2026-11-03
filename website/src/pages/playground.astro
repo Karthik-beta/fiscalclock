@@ -1,6 +1,7 @@
 ---
 import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
 import { examples, shortLabel } from "../lib/examples";
+import { FISCALCLOCK_VERSION } from "../lib/site";
 
 const EXAMPLE_DATE = "2024-02-03";
 const EXAMPLE_YEAR = 2023;
@@ -16,7 +17,7 @@ const EXAMPLE_YEAR = 2023;
 >
   <div class="playground not-content" data-example-date={EXAMPLE_DATE} data-example-year={EXAMPLE_YEAR}>
     <p class="pg-intro">
-      Edit a definition and enter a date. fiscalclock 0.1.0 runs in this page as WebAssembly and answers with its own
+      Edit a definition and enter a date. fiscalclock {FISCALCLOCK_VERSION} runs in this page as WebAssembly and answers with its own
       results and error messages. The calendars in the Example list are example definitions, not built in. The page starts at <time datetime={EXAMPLE_DATE}>{EXAMPLE_DATE}</time>, a fixed
       example date: fiscalclock never reads today's date. Everything you change is kept in the page's address, so a
       copied link opens the same state.

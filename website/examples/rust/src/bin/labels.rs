@@ -12,7 +12,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let parsed = cal.parse(&label)?;
     println!(
         "{} {} {:?} {} {}",
-        parsed.level.name(), parsed.year, parsed.index, parsed.start, parsed.last_day()
+        parsed.level.name(),
+        parsed.year,
+        parsed.index,
+        parsed.start,
+        parsed.last_day()
     );
 
     Ok(())

@@ -7,6 +7,7 @@
  * The same function renders the landing page at build time and the
  * playground in the browser, so it returns a plain string and touches no DOM.
  */
+import { esc } from "./escape.ts";
 
 /** The keys of the core's Period JSON (spec/api-v1.md, "Period") that the strip reads. */
 export interface StripPeriod {
@@ -47,10 +48,6 @@ const Y_MARKER = Y_AXIS + 76;
 
 const color = (role: string) => `var(--fc-color-diagram-${role})`;
 
-function esc(text: string): string {
-  return text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-}
-
 function rect(x: number, y: number, w: number, h: number, style: string, attrs = ""): string {
   return `<rect${attrs} x="${x.toFixed(2)}" y="${y}" width="${w.toFixed(2)}" height="${h}" style="${style}"/>`;
 }
@@ -81,7 +78,11 @@ export function renderYearStrip(periods: StripPeriod[], opts: StripOptions): str
   const height = (opts.marker ? Y_MARKER : Y_NOTES) + 8;
   const xOf = (dayOffset: number) => PAD_X + dayOffset * PX_PER_DAY;
   const offsets: number[] = [];
-  periods.reduce((acc, p) => (offsets.push(acc), acc + p.days), 0);
+  let daysSoFar = 0;
+  for (const p of periods) {
+    offsets.push(daysSoFar);
+    daysSoFar += p.days;
+  }
   const offsetOf = new Map(periods.map((p, i) => [p.start, offsets[i]!]));
 
   const ink = `fill:${color("ink")}`;

@@ -69,6 +69,12 @@ const RUNNERS = {
   rust() {
     const manifest = join(examples, "rust/Cargo.toml");
     check(run("cargo", ["build", "--quiet", "--locked", "--bins", "--manifest-path", manifest]), "cargo build");
+    // The pages show these files, so they stay rustfmt-formatted. A toolchain without rustfmt skips the check, loudly.
+    if (run("cargo", ["fmt", "--version"]).status === 0) {
+      check(run("cargo", ["fmt", "--check", "--manifest-path", manifest]), "cargo fmt --check");
+    } else {
+      console.warn("test-examples: rustfmt is not installed, so the formatting of the Rust examples was not checked");
+    }
     const lock = readFileSync(join(examples, "rust/Cargo.lock"), "utf8");
     const version = lock.match(/name = "fiscalclock"\nversion = "([^"]+)"/)[1];
     const bin = (name) => join(examples, "rust/target/debug", windows ? `${name}.exe` : name);

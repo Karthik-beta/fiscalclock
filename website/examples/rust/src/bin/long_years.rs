@@ -15,10 +15,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{}", long_years.join(" "));
 
     let extra = cal.period(Level::Week, 2023, Some(53))?;
-    println!("{} {} {}", extra.start, extra.last_day(), extra.has_extra_week);
+    println!(
+        "{} {} {}",
+        extra.start,
+        extra.last_day(),
+        extra.has_extra_week
+    );
 
     for year in [2022, 2023] {
-        println!("{} {:?}", year, cal.period(Level::Period, year, Some(12))?.weeks);
+        println!(
+            "{} {:?}",
+            year,
+            cal.period(Level::Period, year, Some(12))?.weeks
+        );
     }
 
     Ok(())
