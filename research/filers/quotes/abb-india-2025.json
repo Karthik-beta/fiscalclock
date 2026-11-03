@@ -1,0 +1,97 @@
+{
+  "company": "ABB India Limited",
+  "slug": "abb-india",
+  "document": "ABB India Limited Integrated Annual Report 2025",
+  "url": "https://library.e.abb.com/public/93c9bda6800643c789fc96fbb964ae1b/ABB%20India%20Limited%20Integrated%20Annual%20Report%202025.pdf",
+  "host_evidence": "Reached from ABB India's own page https://new.abb.com/indian-subcontinent/investors/abb-india-limited-integrated-annual-report-2025 ('Download here' https://to.abb/nOTyPCwY3 redirects to search.abb.com/library/Download.aspx?DocumentID=9AKK108472A5046, titled 'ABB India Limited Integrated Annual Report 2025', whose embedded viewer loads the PDF from ABB's document library host library.e.abb.com), observed 3 Nov 2026 in a browser. The library.e.abb.com address carries a signed token (x-sign) and may expire; the page above is the stable entry point.",
+  "pages": 348,
+  "retrieved": "2026-11-03",
+  "pdf": "ABB-India-Limited-Integrated-Annual-Report-2025.pdf",
+  "sha256": "f33064f1169d5cde931e8a39a63dcc8e6f8b28785ab216d40ea020736c70090b",
+  "quotes": [
+    {
+      "text": "This Integrated Annual Report provides the most important information about the Company’s strategy, performance, governance and value creation of its operations for the financial year ended December 31, 2025.",
+      "pdf_page": 6,
+      "printed_page": null,
+      "section": "About the report"
+    },
+    {
+      "text": "This Report covers the financial and operational performance of ABB India Limited for the period January 01, 2025 to December 31, 2025, unless otherwise stated.",
+      "pdf_page": 7,
+      "printed_page": null,
+      "section": "Key elements: Reporting period and boundary"
+    },
+    {
+      "text": "Your Directors have the pleasure in presenting their Seventy Sixth Annual Report together with Audited Financial Statements for the financial year ended December 31, 2025.",
+      "pdf_page": 98,
+      "printed_page": "96",
+      "section": "Boards' Report"
+    },
+    {
+      "text": "Company’s financial year is January – December.",
+      "pdf_page": 128,
+      "printed_page": "126",
+      "section": "Corporate Governance Report, General shareholder information"
+    },
+    {
+      "text": "Fourth Quarter Financial Results (Year 2025) February 2026 First Quarter Financial Results May 2026 Annual General Meeting May 2026 Second Quarter Financial Results July 2026 Third Quarter Financial Results November 2026",
+      "pdf_page": 128,
+      "printed_page": "126",
+      "section": "Corporate Governance Report, General shareholder information"
+    },
+    {
+      "text": "During CY 2025, ABB India delivered another solid year, surpassing its already strong CY 2024 performance.",
+      "pdf_page": 98,
+      "printed_page": "96",
+      "section": "Boards' Report, Review of operations"
+    },
+    {
+      "text": "Q4 CY2025 alone saw a 52% surge in orders, the highest fourth‑quarter intake in five years",
+      "pdf_page": 98,
+      "printed_page": "96",
+      "section": "Boards' Report, Review of operations"
+    },
+    {
+      "text": "to undertake the Secretarial Audit of the Company for (five) years from Financial Year January 1, 2025 to December 31, 2029.",
+      "pdf_page": 102,
+      "printed_page": "100",
+      "section": "Boards' Report, Secretarial audit"
+    },
+    {
+      "text": "Ratification of remuneration to Cost Auditor of the Company for financial year ending December 31, 2026",
+      "pdf_page": 88,
+      "printed_page": "86",
+      "section": "Notice of the 76th AGM, Item No. 4"
+    },
+    {
+      "text": "The Committee has held four meetings during the Financial Year 2025 i.e., February 17, May 09, August 02 and November 06, 2025.",
+      "pdf_page": 122,
+      "printed_page": "120",
+      "section": "Corporate Governance Report, Audit Committee"
+    },
+    {
+      "text": "FOR THE YEAR ENDED DECEMBER 31, 2025",
+      "pdf_page": 225,
+      "printed_page": "223",
+      "section": "Standalone Statement of Profit and Loss"
+    },
+    {
+      "text": "AS AT DECEMBER 31, 2025",
+      "pdf_page": 224,
+      "printed_page": "222",
+      "section": "Standalone Balance Sheet"
+    },
+    {
+      "text": "recognised as a part of retained earnings for the years ended December 31, 2025 and 2024, respectively.",
+      "pdf_page": 227,
+      "printed_page": "225",
+      "section": "Standalone Statement of Changes in Equity, footnote"
+    },
+    {
+      "text": "These standalone financial statements for the year ended December 31, 2025 are prepared in accordance with Indian Accounting Standards (Ind AS)",
+      "pdf_page": 228,
+      "printed_page": "226",
+      "section": "Notes to the standalone financial statements, Note 2.1"
+    }
+  ]
+}

@@ -73,6 +73,8 @@ PDF_CHECKED = (
 RELIANCE_URL = "https://www.ril.com/ar2024-25/pdf/RIL-IAR-2025.pdf"
 PGHH_2026_URL = "https://assets.ctfassets.net/oe48y40ukei6/3NtnlryjO6oVyBMEES6pLT/d4aee2a14d8cab5a4d777d8e5f8eba8a/ANNUAL_REPORT_2026__1_.pdf"
 PGHH_2024_URL = "https://assets.ctfassets.net/oe48y40ukei6/7aXOHTgxcGULOBM2hYlblW/6ef76eff5f3da3ecad126944fbaf3391/PGHH_ANNUAL_REPORT_2024.pdf"
+SIEMENS_URL = "https://assets.new.siemens.com/siemens/assets/api/uuid:6d32b927-bec4-43f3-bbee-d617b2888331/Annual-Report-Siemens-Limited-2024-26.pdf"
+ABB_URL = "https://library.e.abb.com/public/93c9bda6800643c789fc96fbb964ae1b/ABB%20India%20Limited%20Integrated%20Annual%20Report%202025.pdf"
 PDF_QUOTES_CHECKED = (
     "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, "
     "whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
@@ -245,6 +247,88 @@ def pg_hygiene_vectors() -> list[dict]:
     ]
 
 
+def siemens_india_vectors() -> list[dict]:
+    year = {"level": "year"}
+    fy = naming({"fy": scheme("start", {"year": "FY {yyyy}-{yy_next}"})})
+    april = fixed_date(4, 1, "monday", naming({"fy": scheme("start", {"year": "FY {yyyy}-{yy_next}", "quarter": "Q{q} FY {yyyy}-{yy_next}"})}))
+    cal = Calendar(april)
+    april_cases = [validate_case(april)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2026}, "expect_subset": {"last_day": "2027-03-31"}},
+        *({"op": "period", "args": {"level": "quarter", "year": 2026, "index": i}, "expect_subset": {"last_day": d}}
+          for i, d in enumerate(("2026-06-30", "2026-09-30", "2026-12-31"), 1)),
+        {"op": "format", "args": {"period": {**year, "year": 2026, "index": None}}, "expect": {"label": "FY 2026-27", "scheme": "fy"}},
+    )]
+    april_citation = (
+        "\"The Board of Directors at its meeting held on August 8, 2025 approved the change of financial year of the Company to uniform financial year "
+        "commencing on April 1 of every year and ending on March 31 of the following year including observing a one-time transitional financial year "
+        "from October 1, 2024 to March 31, 2026 (18 months).\" (Directors' Report, p. 35) "
+        "\"For the Financial Year 2026-27, Financial Results will be announced as per the following tentative schedule: 1st quarter ending June 30, 2026 "
+        "Second week of August 2026 2nd quarter ending September 30, 2026 Second week of November 2026 3rd quarter ending December 31, 2026 "
+        "Second week of February 2027 Year ending March 31, 2027 Fourth week of May 2027\" (Report on Corporate Governance, p. 74) "
+        "\"the next Annual General Meeting of the Company (69th AGM) for FY 2026-27\" (p. 22). "
+        "Establishes the 1 April start, the end of FY 2026-27 and of its first three quarters, and the label FY 2026-27. "
+        "The 18-month FY 2024-26 is outside spec version 1 and has no case; see research/filers/siemens-india.md."
+    )
+    october = fixed_date(10, 1, "monday", fy)
+    cal = Calendar(october)
+    october_cases = [validate_case(october)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2023}, "expect_subset": {"start": "2023-10-01", "last_day": "2024-09-30"}},
+        {"op": "format", "args": {"period": {**year, "year": 2023, "index": None}}, "expect": {"label": "FY 2023-24", "scheme": "fy"}},
+    )]
+    october_citation = (
+        "\"Consequently, as a transitional measure, the last financial year of the Company i.e. FY 2024-26 was for a period of eighteen months from "
+        "October 1, 2024 to March 31, 2026, while the previous financial year i.e. FY 2023-24 was for a period of twelve months from October 1, 2023 to "
+        "September 30, 2024.\" (Directors' Report, p. 35) "
+        "Establishes the bounds and the label of FY 2023-24, the last year of the October to September calendar."
+    )
+    return [
+        vector(
+            "siemens-india-annual-report-2024-26-april",
+            "Siemens Limited Annual Report 2026 (eighteen-month financial year ended 31 March 2026): the April to March calendar that starts with FY 2026-27. "
+            "The week block, the calendar-month subdivision and the quarter structure are illustrative; only fields the document states are asserted.",
+            source("cited", april_citation, PDF_QUOTES_CHECKED, SIEMENS_URL), april, april_cases,
+        ),
+        vector(
+            "siemens-india-annual-report-2024-26-october",
+            "Siemens Limited Annual Report 2026: the October to September calendar the company followed until 30 September 2024. "
+            "The week block and the calendar-month subdivision are illustrative; only fields the document states are asserted.",
+            source("cited", october_citation, PDF_QUOTES_CHECKED, SIEMENS_URL), october, october_cases,
+        ),
+    ]
+
+
+def abb_india_vector() -> dict:
+    defn = fixed_date(1, 1, "monday", naming({
+        "cy": scheme("start", {"year": "CY {yyyy}", "quarter": "Q{q} CY{yyyy}"}),
+        "fy": scheme("start", {"year": "Financial Year {yyyy}"}),
+    }, default="cy"))
+    cal = Calendar(defn)
+    year = {"level": "year"}
+    q4 = {"level": "quarter", "year": 2025, "index": 4}
+    cases = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2025}, "expect_subset": {"start": "2025-01-01", "last_day": "2025-12-31"}},
+        {"op": "period", "args": {**year, "year": 2026}, "expect_subset": {"last_day": "2026-12-31"}},
+        {"op": "format", "args": {"period": {**year, "year": 2025, "index": None}}, "expect": {"label": "CY 2025", "scheme": "cy"}},
+        {"op": "format", "args": {"period": q4}, "expect": {"label": "Q4 CY2025", "scheme": "cy"}},
+        {"op": "parse", "args": {"label": "Q4 CY2025"}, "expect_subset": q4},
+    )]
+    citation = (
+        "\"This Report covers the financial and operational performance of ABB India Limited for the period January 01, 2025 to December 31, 2025, "
+        "unless otherwise stated.\" (PDF page 7, which prints no page number) "
+        "\"During CY 2025, ABB India delivered another solid year, surpassing its already strong CY 2024 performance.\" and "
+        "\"Q4 CY2025 alone saw a 52% surge in orders\" (Directors' Report, p. 96) "
+        "\"Ratification of remuneration to Cost Auditor of the Company for financial year ending December 31, 2026\" (p. 86). "
+        "Establishes the calendar-year financial year, the bounds of 2025, the end of 2026, and the labels CY 2025 and Q4 CY2025 as printed "
+        "(with a space after CY in the year label and none in the quarter label)."
+    )
+    return vector(
+        "abb-india-integrated-annual-report-2025",
+        "ABB India Limited Integrated Annual Report 2025 (financial year ended 31 December 2025). "
+        "The week block, the calendar-month subdivision and the quarter structure are illustrative; only fields the document states are asserted.",
+        source("cited", citation, PDF_QUOTES_CHECKED, ABB_URL), defn, cases,
+    )
+
+
 def cited_vectors() -> list[dict]:
     nrf = nrf_definition()
     cal = Calendar(nrf)
@@ -275,6 +359,8 @@ def cited_vectors() -> list[dict]:
     return [
         reliance_vector(),
         *pg_hygiene_vectors(),
+        *siemens_india_vectors(),
+        abb_india_vector(),
         vector("nrf-53-week-years", "NRF's published list of 53-week fiscal years, checked against the NRF 4-5-4 definition.",
                source("cited", nrf_citation, FETCHED, NRF_URL), nrf, nrf_cases),
         vector("apple-10q-2023-12-30", "Apple Inc. Form 10-Q for the quarter ended 30 December 2023. The definition's period pattern is illustrative; only fields the filing states are asserted.",

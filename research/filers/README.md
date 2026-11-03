@@ -16,7 +16,7 @@ Last reviewed: 3 Nov 2026
 
 ## Records
 
-Indian listed companies come first. Most report on a year from 1 April to 31 March; the records below also cover a company that moved from July to June, and two that moved from a calendar year, each through a transition period of other than twelve months. Spec version 1 cannot express a transition period, so those records give the regular years on either side and keep the transition as a candidate case for release 0.2.
+Indian listed companies come first. Most report on a year from 1 April to 31 March. The records below also cover a company on the calendar year, and four that moved to 1 April through a transition period of other than twelve months: from July to June (nine months), from October to September (eighteen months), and from the calendar year (fifteen months, twice). Spec version 1 cannot express a transition period, so those records give the regular years on either side and keep the transition as a candidate case for release 0.2.
 
 ### India
 
@@ -24,6 +24,8 @@ Indian listed companies come first. Most report on a year from 1 April to 31 Mar
 | --- | --- | --- | --- | --- |
 | [Reliance Industries](reliance.md) | Integrated Annual Report 2024-25 (financial year ended 31 March 2025) | 1 April to 31 March, labelled `FY 2024-25` | Quoted | `conformance/vectors/cited/reliance-annual-report-2024-25.json` |
 | [Procter & Gamble Hygiene and Health Care](pg-hygiene.md) | Annual Reports 2023-24, 2024-25 and 2025-26 | 1 July to 30 June until 30 June 2024; a nine-month 2024-25 from 1 July 2024 to 31 March 2025; then 1 April to 31 March | Quoted | `conformance/vectors/cited/pg-hygiene-annual-report-2025-26.json` and `pg-hygiene-annual-report-2023-24.json`; none for the nine-month year |
+| [ABB India](abb-india.md) | Integrated Annual Report 2025 (financial year ended 31 December 2025) | 1 January to 31 December, labelled `CY 2025` | Quoted | `conformance/vectors/cited/abb-india-integrated-annual-report-2025.json` |
+| [Siemens Limited (India)](siemens-india.md) | Annual Report 2026 (eighteen months ended 31 March 2026) | 1 October to 30 September until 30 September 2024; 18 months from 1 October 2024 to 31 March 2026; then 1 April to 31 March | Quoted | `conformance/vectors/cited/siemens-india-annual-report-2024-26-april.json` and `-october.json`; none for the 18-month year |
 | [Linde India](linde-india.md) | Annual Report 2022-23 (15 months ended 31 March 2023) | Calendar years until 2021; 15 months from 1 January 2022 to 31 March 2023; then 1 April to 31 March | Quoted | None; spec version 1 cannot express the transition period |
 | [Thomas Cook (India)](thomas-cook-india.md) | Annual Report 2014-2015 (fifteen months ended 31 March 2015) | Calendar years until 2013; 15 months from 1 January 2014 to 31 March 2015; then 1 April to 31 March | Quoted | None; spec version 1 cannot express the transition period |
 
