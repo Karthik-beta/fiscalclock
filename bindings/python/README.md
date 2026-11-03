@@ -29,7 +29,7 @@ A 4-5-4 calendar whose year ends on the Saturday nearest 31 January:
 import datetime as dt
 from fiscalclock import FiscalCalendar
 
-cal = FiscalCalendar({
+definition = {
     "spec_version": 1,
     "year": {"type": "week_based",
              "anchor": {"edge": "end", "month": 1, "day": "last", "rule": "nearest"}},
@@ -38,7 +38,8 @@ cal = FiscalCalendar({
                     "quarters": [3, 3, 3, 3], "extra_week": {"period": 12}},
     "naming": {"default": "fy", "schemes": {"fy": {"year_number": "start",
                "templates": {"year": "FY{yyyy}", "quarter": "Q{q} FY{yyyy}"}}}},
-})
+}
+cal = FiscalCalendar(definition)
 
 fy2023 = cal.period("year", 2023)
 assert fy2023.start == dt.date(2023, 1, 29)
@@ -52,13 +53,73 @@ assert cal.parse("Q4 FY2023") == here.quarter
 
 ## API
 
-`FiscalCalendar(definition)` takes a JSON string or a mapping and raises `FiscalclockError` if the definition is invalid. Its methods are `locate`, `period`, `shift`, `parent`, `children`, `years`, `format`, `parse`, `dimension`, `dimension_csv` and `explain`, as described in [`spec/api-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md).
+`FiscalCalendar(definition)` takes a JSON string or a mapping, validates it once, and raises `FiscalclockError` if it is invalid. The operations are specified in [`spec/api-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md).
 
+| Member | Returns |
+| --- | --- |
+| `locate(date)` | The `Location` of `date`: its year, quarter, period and week. |
+| `period(level, year, index=None)` | The `Period` with those coordinates. Omit `index` for a year. |
+| `shift(period, n)` | The `Period` `n` steps away at the same level. |
+| `parent(period)` | The enclosing `Period` one level up. |
+| `children(period, level)` | A `list[Period]` of the periods at `level` inside `period`. |
+| `years(first, last)` | A `list[Period]` of the years numbered `first` to `last`, inclusive. |
+| `format(period, scheme=None)` | The label, a `str`, under `scheme` or the default scheme. |
+| `parse(label)` | The `Period` that `label` names. |
+| `dimension(start, end_exclusive)` | A `list[dict]`, one row per day, with dates as ISO strings, ready for a data frame. |
+| `dimension_csv(start, end_exclusive)` | The same rows as CSV text. |
+| `explain(date)` | A `dict` with the rules applied to locate `date`, step by step. |
+| `call_json(op, args)` | The core's JSON text for operation `op` with the JSON text `args`. |
+| `calendar_id` | A `str`: the first 16 hex digits of the SHA-256 of `canonical_json`. |
+| `canonical_json` | A `str`: the canonical form of the definition. |
+
+- `level` is `"year"`, `"quarter"`, `"period"` or `"week"`.
+- `date`, `start` and `end_exclusive` are a `datetime.date` or an ISO `YYYY-MM-DD` string (see [Dates](#dates)).
+- `period` is a `Period`, or a mapping with its `level`, `year` and `index`.
 - `Period` and `Location` are frozen dataclasses with `datetime.date` fields. Every period is the half-open interval `[start, end_exclusive)`, and `last_day` is the day before `end_exclusive`.
-- `dimension` returns a list of dicts with dates as ISO strings, ready for a data frame.
-- `call_json(op, args)` and the module-level `call_json` and `validate_json` take and return JSON text exactly as the core produces it.
-- `validate(definition)` returns the validation result as a dict and does not raise.
-- `FiscalclockError` is a `ValueError` with the stable `code`, the JSON `path`, `message`, `hint` and `details` of the first error, and `errors` holding all of them.
+
+The module also has three functions that take a definition on each call:
+
+- `validate(definition)` takes a JSON string or a mapping and returns the validation result as a dict. It does not raise.
+- `validate_json(definition)` takes definition text and returns the core's JSON text.
+- `call_json(definition, op, args)` takes definition text, an operation name and argument text, and returns the core's JSON text.
+
+The JSON text from `call_json` and `validate_json` is exactly what the core produces, byte for byte the same as in Rust and JavaScript:
+
+```python
+import json
+from fiscalclock import call_json
+
+args = '{"period":{"level":"quarter","year":2023,"index":4}}'
+print(cal.call_json("format", args))
+print(call_json(json.dumps(definition), "format", args))
+# {"label":"Q4 FY2023","scheme":"fy"}
+# {"label":"Q4 FY2023","scheme":"fy"}
+```
+
+## Errors
+
+`FiscalclockError` is a `ValueError`. Its `code`, `path`, `message`, `hint` and `details` describe the first error, and `errors` holds every error as a dict, because validation can report several. `message` is the core's message; `str(error)` combines the code, path, message and hint. Match on `code` and `path`, not on the wording of `message` or `hint`. The codes are listed in the [error catalogue](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue).
+
+When a label matches more than one period, `parse` raises `AMBIGUOUS_LABEL` with every candidate in `details["candidates"]`, and never picks one:
+
+```python
+from fiscalclock import FiscalclockError
+
+two_schemes = FiscalCalendar({**definition, "naming": {"default": "by_start", "schemes": {
+    "by_start": {"year_number": "start", "templates": {"year": "FY{yyyy}"}},
+    "by_end": {"year_number": "end", "templates": {"year": "FY{yyyy}"}},
+}}})
+
+try:
+    two_schemes.parse("FY2024")
+except FiscalclockError as error:
+    print(error.code, error.path)
+    for candidate in error.details["candidates"]:
+        print(candidate["scheme"], candidate["period"]["start"])
+# AMBIGUOUS_LABEL label
+# by_end 2023-01-29
+# by_start 2024-02-04
+```
 
 ## Dates
 
@@ -66,7 +127,7 @@ Date arguments accept only an object whose type is exactly `datetime.date`, or a
 
 ## How the results are checked
 
-- 282 shared conformance vector files (10,483 cases) are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
+- Shared conformance vectors are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
 - Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
 - Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
 - On every push, CI runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.

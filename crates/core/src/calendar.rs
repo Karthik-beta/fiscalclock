@@ -121,23 +121,56 @@ const MAX_DIMENSION_DAYS: i32 = 146_097;
 
 impl FiscalCalendar {
     /// Validates a JSON definition and builds the calendar.
+    ///
+    /// # Errors
+    ///
+    /// Returns every validation error found, sorted by path and then code. Any
+    /// code the error catalogue lists as raised by `validate` can appear, from
+    /// `INVALID_JSON` to `MAJORITY_TIE`.
     pub fn from_json(definition: &str) -> Result<FiscalCalendar, Errors> {
-        Definition::from_json(definition).map(FiscalCalendar::new)
+        Definition::parse(definition)
+            .and_then(FiscalCalendar::numbered)
+            .map(FiscalCalendar::with_identity)
     }
 
     /// Builds the calendar from a validated definition.
     pub fn new(def: Definition) -> FiscalCalendar {
-        let canonical = def.canonical_json();
-        let id = crate::definition::calendar_id_of(&canonical);
+        FiscalCalendar::with_range(def).with_identity()
+    }
+
+    /// Builds the calendar from a parsed definition, checking that every scheme
+    /// numbers the supported fiscal years uniquely and recording each scheme's
+    /// shift. The canonical form and `calendar_id` are not computed yet.
+    pub(crate) fn numbered(def: Definition) -> Result<FiscalCalendar, Errors> {
+        let mut cal = FiscalCalendar::with_range(def);
+        let shifts = cal.scheme_shifts().map_err(Errors::sorted)?;
+        for (scheme, shift) in cal.def.schemes.iter_mut().zip(shifts) {
+            scheme.shift = shift;
+        }
+        Ok(cal)
+    }
+
+    fn with_identity(mut self) -> FiscalCalendar {
+        self.canonical = self.def.canonical_json();
+        self.id = crate::definition::calendar_id_of(&self.canonical);
+        self
+    }
+
+    /// The calendar with its supported range worked out and no identity yet.
+    fn with_range(def: Definition) -> FiscalCalendar {
         let mut cal = FiscalCalendar {
             def,
-            canonical,
-            id,
+            canonical: String::new(),
+            id: String::new(),
             min_key: Key(0),
             max_key: Key(0),
         };
+        // A supported fiscal year must lie wholly inside the date range, so
+        // that its `end_exclusive` is representable. Year boundaries move a few
+        // days either side of 1 January, so the first and last supported keys
+        // are searched for rather than assumed.
         let first_day = Date::civil(1, 1, 2);
-        let end_limit = Date::civil(9999, 12, 31);
+        let end_limit = Date::MAX;
         cal.min_key = (-3..=5)
             .map(Key)
             .find(|&k| cal.year_bounds(k).0 >= first_day)
@@ -320,13 +353,14 @@ impl FiscalCalendar {
             match self.rule_shift(scheme.year_number) {
                 Ok(shift) => shifts.push(shift),
                 Err(problems) => {
-                    let alternative = [YearNumber::Start, YearNumber::End, YearNumber::Majority]
-                        .into_iter()
+                    let alternative = YearNumber::ALL
+                        .iter()
+                        .copied()
                         .find(|&r| r != scheme.year_number && self.rule_shift(r).is_ok());
                     let hint = match alternative {
                         Some(alt) => format!(
                             "use \"year_number\": \"{}\", which numbers every fiscal year in the range uniquely",
-                            year_number_name(alt)
+                            alt.name()
                         ),
                         None => String::from(
                             "no year_number rule numbers this calendar uniquely; table numbering is planned for fiscalclock 0.2",
@@ -344,7 +378,7 @@ impl FiscalCalendar {
                             (
                                 format!(
                                     "year_number \"{}\" gives two fiscal years the same number, or skips a number, within the supported range",
-                                    year_number_name(scheme.year_number)
+                                    scheme.year_number.name()
                                 ),
                                 years
                                     .into_iter()
@@ -375,7 +409,7 @@ impl FiscalCalendar {
         i64::from(key.0) + scheme.shift + i64::from(scheme.offset)
     }
 
-    fn default_scheme(&self) -> &Scheme {
+    pub(crate) fn default_scheme(&self) -> &Scheme {
         &self.def.schemes[self.def.default_scheme]
     }
 
@@ -427,8 +461,11 @@ impl FiscalCalendar {
     }
 
     fn has_extra(&self, key: Key) -> bool {
+        if !matches!(self.def.structure, Structure::WeekBased(_)) {
+            return false;
+        }
         let (s, e) = self.year_bounds(key);
-        matches!(self.def.structure, Structure::WeekBased(_)) && s.days_until(e) == 371
+        s.days_until(e) == 371
     }
 
     /// Weeks before period `k` and weeks in it, in a week-based year.
@@ -551,7 +588,7 @@ impl FiscalCalendar {
         }
     }
 
-    /// Resolves coordinates to a key and index, with errors under `prefix`.
+    /// Resolves coordinates to a key and index.
     fn resolve(
         &self,
         level: Level,
@@ -603,11 +640,21 @@ impl FiscalCalendar {
     }
 
     /// Where `date` falls at every level.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `date` when the fiscal year containing `date` is
+    /// outside the supported range.
     pub fn locate(&self, date: Date) -> Result<Location, Error> {
         self.locate_at(date, "date")
     }
 
     pub(crate) fn locate_at(&self, date: Date, path: &str) -> Result<Location, Error> {
+        self.locate_keyed(date, path).map(|(_, loc)| loc)
+    }
+
+    /// Like [`Self::locate_at`], also returning the fiscal year's key.
+    pub(crate) fn locate_keyed(&self, date: Date, path: &str) -> Result<(Key, Location), Error> {
         let key = self.key_of(date);
         if !self.in_range(key) {
             return Err(out_of_range(
@@ -639,7 +686,7 @@ impl FiscalCalendar {
         let period = self.make(Level::Period, key, Some(pi));
         let week = self.make(Level::Week, key, Some(wi));
         let day_of = |p: &Period| p.start.days_until(date) as u32 + 1;
-        Ok(Location {
+        let location = Location {
             date,
             day_of_year: day_of(&year),
             day_of_quarter: day_of(&quarter),
@@ -649,16 +696,30 @@ impl FiscalCalendar {
             quarter,
             period,
             week,
-        })
+        };
+        Ok((key, location))
     }
 
     /// The period with the given coordinates. `index` is `None` for a year.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `year` when the fiscal year is outside the supported
+    /// range. `INVALID_ARGUMENT` at `index` when a year is given an index or any
+    /// other level none. `PERIOD_NOT_FOUND` at `index` when the year has no such
+    /// quarter, period or week.
     pub fn period(&self, level: Level, year: i32, index: Option<u32>) -> Result<Period, Error> {
         let (key, index) = self.resolve(level, year, index)?;
         Ok(self.make(level, key, index))
     }
 
     /// The period `n` steps away at the same level, crossing years as needed.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period, and `OUT_OF_RANGE` at `n` when the
+    /// result lies outside the supported range.
     pub fn shift(&self, period: &Period, n: i64) -> Result<Period, Error> {
         let (key, index) = self.reresolve(period)?;
         let level = period.level;
@@ -695,7 +756,7 @@ impl FiscalCalendar {
                 }
                 Structure::FixedDate(_) => {
                     let span = i64::from(self.max_key.0 - self.min_key.0 + 1) * 54;
-                    if n.abs() > span {
+                    if n.unsigned_abs() > span.unsigned_abs() {
                         return Err(oor());
                     }
                     let mut key = key;
@@ -721,6 +782,11 @@ impl FiscalCalendar {
     }
 
     /// The enclosing period one level up. A year has no parent.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` or `PERIOD_NOT_FOUND` at `period` when its coordinates do
+    /// not name a period, and `INVALID_ARGUMENT` at `period` for a year.
     pub fn parent(&self, period: &Period) -> Result<Period, Error> {
         let (key, index) = self.reresolve(period)?;
         let i = index.unwrap_or(1);
@@ -743,6 +809,13 @@ impl FiscalCalendar {
     }
 
     /// The periods at `level` inside `period`, in order.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period. `LEVEL_NOT_NESTED` at `level` when
+    /// `level` is not below the period's level, or when asking for the weeks of
+    /// a quarter or period in a `fixed_date` year.
     pub fn children(&self, period: &Period, level: Level) -> Result<Vec<Period>, Error> {
         let (key, index) = self.reresolve(period)?;
         let fixed = matches!(self.def.structure, Structure::FixedDate(_));
@@ -791,6 +864,12 @@ impl FiscalCalendar {
     }
 
     /// The year periods with year numbers `from` to `to` inclusive, at most 10,000.
+    ///
+    /// # Errors
+    ///
+    /// `INVALID_ARGUMENT` at `to` when `from` is after `to` or more than 10,000
+    /// years are requested. `OUT_OF_RANGE` at `from` or `to` when that year is
+    /// outside the supported range.
     pub fn years(&self, from: i32, to: i32) -> Result<Vec<Period>, Error> {
         if from > to {
             return Err(Error::new(
@@ -826,13 +905,9 @@ impl FiscalCalendar {
                 .iter()
                 .find(|s| s.name == n)
                 .ok_or_else(|| {
-                    let mut names = String::new();
-                    for s in &self.def.schemes {
-                        if !names.is_empty() {
-                            names.push_str(", ");
-                        }
-                        names.push_str(&s.name);
-                    }
+                    let names: Vec<&str> =
+                        self.def.schemes.iter().map(|s| s.name.as_str()).collect();
+                    let names = names.join(", ");
                     Error::new(
                         ErrorCode::SchemeNotFound,
                         "scheme",
@@ -843,13 +918,25 @@ impl FiscalCalendar {
         }
     }
 
-    /// The name of the scheme `format` uses for `scheme`, checking that it exists.
-    pub(crate) fn scheme_name(&self, name: Option<&str>) -> Result<&str, Error> {
-        self.scheme(name).map(|s| s.name.as_str())
+    /// The label of `period` under `scheme`, or the default scheme when `None`.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period. `SCHEME_NOT_FOUND` at `scheme`.
+    /// `TEMPLATE_MISSING` at `period` when the scheme has no template for the
+    /// level. `OUT_OF_RANGE` at `period` when `{yyyy}` would need a year number
+    /// outside 1 to 9999.
+    pub fn format(&self, period: &Period, scheme: Option<&str>) -> Result<String, Error> {
+        self.format_labeled(period, scheme).map(|(label, _)| label)
     }
 
-    /// The label of `period` under `scheme`, or the default scheme when `None`.
-    pub fn format(&self, period: &Period, scheme: Option<&str>) -> Result<String, Error> {
+    /// Like [`Self::format`], also returning the name of the scheme it used.
+    pub(crate) fn format_labeled(
+        &self,
+        period: &Period,
+        scheme: Option<&str>,
+    ) -> Result<(String, &str), Error> {
         let (key, index) = self.reresolve(period)?;
         let s = self.scheme(scheme)?;
         let Some(t) = &s.templates[period.level.index()] else {
@@ -864,13 +951,14 @@ impl FiscalCalendar {
             ));
         };
         let number = self.number(key, s);
-        t.render(number, index).ok_or_else(|| {
+        let label = t.render(number, index).ok_or_else(|| {
             out_of_range(
                 "period",
                 format!("year number {number} under scheme \"{}\"", s.name),
             )
             .hint("{yyyy} formats year numbers from 1 to 9999")
-        })
+        })?;
+        Ok((label, s.name.as_str()))
     }
 
     pub(crate) fn label_for(
@@ -878,6 +966,7 @@ impl FiscalCalendar {
         scheme: &Scheme,
         level: Level,
         loc: &Location,
+        key: Key,
     ) -> Option<String> {
         let t = scheme.templates[level.index()].as_ref()?;
         let p = match level {
@@ -886,11 +975,17 @@ impl FiscalCalendar {
             Level::Period => &loc.period,
             Level::Week => &loc.week,
         };
-        let key = self.key_of(loc.date);
         t.render(self.number(key, scheme), p.index)
     }
 
     /// The period a label denotes. Reports every match rather than choosing one.
+    ///
+    /// # Errors
+    ///
+    /// `LABEL_NOT_RECOGNISED` at `label` when no template matches.
+    /// `AMBIGUOUS_LABEL` at `label` when more than one period matches, with
+    /// every candidate in [`Details::Candidates`]. `OUT_OF_RANGE` at `label` when
+    /// every match names a fiscal year outside the supported range.
     pub fn parse(&self, label: &str) -> Result<Period, Error> {
         let mut candidates: Vec<Candidate> = Vec::new();
         let mut out_of_range_year = false;
@@ -1044,12 +1139,4 @@ pub(crate) fn out_of_range(path: impl Into<String>, what: String) -> Error {
         format!("{what} is outside the supported range"),
     )
     .hint("fiscalclock supports fiscal years that lie wholly between 0001-01-02 and 9999-12-30")
-}
-
-fn year_number_name(rule: YearNumber) -> &'static str {
-    match rule {
-        YearNumber::Start => "start",
-        YearNumber::End => "end",
-        YearNumber::Majority => "majority",
-    }
 }

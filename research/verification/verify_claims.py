@@ -29,10 +29,6 @@ def weekday_on_or_before(d: date, weekday: int) -> date:
     return d - timedelta(days=(d.weekday() - weekday) % 7)
 
 
-def weekday_on_or_after(d: date, weekday: int) -> date:
-    return d + timedelta(days=(weekday - d.weekday()) % 7)
-
-
 def weekday_nearest(d: date, weekday: int) -> date:
     before = weekday_on_or_before(d, weekday)
     return before if (d - before).days <= 3 else before + timedelta(days=7)
