@@ -38,7 +38,7 @@ export default defineEcConfig({
   // scrolling (WCAG scrollable-region-focusable) at any width or font timing.
   defaultProps: { wrap: true, preserveIndent: true },
   styleOverrides: {
-    borderRadius: "var(--fc-radius-md)",
+    borderRadius: "var(--fc-radius-lg)",
     borderColor: "var(--fc-color-border-default)",
     borderWidth: "var(--fc-border-width-thin)",
     codeBackground: "var(--fc-color-code-bg)",

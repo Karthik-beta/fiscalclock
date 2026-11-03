@@ -138,3 +138,58 @@ site-search button[data-open-modal] > kbd {
     outline-offset: 2px;
   }
 }
+
+/*
+ * DD-037: the modern setting of the docs chrome. Headings take the token
+ * tracking, the header is translucent over the page, and the current page in
+ * the sidebar is marked with a tint and an accent bar instead of a solid block.
+ */
+.sl-markdown-content :is(h1, h2, h3):not(:where(.not-content *)),
+h1#_top {
+  font-weight: var(--fc-font-weight-semibold);
+  text-wrap: balance;
+}
+
+h1#_top {
+  letter-spacing: var(--fc-type-heading-1-letter-spacing);
+}
+
+.sl-markdown-content h2:not(:where(.not-content *)) {
+  letter-spacing: var(--fc-type-heading-2-letter-spacing);
+}
+
+.sl-markdown-content h3:not(:where(.not-content *)) {
+  letter-spacing: var(--fc-type-heading-3-letter-spacing);
+}
+
+header.header {
+  background: color-mix(in srgb, var(--fc-color-bg-default) 85%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.sidebar-content a {
+  border-radius: var(--fc-radius-lg);
+}
+
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover {
+  background: var(--fc-color-bg-accent-subtle);
+  color: var(--fc-color-text-default);
+  font-weight: var(--fc-font-weight-semibold);
+  box-shadow: none;
+  outline: 0;
+  border-inline-start: var(--fc-border-width-thick) solid var(--fc-color-accent-default);
+}
+
+site-search button[data-open-modal] {
+  border-radius: var(--fc-radius-lg);
+}
+
+.sl-markdown-content :is(.starlight-aside, details):not(:where(.not-content *)) {
+  border-radius: var(--fc-radius-lg);
+}
+
+.pagination-links a {
+  border-radius: var(--fc-radius-xl);
+  box-shadow: none;
+}

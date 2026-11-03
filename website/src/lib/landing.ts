@@ -32,6 +32,13 @@ export const yearLabel = cal.format(year);
 const askOutputs = { python: askPy, javascript: askJs, rust: askRs };
 export const askOutput = askPy.replace(/\r\n/g, "\n").replace(/\n$/, "");
 
+// Counted as the README counts them: every vector file with a cases array.
+const vectors = Object.values(
+  import.meta.glob<{ cases?: unknown[] }>("../../../conformance/vectors/**/*.json", { eager: true, import: "default" }),
+).filter((v) => Array.isArray(v.cases));
+export const vectorFiles = vectors.length.toLocaleString("en");
+export const vectorCases = vectors.reduce((n, v) => n + v.cases!.length, 0).toLocaleString("en");
+
 crossCheck();
 
 function crossCheck(): void {

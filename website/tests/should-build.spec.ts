@@ -71,13 +71,13 @@ const LAST_COMMIT_CASES: [string, number][] = [
   ["docs/examples/retail-4-5-4.json", BUILD],
   ["design/tokens/primitives.tokens.json", SKIP],
   ["spec/README.md", SKIP],
-  ["conformance/vectors/oracle/iso-week.json", SKIP],
+  ["conformance/vectors/oracle/iso-week.json", BUILD],
   ["docs/README.md", SKIP],
   ["bindings/js/package.json", SKIP],
   ["crates/core/src/lib.rs", SKIP],
   ["bindings/js/src/index.ts", SKIP],
   ["bindings/python/pyproject.toml", SKIP],
-  ["conformance/vectors/generated/iso.json", SKIP],
+  ["conformance/vectors/generated/iso.json", BUILD],
   ["README.md", SKIP],
 ];
 

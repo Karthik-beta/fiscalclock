@@ -1,0 +1,95 @@
+---
+/**
+ * The landing page's first screen (DD-038): the headline, the install command
+ * and a live date lookup. The first answer is computed at build time, so it is
+ * in the HTML; the browser loads fiscalclock's WebAssembly only when a
+ * visitor changes the date or the calendar.
+ */
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import * as fiscalclock from "fiscalclock";
+import site from "../../package.json";
+import { examples, shortLabel } from "../lib/examples";
+import { lookup, renderLookup } from "../lib/lookup";
+
+const DATE = "2024-02-03";
+const first = examples[0]!;
+const answer = renderLookup(lookup(fiscalclock, first.definition, DATE));
+const choices = examples.map((e) => ({ name: e.name, label: shortLabel(e), url: e.url, definition: e.definition }));
+---
+
+<section class="hero not-content" aria-labelledby="_top">
+  <div class="hero-copy">
+    <h1 id="_top">Fiscal calendars, defined as data.</h1>
+    <p class="hero-summary">
+      Describe your fiscal calendar as JSON. fiscalclock tells you which fiscal year, quarter, period and week any date
+      falls in, with the bounds and labels of each. One Rust core gives the same answer in Python, JavaScript and Rust.
+    </p>
+    <Tabs syncKey="lang">
+      <TabItem label="Python"><Code code="pip install fiscalclock" lang="sh" frame="none" /></TabItem>
+      <TabItem label="JavaScript"><Code code="npm install fiscalclock" lang="sh" frame="none" /></TabItem>
+      <TabItem label="Rust"><Code code="cargo add fiscalclock" lang="sh" frame="none" /></TabItem>
+    </Tabs>
+    <p class="hero-actions">
+      <a class="hero-primary" href="/start-here/quick-start/">Get started</a>
+      <a class="hero-secondary" href="#for-ai-agents">For AI agents</a>
+    </p>
+  </div>
+
+  <form class="lookup" aria-labelledby="lookup-heading" data-lookup>
+    <h2 id="lookup-heading">Try a date</h2>
+    <div class="lookup-fields">
+      <label>
+        <span>Date (YYYY-MM-DD)</span>
+        <input name="date" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value={DATE} />
+      </label>
+      <label>
+        <span>Calendar</span>
+        <select name="calendar">
+          {choices.map((c) => <option value={c.name}>{c.label}</option>)}
+        </select>
+      </label>
+    </div>
+    <div class="lookup-answer" role="status" aria-live="polite" set:html={answer} />
+    <p class="lookup-note">
+      Computed by fiscalclock {site.dependencies.fiscalclock}, in your browser as WebAssembly once you change a
+      value.{" "}<a class="lookup-source" href={first.url}>Source of this calendar</a>.
+      These are example definitions, not built in.
+    </p>
+    <script is:inline type="application/json" data-lookup-calendars set:html={JSON.stringify(choices).replaceAll("<", "\\u003c")} />
+  </form>
+</section>
+
+<script>
+  import { lookup, renderLookup } from "../lib/lookup";
+
+  interface Choice {
+    name: string;
+    url: string;
+    definition: Record<string, unknown>;
+  }
+
+  const form = document.querySelector<HTMLFormElement>("[data-lookup]")!;
+  const choices: Choice[] = JSON.parse(form.querySelector("[data-lookup-calendars]")!.textContent!);
+  const answer = form.querySelector<HTMLElement>(".lookup-answer")!;
+  const source = form.querySelector<HTMLAnchorElement>(".lookup-source")!;
+  const date = form.elements.namedItem("date") as HTMLInputElement;
+  const calendar = form.elements.namedItem("calendar") as HTMLSelectElement;
+
+  let timer: number | undefined;
+  async function update(): Promise<void> {
+    const fiscalclock = await import("fiscalclock");
+    const choice = choices.find((c) => c.name === calendar.value)!;
+    source.href = choice.url;
+    const result = lookup(fiscalclock, choice.definition, date.value.trim());
+    date.setAttribute("aria-invalid", String(!result.ok));
+    answer.innerHTML = renderLookup(result);
+  }
+
+  form.addEventListener("submit", (event) => event.preventDefault());
+  calendar.addEventListener("change", update);
+  // Answers once typing pauses, so a screen reader hears one result, not one per keystroke.
+  date.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = window.setTimeout(update, 250);
+  });
+</script>

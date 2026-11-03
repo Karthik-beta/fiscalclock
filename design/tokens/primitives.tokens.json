@@ -317,7 +317,7 @@
       "$type": "fontFamily",
       "sans": {
         "$value": [
-          "IBM Plex Sans",
+          "Mona Sans",
           "system-ui",
           "-apple-system",
           "Segoe UI",
@@ -400,6 +400,12 @@
           "value": 3,
           "unit": "rem"
         }
+      },
+      "5xl": {
+        "$value": {
+          "value": 3.75,
+          "unit": "rem"
+        }
       }
     },
     "line-height": {
@@ -412,6 +418,9 @@
       },
       "body": {
         "$value": 1.6
+      },
+      "display": {
+        "$value": 1.05
       }
     }
   },
@@ -496,6 +505,18 @@
     "md": {
       "$value": {
         "value": 6,
+        "unit": "px"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "xl": {
+      "$value": {
+        "value": 12,
         "unit": "px"
       }
     },
@@ -647,14 +668,26 @@
         "lineHeight": "{font.line-height.snug}"
       }
     },
+    "display": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "{font.size.5xl}",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": {
+          "value": -0.14,
+          "unit": "rem"
+        },
+        "lineHeight": "{font.line-height.display}"
+      }
+    },
     "heading-1": {
       "$value": {
         "fontFamily": "{font.family.sans}",
         "fontSize": "{font.size.3xl}",
         "fontWeight": "{font.weight.semibold}",
         "letterSpacing": {
-          "value": 0,
-          "unit": "px"
+          "value": -0.06,
+          "unit": "rem"
         },
         "lineHeight": "{font.line-height.tight}"
       }
@@ -665,8 +698,8 @@
         "fontSize": "{font.size.2xl}",
         "fontWeight": "{font.weight.semibold}",
         "letterSpacing": {
-          "value": 0,
-          "unit": "px"
+          "value": -0.03,
+          "unit": "rem"
         },
         "lineHeight": "{font.line-height.tight}"
       }
@@ -677,8 +710,8 @@
         "fontSize": "{font.size.xl}",
         "fontWeight": "{font.weight.semibold}",
         "letterSpacing": {
-          "value": 0,
-          "unit": "px"
+          "value": -0.01,
+          "unit": "rem"
         },
         "lineHeight": "{font.line-height.snug}"
       }

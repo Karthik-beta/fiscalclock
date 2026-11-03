@@ -1,4 +1,10 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+
+interface VectorFile {
+  cases: { op: string; args: Record<string, unknown>; expect_subset?: Record<string, unknown> }[];
+}
+const apple = JSON.parse(readFileSync(new URL("../../conformance/vectors/cited/apple-10q-2023-12-30.json", import.meta.url), "utf8")) as VectorFile;
 
 test("the landing page draws fiscal 2023 to scale with its 12 periods and the extra week", async ({ page }) => {
   await page.goto("/");
@@ -15,17 +21,35 @@ test("the landing page draws fiscal 2023 to scale with its 12 periods and the ex
   await expect(page.locator(".strip-figure tbody tr")).toHaveCount(12);
 });
 
-test("at 1280 by 800 pixels the year strip starts on the first screen, beside a definition that is not wrapped", async ({ page }) => {
+test("at 1280 by 800 pixels the date lookup and its first answer fit on the first screen", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/");
   await page.evaluate(() => document.fonts.ready);
-  const strip = page.getByRole("img", { name: /^FY2023: / });
-  expect((await strip.boundingBox())!.y).toBeLessThan(800);
+  const lookup = page.getByRole("form", { name: "Try a date" });
+  const box = (await lookup.boundingBox())!;
+  expect(box.y + box.height).toBeLessThan(800);
+  await expect(lookup.getByRole("row", { name: /^quarter/i })).toContainText("[2023-10-29, 2024-02-04)");
+});
 
-  const code = page.locator(".landing-definition pre");
-  const heights = await code.locator(".ec-line").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height));
-  expect(new Set(heights).size, "every line of the definition is one row high").toBe(1);
-  expect(JSON.parse((await code.locator(".ec-line").allTextContents()).join("\n"))).toMatchObject({ spec_version: 1, subdivision: { extra_week: { period: 12 } } });
+test("changing the calendar answers in the browser, matching the cited filing", async ({ page }) => {
+  const quarter = apple.cases.find((c) => c.op === "period" && c.args.level === "quarter" && c.args.year === 2024 && c.args.index === 1)!;
+  const lastDay = quarter.expect_subset!.last_day as string;
+  const endExclusive = new Date(Date.parse(lastDay) + 86_400_000).toISOString().slice(0, 10);
+
+  const wasm: string[] = [];
+  page.on("request", (request) => request.url().endsWith(".wasm") && wasm.push(request.url()));
+  await page.goto("/", { waitUntil: "networkidle" });
+  expect(wasm, "no WebAssembly before the visitor asks").toEqual([]);
+
+  const lookup = page.getByRole("form", { name: "Try a date" });
+  await lookup.getByLabel("Calendar").selectOption({ label: "Apple, 52/53-week year" });
+  await lookup.getByLabel("Date (YYYY-MM-DD)").fill(lastDay);
+  await expect(lookup.getByRole("row", { name: /^quarter/i })).toContainText(`, ${endExclusive})`);
+  expect(wasm).toHaveLength(1);
+
+  await lookup.getByLabel("Date (YYYY-MM-DD)").fill("2023-02-30");
+  await expect(lookup.getByText("INVALID_DATE")).toBeVisible();
+  await expect(lookup.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "true");
 });
 
 for (const [width, shown] of [[375, true], [1280, false]] as const) {

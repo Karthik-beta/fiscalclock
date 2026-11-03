@@ -1,86 +1,273 @@
 /* Landing page only: imported by src/content/docs/index.mdx. */
 
 /* The splash template has no sidebar; give the hero and the year strip the width. */
-:root:has(.landing-top) {
-  --sl-content-width: 70rem;
+:root:has(.hero) {
+  --sl-content-width: 72rem;
 }
 
-/* The title and the content sit in two panels; on this page they read as one. */
-:root:has(.landing-top) .content-panel + .content-panel {
-  border-top: 0;
-  padding-top: 0;
+/* The hero holds the headline, so the empty title panel above it goes. */
+:root:has(.hero) main .content-panel:not(:has(.sl-markdown-content)) {
+  display: none;
 }
 
-:root:has(.landing-top) h1#_top {
-  max-width: 15em;
-  margin-top: var(--fc-space-6);
-  font-size: clamp(var(--fc-font-size-3xl), 2rem + 2vw, var(--fc-font-size-4xl));
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.landing-top {
+.hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--fc-space-6);
-  align-items: start;
+  gap: var(--fc-space-7);
+  align-items: center;
+  padding-block: var(--fc-space-7) var(--fc-space-6);
 }
 
 @media (min-width: 64rem) {
-  .landing-top {
-    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-    gap: var(--fc-space-7);
+  .hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    gap: var(--fc-space-8);
+    padding-block: var(--fc-space-8) var(--fc-space-7);
   }
 }
 
-.landing-intro > * + * {
+.hero-copy > * + * {
   margin-top: var(--fc-space-5);
 }
 
-.landing-summary {
-  max-width: 34em;
-  font-size: var(--fc-font-size-lg);
-  line-height: var(--fc-font-line-height-body);
+.hero h1 {
+  max-width: 11em;
   color: var(--fc-color-text-default);
+  font-family: var(--fc-type-display-font-family);
+  font-size: clamp(var(--fc-font-size-3xl), 1.6rem + 3.2vw, var(--fc-type-display-font-size));
+  font-weight: var(--fc-type-display-font-weight);
+  line-height: var(--fc-type-display-line-height);
+  letter-spacing: var(--fc-type-display-letter-spacing);
+  text-wrap: balance;
 }
 
-.landing-actions {
+.hero-summary {
+  max-width: 34em;
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-font-size-lg);
+  line-height: var(--fc-font-line-height-body);
+  text-wrap: pretty;
+}
+
+.hero-copy starlight-tabs {
+  max-width: 30rem;
+}
+
+.hero-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--fc-space-4) var(--fc-space-5);
+  gap: var(--fc-space-3);
 }
 
-.landing-actions a {
+.hero-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding-inline: var(--fc-space-5);
+  border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  border-radius: var(--fc-radius-lg);
   color: var(--fc-color-text-default);
-  text-decoration-line: underline;
-  text-decoration-color: var(--fc-color-accent-default);
-  text-decoration-thickness: var(--fc-border-width-thin);
-  text-underline-offset: 0.2em;
-}
-
-.landing-actions a.landing-primary {
-  padding: var(--fc-space-2) var(--fc-space-4);
-  border-radius: var(--fc-radius-md);
-  background: var(--fc-color-accent-default);
-  color: var(--fc-color-text-on-accent);
   font-weight: var(--fc-font-weight-semibold);
   text-decoration: none;
+  transition: border-color var(--fc-duration-fast), background-color var(--fc-duration-fast);
 }
 
-.landing-actions a.landing-primary:hover {
+.hero-actions a:hover {
+  border-color: var(--fc-color-border-strong);
+}
+
+.hero-actions .hero-primary {
+  border-color: var(--fc-color-accent-default);
+  background: var(--fc-color-accent-default);
+  color: var(--fc-color-text-on-accent);
+}
+
+.hero-actions .hero-primary:hover {
+  border-color: var(--fc-color-accent-hover);
   background: var(--fc-color-accent-hover);
 }
 
-.landing-label {
-  margin-bottom: var(--fc-space-3);
+/* The live lookup: the one raised panel on the first screen (DD-042). */
+.lookup {
+  padding: var(--fc-space-5);
+  border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  border-radius: var(--fc-radius-xl);
+  background: var(--fc-color-bg-raised);
+}
+
+.lookup h2 {
+  color: var(--fc-color-text-default);
+  font-size: var(--fc-font-size-md);
+  font-weight: var(--fc-font-weight-semibold);
+}
+
+.lookup-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--fc-space-3);
+  margin-top: var(--fc-space-4);
+}
+
+.lookup-fields label {
+  display: grid;
+  gap: var(--fc-space-1);
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-type-small-font-size);
+}
+
+.lookup-fields input,
+.lookup-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding-inline: var(--fc-space-3);
+  border: var(--fc-border-width-thin) solid var(--fc-color-border-strong);
+  border-radius: var(--fc-radius-lg);
+  background: var(--fc-color-bg-default);
+  color: var(--fc-color-text-default);
+  font: inherit;
+  font-size: var(--fc-font-size-md);
+}
+
+.lookup-fields input {
+  font-family: var(--fc-type-code-font-family);
+  font-variant-numeric: tabular-nums;
+}
+
+.lookup-fields input[aria-invalid="true"] {
+  border-color: var(--fc-color-status-danger);
+}
+
+.lookup-answer {
+  margin-top: var(--fc-space-5);
+}
+
+/* Fiscal labels are data: Plex Mono keeps I, l and 1 apart (DD-039). */
+.lookup-headline {
+  color: var(--fc-color-text-default);
+  font-family: var(--fc-type-code-font-family);
+  font-size: var(--fc-font-size-2xl);
+  font-weight: var(--fc-font-weight-semibold);
+  line-height: var(--fc-font-line-height-tight);
+}
+
+.lookup-headline.is-error {
+  color: var(--fc-color-status-danger);
+  font-family: var(--fc-type-body-font-family);
+  font-size: var(--fc-font-size-lg);
+}
+
+.lookup-errors {
+  margin-top: var(--fc-space-2);
+  padding-inline-start: var(--fc-space-5);
+  font-size: var(--fc-type-small-font-size);
+}
+
+.lookup-table {
+  width: 100%;
+  margin-top: var(--fc-space-3);
+  border-collapse: collapse;
+  font-size: var(--fc-type-small-font-size);
+}
+
+.lookup-table th,
+.lookup-table td {
+  padding: var(--fc-space-1) 0;
+  border-top: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  text-align: start;
+  vertical-align: baseline;
+}
+
+.lookup-table th {
+  width: 5.5em;
+  color: var(--fc-color-text-muted);
+  font-weight: normal;
+  text-transform: capitalize;
+}
+
+.lookup-table td {
+  font-family: var(--fc-type-code-font-family);
+}
+
+.lookup-table .lookup-label {
+  white-space: nowrap;
+  color: var(--fc-color-text-default);
+  font-weight: var(--fc-font-weight-semibold);
+}
+
+.lookup-table td:last-child {
+  color: var(--fc-color-text-muted);
+  text-align: end;
+}
+
+/* Each period as wide as its days, each week a cell; the date's period and week stand out. */
+.lookup-ribbon {
+  display: flex;
+  gap: 3px;
+  height: 1.5rem;
+  margin-top: var(--fc-space-4);
+}
+
+.lookup-segment {
+  display: flex;
+  gap: 1px;
+  flex-basis: 0;
+  min-width: 0;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--fc-color-bg-subtle);
+}
+
+.lookup-segment > span {
+  flex: 1;
+  background: var(--fc-color-border-default);
+}
+
+.lookup-segment.is-here > span {
+  background: var(--fc-color-bg-accent-subtle);
+  outline: 1px solid var(--fc-color-accent-default);
+  outline-offset: -1px;
+}
+
+.lookup-segment.is-here,
+.lookup-segment > span.is-here {
+  background: var(--fc-color-accent-default);
+}
+
+.lookup-note {
+  margin-top: var(--fc-space-4);
   color: var(--fc-color-text-muted);
   font-size: var(--fc-type-small-font-size);
   line-height: var(--fc-type-small-line-height);
 }
 
-.landing-strip {
-  margin-top: var(--fc-space-6);
+/* Evidence as linked sentences (DD-041), on one band under the hero. */
+.evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--fc-space-5) var(--fc-space-6);
+  padding-block: var(--fc-space-6);
+  border-block: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-type-small-font-size);
+  line-height: var(--fc-type-small-line-height);
+}
+
+.evidence strong {
+  display: block;
+  margin-bottom: var(--fc-space-1);
+  color: var(--fc-color-text-default);
+  font-size: var(--fc-font-size-md);
+  font-weight: var(--fc-font-weight-semibold);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.evidence a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-color: var(--fc-color-accent-default);
+  text-underline-offset: 0.2em;
 }
 
 .landing-prose {
@@ -88,6 +275,15 @@
   margin-top: var(--fc-space-8);
 }
 
+.landing-prose > h2:not(:first-child) {
+  margin-top: var(--fc-space-9);
+}
+
 .landing-prose td code {
   white-space: nowrap;
+}
+
+/* The year strip may use the full content width beside the narrower prose. */
+.landing-prose .strip-figure {
+  width: min(72rem, calc(100vw - 2 * var(--fc-layout-gutter-sm)));
 }
