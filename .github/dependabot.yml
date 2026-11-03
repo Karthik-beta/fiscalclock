@@ -41,6 +41,11 @@ updates:
       interval: monthly
     cooldown:
       default-days: 7
+    ignore:
+      # The types must match the oldest Node.js in package.json "engines", or
+      # the binding could use APIs that its users' Node.js does not have.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       js-binding:
         update-types: [minor, patch]
