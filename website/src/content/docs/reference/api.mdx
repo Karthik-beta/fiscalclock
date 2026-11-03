@@ -4,6 +4,7 @@ description: Every fiscalclock operation, what it returns, and how to call it in
 ---
 
 import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import * as site from "../../../lib/site";
 import validatePy from "../../../../examples/python/validate.py?raw";
 import validatePyOut from "../../../../examples/python/validate.out?raw";
 import validateJs from "../../../../examples/js/validate.mjs?raw";
@@ -77,7 +78,7 @@ import explainJsOut from "../../../../examples/js/explain.out?raw";
 import explainRs from "../../../../examples/rust/src/bin/explain.rs?raw";
 import explainRsOut from "../../../../examples/rust/src/bin/explain.out?raw";
 
-This page lists the operations of API version 1 and how each language names them. The normative contract, with every argument rule and error path, is the [API spec](/reference/spec/api-v1/); the Rust crate's full API is on [docs.rs](https://docs.rs/fiscalclock/0.1.0/fiscalclock/).
+This page lists the operations of API version 1 and how each language names them. The normative contract, with every argument rule and error path, is the [API spec](/reference/spec/api-v1/); the Rust crate's full API is on <a href={site.DOCS_RS_URL}>docs.rs</a>.
 
 Every operation is defined once, in the Rust core. The Python and npm packages convert their native values to the core's JSON API and back, so they return the same results as the crate.
 

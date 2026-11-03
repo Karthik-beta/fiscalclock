@@ -10,7 +10,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let days = cal.dimension(fy2023.start, fy2023.end_exclusive)?;
     println!("{}", days.len());
     for quarter in cal.children(&fy2023, Level::Quarter)? {
-        let count = days.iter().filter(|day| day.location.quarter == quarter).count();
+        let count = days
+            .iter()
+            .filter(|day| day.location.quarter == quarter)
+            .count();
         println!("{} {}", cal.format(&quarter, None)?, count);
     }
 

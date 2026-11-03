@@ -3,11 +3,12 @@ import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import starlightLlmsTxt from "starlight-llms-txt";
 import { PAGE_SEPARATOR, llmsPostbuild } from "./src/agents/llms-postbuild.ts";
+import { HIDDEN_PAGES, SITE, pagePath } from "./src/agents/paths.ts";
 
-const site = "https://fiscalclock.karthik.nz";
+const site = SITE;
 const repo = "https://github.com/Karthik-beta/fiscalclock";
 // Pages that ask search engines not to index them (robots noindex) stay out of the sitemap.
-const unlisted = new Set([`${site}/guides/style-check/`]);
+const unlisted = new Set(HIDDEN_PAGES.map((id) => `${site}${pagePath(id)}`));
 
 export default defineConfig({
   site,

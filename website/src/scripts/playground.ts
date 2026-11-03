@@ -117,7 +117,6 @@ function setDefinition(text: string): void {
   editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: text } });
 }
 
-
 function readState(): PlaygroundState {
   return { definition: editor.state.doc.toString(), date: dateInput.value.trim(), year: Number(yearInput.value) };
 }
@@ -162,7 +161,6 @@ function flush(): void {
   render({ followDate: follow });
 }
 
-
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...kids: (Node | string)[]): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
@@ -184,25 +182,17 @@ function attempt<T>(source: ErrorSource, errors: ShownError[], run: () => T): T 
 
 function render({ followDate }: { followDate: boolean }): void {
   const state = readState();
-  history.replaceState(null, "", encodeState(state));
   syncExampleSelect(state.definition);
 
   const errors: ShownError[] = [];
-  let here: Location | undefined;
-  let cal: FiscalCalendar | undefined;
-
-  const validation = fc.validate(state.definition);
-  if ("errors" in validation) {
-    errors.push(...validation.errors.map((err) => ({ ...err, source: "definition" as const })));
-  } else {
-    cal = new fc.FiscalCalendar(state.definition);
-    here = attempt("date", errors, () => cal!.locate(state.date));
-    if (followDate && here && here.year.year !== state.year) {
-      yearInput.value = String(here.year.year);
-      state.year = here.year.year;
-      history.replaceState(null, "", encodeState(state));
-    }
+  // Building the calendar reports the same errors as `validate`, so the definition is parsed once.
+  const cal = attempt("definition", errors, () => new fc.FiscalCalendar(state.definition));
+  const here = cal && attempt("date", errors, () => cal.locate(state.date));
+  if (followDate && here && here.year.year !== state.year) {
+    yearInput.value = String(here.year.year);
+    state.year = here.year.year;
   }
+  history.replaceState(null, "", encodeState(state));
 
   showLocation(cal, here, state);
   showStrip(cal, here, state, errors);
@@ -353,7 +343,6 @@ function showStrip(cal: FiscalCalendar | undefined, here: Location | undefined, 
   const marker = scroller.querySelector<SVGRectElement>("[data-marker]");
   if (marker) scroller.scrollLeft = marker.x.baseVal.value - scroller.clientWidth / 2;
 }
-
 
 function syncExampleSelect(text: string): void {
   const match = examples.find((e) => exampleText(e) === text);

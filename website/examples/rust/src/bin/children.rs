@@ -8,7 +8,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let q4 = cal.period(Level::Quarter, 2023, Some(4))?;
     for period in cal.children(&q4, Level::Period)? {
-        println!("{} {:?} {}", cal.format(&period, None)?, period.weeks, period.has_extra_week);
+        println!(
+            "{} {:?} {}",
+            cal.format(&period, None)?,
+            period.weeks,
+            period.has_extra_week
+        );
     }
 
     Ok(())

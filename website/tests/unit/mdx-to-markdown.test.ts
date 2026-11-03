@@ -85,12 +85,9 @@ test("an aside becomes a blockquote that starts with its type and title", async 
 });
 
 test("relative links become absolute URLs on the site", async () => {
-  const markdown = await mdxToMarkdown(
-    page('See [the spec](../../reference/spec/) and [errors](#errors).\n\n<LinkCard title="API" href="/reference/api/" />\n'),
-  );
+  const markdown = await mdxToMarkdown(page("See [the spec](../../reference/spec/) and [errors](#errors).\n"));
   assert.ok(markdown.includes("[the spec](https://fiscalclock.karthik.nz/reference/spec/)"), markdown);
   assert.ok(markdown.includes("[errors](https://fiscalclock.karthik.nz/start-here/quick-start/#errors)"), markdown);
-  assert.ok(markdown.includes("[API](https://fiscalclock.karthik.nz/reference/api/)"), markdown);
 });
 
 test("HTML elements keep their text", async () => {

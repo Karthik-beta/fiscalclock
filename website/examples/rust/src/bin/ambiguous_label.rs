@@ -10,7 +10,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", error.code);
         if let Some(Details::Candidates(candidates)) = &error.details {
             for c in candidates {
-                println!("{} {} {} {}", c.scheme, c.period.year, c.period.start, c.period.last_day());
+                println!(
+                    "{} {} {} {}",
+                    c.scheme,
+                    c.period.year,
+                    c.period.start,
+                    c.period.last_day()
+                );
             }
         }
     }

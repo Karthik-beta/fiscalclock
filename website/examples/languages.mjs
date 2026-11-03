@@ -4,9 +4,9 @@
 // DEFINITIONS); the pages import their example files directly and list their
 // tabs themselves. Python comes first in both (DD-034).
 export const LANGUAGES = [
-  { key: "python", label: "Python", lang: "python", dir: "python", ext: ".py" },
-  { key: "js", label: "JavaScript", lang: "js", dir: "js", ext: ".mjs" },
-  { key: "rust", label: "Rust", lang: "rust", dir: "rust/src/bin", ext: ".rs" },
+  { key: "python", label: "Python", dir: "python", ext: ".py" },
+  { key: "js", label: "JavaScript", dir: "js", ext: ".mjs" },
+  { key: "rust", label: "Rust", dir: "rust/src/bin", ext: ".rs" },
 ];
 
 /** The source file of example `name` in `language`, relative to examples/. */

@@ -6,6 +6,7 @@
  * in, so importing this file never loads it.
  */
 import type { ErrorObject, FiscalCalendar, Period } from "fiscalclock";
+import { esc } from "./escape.ts";
 
 type Fiscalclock = Pick<typeof import("fiscalclock"), "FiscalCalendar" | "FiscalclockError">;
 
@@ -59,7 +60,6 @@ export function lookup(fc: Fiscalclock, definition: Record<string, unknown>, dat
   }
 }
 
-const esc = (text: string) => text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const time = (d: string) => `<time datetime="${esc(d)}">${esc(d)}</time>`;
 
 function ribbon(segments: Segment[]): string {

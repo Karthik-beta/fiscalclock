@@ -9,7 +9,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let q4 = cal.period(Level::Quarter, 2023, Some(4))?;
     println!(
         "{} {} {} {} {:?} {}",
-        q4.start, q4.end_exclusive, q4.last_day(), q4.days, q4.weeks, q4.has_extra_week
+        q4.start,
+        q4.end_exclusive,
+        q4.last_day(),
+        q4.days,
+        q4.weeks,
+        q4.has_extra_week
     );
 
     Ok(())
