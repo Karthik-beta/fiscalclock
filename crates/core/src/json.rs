@@ -10,6 +10,7 @@
 
 use alloc::format;
 use alloc::string::String;
+use core::fmt::Write;
 
 use serde_json::{Map, Value};
 
@@ -96,11 +97,11 @@ impl FiscalCalendar {
                     Some(Value::String(s)) => Some(s.as_str()),
                     Some(_) => return Err(wrong_type("scheme", "a string or null")),
                 };
-                let label = self.format(&p, scheme)?;
+                let (label, scheme_name) = self.format_labeled(&p, scheme)?;
                 out.push_str("{\"label\":");
                 write_str(&mut out, &label);
                 out.push_str(",\"scheme\":");
-                write_str(&mut out, self.scheme_name(scheme)?);
+                write_str(&mut out, scheme_name);
                 out.push('}');
             }
             "parse" => {
@@ -123,22 +124,19 @@ impl FiscalCalendar {
             "explain" => {
                 let e = self.explain(arg_date(a, "date")?)?;
                 out.push_str("{\"date\":");
-                write_str(&mut out, &format!("{}", e.date));
+                write_date(&mut out, e.date);
                 out.push_str(",\"calendar_id\":");
                 write_str(&mut out, self.calendar_id());
                 out.push_str(",\"steps\":[");
-                for (i, s) in e.steps.iter().enumerate() {
-                    if i > 0 {
-                        out.push(',');
-                    }
+                write_list(&mut out, &e.steps, |out, s| {
                     out.push_str("{\"level\":");
-                    write_str(&mut out, s.level.name());
+                    write_str(out, s.level.name());
                     out.push_str(",\"rule\":");
-                    write_str(&mut out, &s.rule);
+                    write_str(out, &s.rule);
                     out.push_str(",\"result\":");
-                    write_str(&mut out, &s.result);
+                    write_str(out, &s.result);
                     out.push('}');
-                }
+                });
                 out.push_str("]}");
             }
             _ => {
@@ -298,23 +296,41 @@ pub(crate) fn write_str(out: &mut String, s: &str) {
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
-            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c if (c as u32) < 0x20 => {
+                let _ = write!(out, "\\u{:04x}", c as u32);
+            }
             c => out.push(c),
         }
     }
     out.push('"');
 }
 
-fn write_date(out: &mut String, d: Date) {
-    out.push_str(&format!("\"{d}\""));
+/// Writes `items` separated by commas, each through `each`.
+pub(crate) fn write_list<T>(
+    out: &mut String,
+    items: impl IntoIterator<Item = T>,
+    mut each: impl FnMut(&mut String, T),
+) {
+    for (i, item) in items.into_iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        each(out, item);
+    }
+}
+
+pub(crate) fn write_date(out: &mut String, d: Date) {
+    let _ = write!(out, "\"{d}\"");
 }
 
 fn write_period(out: &mut String, p: &Period) {
     out.push_str("{\"level\":");
     write_str(out, p.level.name());
-    out.push_str(&format!(",\"year\":{},\"index\":", p.year));
+    let _ = write!(out, ",\"year\":{},\"index\":", p.year);
     match p.index {
-        Some(i) => out.push_str(&format!("{i}")),
+        Some(i) => {
+            let _ = write!(out, "{i}");
+        }
         None => out.push_str("null"),
     }
     out.push_str(",\"start\":");
@@ -323,9 +339,11 @@ fn write_period(out: &mut String, p: &Period) {
     write_date(out, p.end_exclusive);
     out.push_str(",\"last_day\":");
     write_date(out, p.last_day());
-    out.push_str(&format!(",\"days\":{},\"weeks\":", p.days));
+    let _ = write!(out, ",\"days\":{},\"weeks\":", p.days);
     match p.weeks {
-        Some(w) => out.push_str(&format!("{w}")),
+        Some(w) => {
+            let _ = write!(out, "{w}");
+        }
         None => out.push_str("null"),
     }
     out.push_str(if p.has_extra_week {
@@ -337,12 +355,7 @@ fn write_period(out: &mut String, p: &Period) {
 
 fn write_periods(out: &mut String, ps: &[Period]) {
     out.push('[');
-    for (i, p) in ps.iter().enumerate() {
-        if i > 0 {
-            out.push(',');
-        }
-        write_period(out, p);
-    }
+    write_list(out, ps, write_period);
     out.push(']');
 }
 
@@ -355,13 +368,14 @@ fn write_location(out: &mut String, l: &Location) {
         ("period", &l.period),
         ("week", &l.week),
     ] {
-        out.push_str(&format!(",\"{name}\":"));
+        let _ = write!(out, ",\"{name}\":");
         write_period(out, p);
     }
-    out.push_str(&format!(
+    let _ = write!(
+        out,
         ",\"day_of_year\":{},\"day_of_quarter\":{},\"day_of_period\":{},\"day_of_week\":{}}}",
         l.day_of_year, l.day_of_quarter, l.day_of_period, l.day_of_week
-    ));
+    );
 }
 
 fn write_error(out: &mut String, e: &Error) {
@@ -381,20 +395,14 @@ fn write_error(out: &mut String, e: &Error) {
         None => out.push_str("null"),
         Some(Details::Years(years)) => {
             out.push_str("{\"years\":[");
-            for (i, y) in years.iter().enumerate() {
-                if i > 0 {
-                    out.push(',');
-                }
-                out.push_str(&format!("{y}"));
-            }
+            write_list(out, years, |out, y| {
+                let _ = write!(out, "{y}");
+            });
             out.push_str("]}");
         }
         Some(Details::Candidates(candidates)) => {
             out.push_str("{\"candidates\":[");
-            for (i, c) in candidates.iter().enumerate() {
-                if i > 0 {
-                    out.push(',');
-                }
+            write_list(out, candidates, |out, c| {
                 out.push_str("{\"period\":");
                 write_period(out, &c.period);
                 out.push_str(",\"scheme\":");
@@ -402,7 +410,7 @@ fn write_error(out: &mut String, e: &Error) {
                 out.push_str(",\"level\":");
                 write_str(out, c.level.name());
                 out.push('}');
-            }
+            });
             out.push_str("]}");
         }
     }
@@ -412,12 +420,7 @@ fn write_error(out: &mut String, e: &Error) {
 /// `{"errors":[...]}` for a list of errors.
 pub fn errors_json(errors: &[Error]) -> String {
     let mut out = String::from("{\"errors\":[");
-    for (i, e) in errors.iter().enumerate() {
-        if i > 0 {
-            out.push(',');
-        }
-        write_error(&mut out, e);
-    }
+    write_list(&mut out, errors, write_error);
     out.push_str("]}");
     out
 }
