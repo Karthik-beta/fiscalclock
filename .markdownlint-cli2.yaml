@@ -12,4 +12,5 @@ ignores:
   - "**/node_modules/**"
   - "website/dist/**"
   - "**/.venv/**"
+  - ".claude/worktrees/**"
   - "CODE_OF_CONDUCT.md"

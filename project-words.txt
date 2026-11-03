@@ -26,4 +26,5 @@ ruleset
 streetsidesoftware
 textarea
 truthy
+worktrees
 zizmor

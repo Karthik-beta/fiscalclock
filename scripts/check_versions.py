@@ -3,8 +3,8 @@ each pinned tool version agrees everywhere it is written.
 
 With a tag argument (for example ``v0.1.0``), also checks that the tag names
 that version. The pinned tools are the minimum supported Rust version, maturin,
-wasm-bindgen, pandas and the release the website runs; PINS lists every
-file that states one.
+wasm-bindgen, pandas, the CI lint tools and the release the website runs;
+PINS lists every file that states one.
 
 Standard library only, and needs Python 3.11 or later (``tomllib``). Run with
 ``python -I scripts/check_versions.py``.
@@ -54,6 +54,20 @@ PINS = {
         ("conformance/generators/pandas_vectors.py", r'(?:^PANDAS_VERSION = "|pandas==)(\d+\.\d+\.\d+)'),
         ("conformance/generators/README.md", PANDAS_PIN),
         (".github/workflows/docs.yml", PANDAS_PIN),
+    ],
+    "yamllint": [
+        (".github/workflows/docs.yml", r"yamllint==(\d+\.\d+\.\d+)"),
+        ("scripts/check.py", r"yamllint==(\d+\.\d+\.\d+)"),
+    ],
+    "check-jsonschema": [
+        (".github/workflows/docs.yml", r"check-jsonschema==(\d+\.\d+\.\d+)"),
+        ("AGENTS.md", r"check-jsonschema==(\d+\.\d+\.\d+)"),
+        ("scripts/check.py", r"check-jsonschema==(\d+\.\d+\.\d+)"),
+    ],
+    "zizmor": [
+        (".github/workflows/docs.yml", r"zizmor==(\d+\.\d+\.\d+)"),
+        ("AGENTS.md", r"zizmor==(\d+\.\d+\.\d+)"),
+        ("scripts/check.py", r"zizmor==(\d+\.\d+\.\d+)"),
     ],
     # The site runs the published packages, so these may lag the version above,
     # but every language's examples must run the same release.

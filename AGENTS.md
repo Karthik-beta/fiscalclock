@@ -59,7 +59,7 @@ These apply to code comments, documentation, tests, commit messages and issue te
 2. Never change an expected result in an existing vector without a linked issue that explains why.
 3. Property tests cover tiling, nesting, round trips and, for rule-only week-based definitions, the 364/371-day and 71-in-400 properties. Do not apply the 364/371 or 400-year properties to definitions with exceptions or table years.
 4. The reference implementation in `crates/core/tests/` stays slow and obvious (day-by-day iteration). Do not optimise it or share code with the core's boundary arithmetic.
-5. Run the full check list below before declaring work done, and report the commands and their results.
+5. Run the full check list below (`python -I scripts/check.py`) before declaring work done, and report the commands and their results.
 
 ## When an ADR is required
 
@@ -68,6 +68,30 @@ Write an ADR before changing the definition format, the result of any operation 
 ## Build, test and lint
 
 These are the commands CI runs (`.github/workflows/ci.yml` and `docs.yml`). Run the ones that cover your change, from the repository root, and report them with their results.
+
+`python -I scripts/check.py` runs all of them and ends with one PASS or FAIL line per command. Name groups to run only those (`python -I scripts/check.py rust python`). `--list` prints each group's commands without running them. The script lints only files that git tracks, so untracked copies such as `.claude/worktrees/` or a `.venv` are skipped. It writes each command's output to `target/check/logs/`, and builds the Python wheel in its own virtual environment, `target/check/venv`.
+
+| You changed | Groups to run |
+| --- | --- |
+| `crates/core/`, `Cargo.lock` | `rust python js transcripts` |
+| `conformance/` | `rust python js transcripts evidence website` |
+| `bindings/python/` | `python transcripts` |
+| `bindings/js/` | `js transcripts` |
+| `research/`, `scripts/` | `evidence docs` |
+| `spec/`, `CHANGELOG.md` | `docs website` |
+| `website/`, `docs/examples/`, `design/tokens/generated/`, `assets/brand/` | `website` |
+| Any other Markdown, MDX, YAML or TOML | `docs` |
+| `.github/` | `workflows docs` |
+
+The `docs` group checks links between files in the repository offline, as every CI run does. The `links` group checks every external link online, as the weekly CI run does; run it when you add or change external links. A third-party site that is down fails it without any fault in the change.
+
+Tools, from a fresh clone:
+
+- Rust stable with `rustfmt`, `clippy` and the WebAssembly target, plus the minimum supported version: `rustup toolchain install stable --component rustfmt,clippy --target wasm32-unknown-unknown` and `rustup toolchain install 1.85`.
+- Python 3.11 or later for the scripts (the package itself supports 3.10), and [uv](https://docs.astral.sh/uv/) for the commands that start with `uv` or `uvx`.
+- Node.js 22 or later for the npm package, and 24 or later for the website.
+- `wasm-bindgen-cli` at the version in `Cargo.lock`. The `js` group prints the `cargo install` command if yours differs.
+- For the `docs` and `links` groups, [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2), [cspell](https://cspell.org/) and [lychee](https://lychee.cli.rs/) on your `PATH`. yamllint runs through `uvx`.
 
 Rust core:
 
@@ -120,7 +144,7 @@ lychee --config website/lychee.toml --no-progress --root-dir "$PWD/website/dist"
 
 `npm test` runs Playwright, which needs its browser once: `cd website && npx playwright install --with-deps chromium`.
 
-Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block. External sites go down, so in CI a pull request checks every link to a file in the repository from Markdown offline, and external links only in the Markdown and MDX files it changes. The weekly run checks every external link.
+Documentation: `markdownlint-cli2 "**/*.md"` (without the script, this also lints untracked files), `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block. External sites go down, so in CI a pull request checks every link to a file in the repository from Markdown offline, and external links only in the Markdown and MDX files it changes. The weekly run checks every external link.
 
 CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas, and audits the workflows with [zizmor](https://docs.zizmor.sh/) (its accepted findings are in `.github/zizmor.yml`):
 
