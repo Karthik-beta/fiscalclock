@@ -201,36 +201,31 @@
   text-align: end;
 }
 
-/* Each period as wide as its days, each week a cell; the date's period and week stand out. */
+/* Each period as wide as its days, each week a cell; the date's period is tinted and its week filled. */
 .lookup-ribbon {
   display: flex;
-  gap: 3px;
-  height: 1.5rem;
+  gap: 4px;
+  height: 1.75rem;
   margin-top: var(--fc-space-4);
 }
 
 .lookup-segment {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   flex-basis: 0;
   min-width: 0;
-  border-radius: 3px;
-  overflow: hidden;
-  background: var(--fc-color-bg-subtle);
 }
 
 .lookup-segment > span {
   flex: 1;
+  border-radius: 2px;
   background: var(--fc-color-border-default);
 }
 
 .lookup-segment.is-here > span {
   background: var(--fc-color-bg-accent-subtle);
-  outline: 1px solid var(--fc-color-accent-default);
-  outline-offset: -1px;
 }
 
-.lookup-segment.is-here,
 .lookup-segment > span.is-here {
   background: var(--fc-color-accent-default);
 }
@@ -270,20 +265,160 @@
   text-underline-offset: 0.2em;
 }
 
-.landing-prose {
-  max-width: var(--fc-layout-prose);
-  margin-top: var(--fc-space-8);
-}
 
-.landing-prose > h2:not(:first-child) {
+/*
+ * Sections below the hero use the full content width: a heading and a lead
+ * paragraph, then the real code or output beside the explanation.
+ */
+.landing-section {
   margin-top: var(--fc-space-9);
 }
 
-.landing-prose td code {
+.landing-section > *,
+.landing-split > * > * {
+  margin-top: 0;
+}
+
+.landing-section > * + *,
+.landing-split > * > * + * {
+  margin-top: var(--fc-space-5);
+}
+
+.landing-section h2 {
+  max-width: 18em;
+  font-size: clamp(var(--fc-font-size-2xl), 1.25rem + 1.6vw, var(--fc-font-size-3xl));
+  line-height: var(--fc-font-line-height-tight);
+  letter-spacing: var(--fc-type-heading-1-letter-spacing);
+}
+
+/* The paragraph under each heading is its lead. */
+.landing-section :is(h2, .sl-heading-wrapper) + p {
+  max-width: 36em;
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-font-size-lg);
+}
+
+.landing-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fc-space-6);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .landing-split {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--fc-space-8);
+  }
+
+  .landing-split > .landing-text {
+    position: sticky;
+    top: calc(var(--sl-nav-height) + var(--fc-space-6));
+  }
+}
+
+.landing-artefact > p {
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-type-small-font-size);
+}
+
+/*
+ * The year strip sits on a band of the subtle surface that runs to the edges
+ * of the window. border-image paints past the box without widening the page.
+ */
+.landing-band {
+  padding-block: var(--fc-space-8);
+  border-image: conic-gradient(var(--fc-color-bg-subtle) 0 0) fill 0 / / 0 100vw;
+}
+
+/* Short points in a grid: the bold lead of each item is its title. */
+.landing-points ul {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fc-space-6) var(--fc-space-7);
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .landing-points ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .landing-points-wide ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.landing-points li {
+  margin: 0;
+  padding-top: var(--fc-space-4);
+  border-top: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-type-small-font-size);
+  line-height: var(--fc-type-small-line-height);
+}
+
+.landing-points li > strong:first-child {
+  display: block;
+  margin-bottom: var(--fc-space-2);
+  color: var(--fc-color-text-default);
+  font-size: var(--fc-font-size-md);
+}
+
+.landing-section table {
+  width: 100%;
+}
+
+.landing-section td code {
   white-space: nowrap;
 }
 
-/* The year strip may use the full content width beside the narrower prose. */
-.landing-prose .strip-figure {
-  width: min(72rem, calc(100vw - 2 * var(--fc-layout-gutter-sm)));
+/* The closing call to action, centred as the one place the page asks for a next step. */
+.landing-cta {
+  display: grid;
+  justify-items: center;
+  gap: var(--fc-space-4);
+  margin-top: var(--fc-space-9);
+  padding: var(--fc-space-8) var(--fc-space-5);
+  border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+  border-radius: var(--fc-radius-xl);
+  background: var(--fc-color-bg-raised);
+  text-align: center;
+}
+
+.landing-cta h2 {
+  color: var(--fc-color-text-default);
+  font-size: clamp(var(--fc-font-size-2xl), 1.25rem + 1.6vw, var(--fc-font-size-3xl));
+  font-weight: var(--fc-font-weight-semibold);
+  line-height: var(--fc-font-line-height-tight);
+  letter-spacing: var(--fc-type-heading-1-letter-spacing);
+}
+
+.landing-cta p {
+  max-width: 34em;
+  color: var(--fc-color-text-muted);
+  font-size: var(--fc-font-size-lg);
+}
+
+.landing-cta .hero-actions {
+  justify-content: center;
+  margin-top: var(--fc-space-2);
+}
+
+.landing-band .strip-scroll {
+  width: 100%;
+  border-radius: var(--fc-radius-xl);
+}
+
+.landing-band .strip-scroll svg {
+  width: 100%;
+  min-width: var(--strip-width);
+  height: auto;
+}
+
+.landing-band figcaption {
+  max-width: 48rem;
 }

@@ -7,7 +7,7 @@ const file = (path: string) => readFileSync(join(examples, path), "utf8").replac
 
 test("the landing page's question shows each language's tested example file above their shared expected output", async ({ page }) => {
   await page.goto("/");
-  const question = page.locator(".landing-prose");
+  const question = page.getByRole("region", { name: "The same answer in every language" });
   for (const [tab, source, output] of [
     ["Python", "python/ask_quarter.py", "python/ask_quarter.out"],
     ["JavaScript", "js/ask_quarter.mjs", "js/ask_quarter.out"],

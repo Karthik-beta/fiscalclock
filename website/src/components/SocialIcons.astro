@@ -1,0 +1,48 @@
+---
+/**
+ * The header's right-hand group: links to the main sections, then
+ * Starlight's GitHub icon. On narrow screens Starlight shows this group in
+ * the mobile menu instead.
+ */
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+
+const SECTIONS = [
+  { label: "Docs", href: "/start-here/quick-start/", match: ["/start-here/", "/guides/"] },
+  { label: "Playground", href: "/playground/", match: ["/playground/"] },
+  { label: "API", href: "/reference/api/", match: ["/reference/"] },
+  { label: "Changelog", href: "/project/changelog/", match: ["/project/"] },
+];
+const path = Astro.url.pathname;
+---
+
+<nav class="header-sections" aria-label="Sections">
+  {
+    SECTIONS.map(({ label, href, match }) => (
+      <a href={href} aria-current={match.some((m) => path.startsWith(m)) ? "page" : undefined}>
+        {label}
+      </a>
+    ))
+  }
+</nav>
+<Default />
+
+<style>
+  .header-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fc-space-1) var(--fc-space-5);
+    margin-inline-end: var(--fc-space-3);
+  }
+
+  .header-sections a {
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+    font-weight: var(--fc-font-weight-medium);
+    text-decoration: none;
+  }
+
+  .header-sections a:hover,
+  .header-sections a[aria-current="page"] {
+    color: var(--fc-color-text-default);
+  }
+</style>

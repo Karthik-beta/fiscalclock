@@ -1,0 +1,60 @@
+---
+/** Starlight's footer (edit link, pagination), then the site footer on every page. */
+import Default from "@astrojs/starlight/components/Footer.astro";
+import site from "../../package.json";
+
+const repo = "https://github.com/Karthik-beta/fiscalclock";
+const LINKS = [
+  { label: "Quick start", href: "/start-here/quick-start/" },
+  { label: "Playground", href: "/playground/" },
+  { label: "API reference", href: "/reference/api/" },
+  { label: "Changelog", href: "/project/changelog/" },
+  { label: "GitHub", href: repo },
+  { label: "Security", href: `${repo}/security/policy` },
+  { label: "llms.txt", href: "/llms.txt" },
+];
+---
+
+<Default />
+<div class="site-footer">
+  <p>
+    fiscalclock {site.dependencies.fiscalclock}. Open source under the MIT or Apache-2.0 licence, at your option.
+  </p>
+  <nav aria-label="Footer">
+    <ul>{LINKS.map(({ label, href }) => <li><a href={href}>{label}</a></li>)}</ul>
+  </nav>
+</div>
+
+<style>
+  .site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--fc-space-4) var(--fc-space-6);
+    margin-top: var(--fc-space-8);
+    padding-block: var(--fc-space-6);
+    border-top: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+  }
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fc-space-2) var(--fc-space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    color: var(--fc-color-text-muted);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--fc-color-text-default);
+    text-decoration: underline;
+    text-decoration-color: var(--fc-color-accent-default);
+  }
+</style>

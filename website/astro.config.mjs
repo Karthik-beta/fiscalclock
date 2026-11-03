@@ -40,7 +40,11 @@ export default defineConfig({
         }),
       ],
       routeMiddleware: "./src/agents/route-middleware.ts",
-      components: { PageTitle: "./src/components/PageTitle.astro" },
+      components: {
+        PageTitle: "./src/components/PageTitle.astro",
+        SocialIcons: "./src/components/SocialIcons.astro",
+        Footer: "./src/components/Footer.astro",
+      },
       // src/pages/404.astro replaces Starlight's 404 route, which looks up a docs entry named 404.
       disable404Route: true,
       editLink: { baseUrl: `${repo}/edit/main/website/` },

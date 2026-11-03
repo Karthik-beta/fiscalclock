@@ -24,15 +24,19 @@ import "../../styles/landing.css";
 <p><strong>No clock, no global state.</strong> The core reads no clock, environment variable or global state, and is licensed <a href="https://github.com/Karthik-beta/fiscalclock#licence">MIT OR Apache-2.0</a>.</p>
 </div>
 
-<div class="landing-prose">
+<section class="landing-section landing-split" aria-labelledby="the-same-answer-in-every-language">
+<div class="landing-text">
 
 ## The same answer in every language
 
-This definition gives the 53-week years NRF publishes for its 4-5-4 retail calendar. It is an illustrative example, not any organisation's published calendar, and fiscalclock has no built-in calendars.
+One Rust core runs in all three packages. Ask the same question in Python, JavaScript or Rust and you get the same bytes back.
+
+This definition gives the 53-week years NRF publishes for its 4-5-4 retail calendar. It is an illustrative example, not any organisation's published calendar, and fiscalclock has no built-in calendars. Save it as `retail-4-5-4.json`, then ask which fiscal quarter 3 Feb 2024 is in.
 
 <Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
 
-Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition as `retail-4-5-4.json` and ask:
+</div>
+<div class="landing-artefact">
 
 <Tabs syncKey="lang">
   <TabItem label="Python"><Code code={askQuarterPy} lang="python" /></TabItem>
@@ -40,11 +44,18 @@ Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definitio
   <TabItem label="Rust"><Code code={askQuarterRs} lang="rust" /></TabItem>
 </Tabs>
 
-All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package, and it must print exactly the output below.
-
 <RawOutput text={fy.askOutput} label="Output" />
 
+Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package. It must print exactly this output: the label, then the core's JSON for the date.
+
+</div>
+</section>
+
+<section class="landing-section landing-band" aria-labelledby="a-year-drawn-to-scale">
+
 ## A year, drawn to scale
+
+Every period is a half-open interval, so periods tile the year with no gaps and no overlaps. This is fiscal 2023 under the definition above.
 
 <YearStripFigure id="fy2023" title={`${fy.yearLabel}: ${fy.year.days} days, ${fy.year.weeks} weeks`} periods={fy.periods} quarters={fy.quarters}>
   Fiscal 2023 under the definition above, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
@@ -55,18 +66,35 @@ All three print the same two lines: the label, then the core's JSON for the date
   <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
 </YearStripFigure>
 
+</section>
+
+<section class="landing-section landing-split" aria-labelledby="for-ai-agents">
+<div class="landing-text">
+
 ## For AI agents
 
-Every page has a plain Markdown copy, so an agent can read the docs without parsing HTML:
-
-- [`/llms.txt`](/llms.txt) lists the pages, and [`/llms-full.txt`](/llms-full.txt) holds all of them in one file. [`/llms-small.txt`](/llms-small.txt) is a shorter version.
-- Add `.md` to any page's address for its Markdown, such as [`/start-here/quick-start.md`](/start-here/quick-start.md). Each docs page also has a "Copy page as Markdown" button.
-- Errors are objects with a stable `code`, a JSON `path` into the definition, a `message` and, where one helps, a `hint`, listed in the [API spec](/reference/spec/api-v1/). An agent can act on the code instead of parsing a sentence.
-- Ambiguous input is an error that lists every candidate reading. fiscalclock never picks one silently.
+Every page has a plain Markdown copy, and every error is an object an agent can act on without parsing a sentence.
 
 A command-line interface and an MCP server are planned for version 0.4, as the [roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) describes. Neither exists yet.
 
+</div>
+<div class="landing-artefact landing-points">
+
+- **[`/llms.txt`](/llms.txt)** lists the pages. [`/llms-full.txt`](/llms-full.txt) holds all of them in one file, and [`/llms-small.txt`](/llms-small.txt) is a shorter version.
+- **`.md` on any page** gives its Markdown, such as [`/start-here/quick-start.md`](/start-here/quick-start.md). Each docs page also has a "Copy page as Markdown" button.
+- **Stable error codes.** Each error has a `code`, a JSON `path` into the definition, a `message` and, where one helps, a `hint`, listed in the [API spec](/reference/spec/api-v1/).
+- **No silent guesses.** Ambiguous input is an error that lists every candidate reading. fiscalclock never picks one.
+
+</div>
+</section>
+
+<section class="landing-section" aria-labelledby="why-you-can-check-the-results">
+
 ## Why you can check the results
+
+People use these dates for financial reporting, so every behaviour is backed by evidence you can rerun. These statements are taken from the [project README](https://github.com/Karthik-beta/fiscalclock#why-you-can-check-the-results).
+
+<div class="landing-points landing-points-wide">
 
 - **Shared conformance vectors.** The vector files in [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance) are run by the test suite of every package. Expected results come from cited sources or from generators written independently of the library, never from the library's own output.
 - **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years [NRF publishes](https://nrf.com/resources/4-5-4-calendar) (2006, 2012, 2017 and 2023).
@@ -75,7 +103,10 @@ A command-line interface and an MCP server are planned for version 0.4, as the [
 - **Identical output in every language.** On every push, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows, and requires the raw outputs to match the Rust output byte for byte.
 - **Reproducible verification.** Every date-arithmetic claim in the design documents is reproduced by a standard-library script in [`research/verification/`](https://github.com/Karthik-beta/fiscalclock/tree/main/research/verification), which CI reruns on every pull request.
 
-These statements are taken from the [project README](https://github.com/Karthik-beta/fiscalclock#why-you-can-check-the-results).
+</div>
+</section>
+
+<section class="landing-section" aria-labelledby="packages">
 
 ## Packages
 
@@ -87,4 +118,13 @@ All three packages are built from the same Rust core and return the same JSON fo
 | [npm package](https://www.npmjs.com/package/fiscalclock) | `npm install fiscalclock` | Node.js 22 and later, and browsers (WebAssembly) |
 | [Rust crate](https://crates.io/crates/fiscalclock) | `cargo add fiscalclock` | Rust 1.85 and later, `no_std` with `alloc` |
 
-</div>
+</section>
+
+<section class="landing-cta not-content" aria-labelledby="landing-cta-heading">
+  <h2 id="landing-cta-heading">Write your first definition</h2>
+  <p>The quick start takes a definition from JSON to its first answer in each language.</p>
+  <p class="hero-actions">
+    <a class="hero-primary" href="/start-here/quick-start/">Read the quick start</a>
+    <a class="hero-secondary" href="/playground/">Open the playground</a>
+  </p>
+</section>

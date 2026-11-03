@@ -11,10 +11,12 @@ interface Props {
 
 const { id, title, periods, quarters } = Astro.props;
 const svg = renderYearStrip(periods, { id, title, quarters });
+// A page may widen the strip, but never below the width it is drawn at.
+const drawnWidth = /^<svg[^>]*\swidth="(\d+)"/.exec(svg)![1];
 ---
 
 <figure class="strip-figure not-content">
-  <div class="strip-scroll" tabindex="0" role="group" aria-label={`${title}, drawn to scale; scrolls sideways`}>
+  <div class="strip-scroll" style={`--strip-width: ${drawnWidth}px`} tabindex="0" role="group" aria-label={`${title}, drawn to scale; scrolls sideways`}>
     <Fragment set:html={svg} />
   </div>
   <figcaption><slot /></figcaption>
