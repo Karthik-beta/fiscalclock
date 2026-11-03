@@ -583,13 +583,15 @@ fn explain_has_one_step_per_level() {
         serde_json::from_str(&c.call_json("explain", r#"{"date":"2024-02-03"}"#)).unwrap();
     assert_eq!(out["date"], "2024-02-03");
     assert_eq!(out["calendar_id"], c.calendar_id());
-    let levels: Vec<&str> = out["steps"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|s| s["level"].as_str().unwrap())
-        .collect();
+    let steps = out["steps"].as_array().unwrap();
+    let levels: Vec<&str> = steps.iter().map(|s| s["level"].as_str().unwrap()).collect();
     assert_eq!(levels, ["year", "quarter", "period", "week"]);
+    for step in steps {
+        assert_eq!(step.as_object().unwrap().len(), 3, "{step}");
+        for key in ["rule", "result"] {
+            assert!(!step[key].as_str().unwrap().is_empty(), "{step}");
+        }
+    }
     let text = out.to_string();
     assert!(
         text.contains("Saturday nearest the last day of January"),
