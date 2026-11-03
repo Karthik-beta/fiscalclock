@@ -10,7 +10,7 @@ import copy
 
 from fiscal_oracle import Calendar
 from oracle_vectors import apple_definition, matches_subset, nrf_definition
-from vectorlib import naming, run, scheme, source, validate_case, vector, week_based
+from vectorlib import fixed_date, naming, run, scheme, source, validate_case, vector, week_based
 
 SPEC_CHECK = "Transcribed from the spec text 2026-10-31; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"
 
@@ -69,6 +69,13 @@ COSTCO_URL = "https://s201.q4cdn.com/287523651/files/doc_financials/2017/ar/2017
 PDF_CHECKED = (
     "Quotes compared character for character with the text that pdftotext -layout -enc UTF-8 extracted from the PDF "
     "(line breaks joined) on 2026-11-01; see research/filers/"
+)
+RELIANCE_URL = "https://www.ril.com/ar2024-25/pdf/RIL-IAR-2025.pdf"
+PGHH_2026_URL = "https://assets.ctfassets.net/oe48y40ukei6/3NtnlryjO6oVyBMEES6pLT/d4aee2a14d8cab5a4d777d8e5f8eba8a/ANNUAL_REPORT_2026__1_.pdf"
+PGHH_2024_URL = "https://assets.ctfassets.net/oe48y40ukei6/7aXOHTgxcGULOBM2hYlblW/6ef76eff5f3da3ecad126944fbaf3391/PGHH_ANNUAL_REPORT_2024.pdf"
+PDF_QUOTES_CHECKED = (
+    "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, "
+    "whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
 )
 
 
@@ -155,6 +162,89 @@ def costco_vector() -> dict:
     )
 
 
+def reliance_vector() -> dict:
+    defn = fixed_date(4, 1, "monday", naming({"fy": scheme("start", {"year": "FY {yyyy}-{yy_next}", "quarter": "Q{q} FY {yyyy}-{yy_next}"})}))
+    cal = Calendar(defn)
+    year = {"level": "year"}
+    cases = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2023}, "expect_subset": {"start": "2023-04-01", "last_day": "2024-03-31"}},
+        {"op": "period", "args": {**year, "year": 2024}, "expect_subset": {"start": "2024-04-01", "last_day": "2025-03-31"}},
+        {"op": "period", "args": {**year, "year": 2025}, "expect_subset": {"last_day": "2026-03-31"}},
+        *({"op": "period", "args": {"level": "quarter", "year": 2025, "index": i}, "expect_subset": {"last_day": d}}
+          for i, d in enumerate(("2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31"), 1)),
+        {"op": "format", "args": {"period": {**year, "year": 2024, "index": None}}, "expect": {"label": "FY 2024-25", "scheme": "fy"}},
+        {"op": "format", "args": {"period": {**year, "year": 2025, "index": None}}, "expect": {"label": "FY 2025-26", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "FY 2024-25"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-04-01", "last_day": "2025-03-31"}},
+    )]
+    citation = (
+        "\"Financial Year April 1 to March 31\" (Corporate Governance Report, General Shareholder Information, p. 58) "
+        "\"Financial Calendar (Tentative) Results for the quarter ending June 30, 2025 - Third week of July, 2025; September 30, 2025 - Third week of October, 2025; "
+        "December 31, 2025 - Third week of January, 2026; and March 31, 2026 - Fourth week of April, 2026.\" (p. 58) "
+        "\"There has been no revision in credit ratings during the FY 2024-25.\" and \"Annual listing fees for the FY 2025-26 has been paid by the Company "
+        "to BSE Limited and National Stock Exchange of India Limited.\" (p. 58) "
+        "\"The Board of Directors present the Company’s Forty-eighth Annual Report (Post-IPO) and the Company’s audited financial statements for the financial year "
+        "ended March 31, 2025.\" (Board's Report, p. 76) "
+        "Statement of Changes in Equity (p. 114): \"Balance as at 1st April, 2023\", \"Change during the year 2023-24\", \"Balance as at 31st March, 2024\", "
+        "\"Change during the year 2024-25\" and \"B. Other Equity Balance as at 1st April, 2024\". "
+        "Establishes the 1 April start, start-year naming in the form FY 2024-25, the bounds of 2023-24 and 2024-25, the end of FY 2025-26, "
+        "and the last day of each quarter of FY 2025-26 (the four quarter ends listed in order)."
+    )
+    return vector(
+        "reliance-annual-report-2024-25",
+        "Reliance Industries Limited Integrated Annual Report 2024-25 (financial year ended 31 March 2025). "
+        "The week block, the calendar-month subdivision and the quarter template are illustrative; only fields the document states are asserted.",
+        source("cited", citation, PDF_QUOTES_CHECKED, RELIANCE_URL), defn, cases,
+    )
+
+
+def pg_hygiene_vectors() -> list[dict]:
+    april = fixed_date(4, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_next}"})}))
+    cal = Calendar(april)
+    year = {"level": "year"}
+    april_cases = [validate_case(april)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2025}, "expect_subset": {"start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "period", "args": {**year, "year": 2026}, "expect_subset": {"last_day": "2027-03-31"}},
+        {"op": "format", "args": {"period": {**year, "year": 2025, "index": None}}, "expect": {"label": "2025-26", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2025-26"}, "expect_subset": {"level": "year", "year": 2025, "start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "parse", "args": {"label": "2026-27"}, "expect_subset": {"level": "year", "year": 2026, "last_day": "2027-03-31"}},
+    )]
+    april_citation = (
+        "\"The Board of Directors of the Company, on January 23, 2025, had approved the change in Financial Year of the Company from “July 1 – June 30” period "
+        "to “April 1 – March 31” period. The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on "
+        "March 31, 2026.\" (Directors' Report, p. 9) "
+        "\"*Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025, and hence not comparable with current Financial Year "
+        "2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) "
+        "\"re-appointed M/s. Ashwin Solanki & Associates, as the Cost Auditors of the Company for the financial year 2026-27.\" and "
+        "\"to audit the cost records of the Company for the financial year ending March 31, 2027, is being placed for the approval of the shareholders of the Company\" (p. 18). "
+        "Establishes the 1 April start, start-year naming in the form 2025-26, the bounds of 2025-26 and the end of 2026-27. "
+        "The nine-month year 2024-25 is outside spec version 1 and has no case; see research/filers/pg-hygiene.md."
+    )
+    july = fixed_date(7, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_next}"})}))
+    cal = Calendar(july)
+    july_cases = [validate_case(july), agree(cal, {"op": "period", "args": {**year, "year": 2023}, "expect_subset": {"start": "2023-07-01", "last_day": "2024-06-30"}})]
+    july_citation = (
+        "\"The Company’s Financial Year is July 1st to June 30th.\" (Report of the Directors, p. 8) "
+        "\"Presently, the Company follows July-June Financial Year.\" (Corporate Governance Report, p. 71) "
+        "\"Financial Year reported July 1, 2023 to June 30, 2024\" (Business Responsibility & Sustainability Report, p. 19). "
+        "Establishes the 1 July start and the bounds of the year that began on 1 July 2023. The company left this calendar after 30 June 2024; "
+        "see research/filers/pg-hygiene.md."
+    )
+    return [
+        vector(
+            "pg-hygiene-annual-report-2025-26",
+            "Procter & Gamble Hygiene and Health Care Limited Annual Report 2025-26 (financial year ended 31 March 2026), its first full year "
+            "after the change from a July-June year. The week block and the calendar-month subdivision are illustrative; only fields the document states are asserted.",
+            source("cited", april_citation, PDF_QUOTES_CHECKED, PGHH_2026_URL), april, april_cases,
+        ),
+        vector(
+            "pg-hygiene-annual-report-2023-24",
+            "Procter & Gamble Hygiene and Health Care Limited Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. "
+            "The week block, the calendar-month subdivision and the label template are illustrative; only fields the document states are asserted.",
+            source("cited", july_citation, PDF_QUOTES_CHECKED, PGHH_2024_URL), july, july_cases,
+        ),
+    ]
+
+
 def cited_vectors() -> list[dict]:
     nrf = nrf_definition()
     cal = Calendar(nrf)
@@ -183,6 +273,8 @@ def cited_vectors() -> list[dict]:
         "first quarter of 2024 ending 30 December 2023, and fiscal 2023 ending 30 September 2023."
     )
     return [
+        reliance_vector(),
+        *pg_hygiene_vectors(),
         vector("nrf-53-week-years", "NRF's published list of 53-week fiscal years, checked against the NRF 4-5-4 definition.",
                source("cited", nrf_citation, FETCHED, NRF_URL), nrf, nrf_cases),
         vector("apple-10q-2023-12-30", "Apple Inc. Form 10-Q for the quarter ended 30 December 2023. The definition's period pattern is illustrative; only fields the filing states are asserted.",

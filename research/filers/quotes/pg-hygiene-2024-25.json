@@ -1,0 +1,97 @@
+{
+  "company": "Procter & Gamble Hygiene and Health Care Limited",
+  "slug": "pg-hygiene",
+  "document": "Annual Report 2024-25",
+  "url": "https://downloads.ctfassets.net/oe48y40ukei6/1u4fKj5iFk4bevuObG5vJd/f5a65c7f94bab8a53fe33769070ac956/Annual_Report_2025.pdf",
+  "host_evidence": "Linked as \"ANNUAL REPORT 2025\" under Annual Report & Returns on https://in.pg.com/india-investors/pghh/shareholder-info/info/ (the company's own site; the file is on its Contentful CDN downloads.ctfassets.net, the same CDN family as the assets.ctfassets.net links on its investor pages). The transition-period report: it covers the nine months 1 July 2024 to 31 March 2025.",
+  "pdf": "Annual_Report_2025.pdf",
+  "retrieved": "2026-11-03",
+  "sha256": "28ec4d56637da6b97e4049e09772afa971fba4ce88b0457e91e3b5cf836c40cd",
+  "pages": 164,
+  "quotes": [
+    {
+      "text": "The Board of Directors of the Company, on January 23, 2025, approved the change in the Financial Year of the Company from “July 1 – June 30” period to “April 1 – March 31” period. Consequently, the Financial Year of the Company for the period under review, viz., 2024-25, is a period of 9 months commencing on July 1, 2024, and ending on March 31, 2025. Subsequent financial years of the Company shall commence on April 1 every year and end on March 31 of the succeeding year.",
+      "pdf_page": 12,
+      "printed_page": "10",
+      "section": "Directors' Report, Financial Year"
+    },
+    {
+      "text": "*Financial Year 2024-25 is a 9 month period from July 1, 2024 to March 31, 2025, and hence, the figures are not comparable with the previous financial year which is a 12 month period.",
+      "pdf_page": 12,
+      "printed_page": "10",
+      "section": "Directors' Report, Financial Year"
+    },
+    {
+      "text": "the numbers are not comparable to the previous financial year, which was a twelve months period (July 1, 2023 to June 30, 2024).",
+      "pdf_page": 12,
+      "printed_page": "10",
+      "section": "Directors' Report, Financial Year"
+    },
+    {
+      "text": "Effective this year, the Company changed its Financial Year from July 1 – June 30, to April 1 – March 31. Accordingly, the current Financial Year of the Company ended on March 31, 2025, covering a period of 9 months from July 1, 2024, to March 31, 2025.",
+      "pdf_page": 8,
+      "printed_page": "6",
+      "section": "Managing Director's Statement"
+    },
+    {
+      "text": "The Financial Year of the Company has been changed from “July 1st – June 30th” period to “April 1st – March 31st” period. Accordingly, the Financial Year of the Company for purpose of this report viz., 2024-25 is a period of 9 months commencing on July 1, 2024, and ending on March 31, 2025.",
+      "pdf_page": 75,
+      "printed_page": "73",
+      "section": "Corporate Governance Report, Financial Calendar"
+    },
+    {
+      "text": "The Company has opted to change its financial year end from June 30 to March 31 of each year for the purpose of preparation of its annual financial statements.",
+      "pdf_page": 104,
+      "printed_page": "102",
+      "section": "Notes to Financial Statements, note 2.2"
+    },
+    {
+      "text": "The Board of Directors of the Company, on January 23, 2025, have approved the change of the Financial Year end from June 30 to March 31 of each year. Accordingly, the current Financial Statements of the Company are for a period of nine months commencing on July 1, 2024 and ending on March 31, 2025.",
+      "pdf_page": 104,
+      "printed_page": "102",
+      "section": "Notes to Financial Statements, note 2.2"
+    },
+    {
+      "text": "STATEMENT OF PROFIT AND LOSS FOR THE NINE MONTH PERIOD ENDED MARCH 31, 2025",
+      "pdf_page": 99,
+      "printed_page": "97",
+      "section": "Statement of Profit and Loss"
+    },
+    {
+      "text": "Financial Year reported July 1, 2024 to March 31, 2025",
+      "pdf_page": 23,
+      "printed_page": "21",
+      "section": "Business Responsibility & Sustainability Report, General Disclosures"
+    },
+    {
+      "text": "The Company, vide approval of its Board of Directors dated January 23, 2025, changed its Financial Year from July 1- June 30 period to April 1- March 31 period. Accordingly, the Company’s financial year 2024-25 was a nine month period from July 1, 2024 and ending March 31, 2025.",
+      "pdf_page": 57,
+      "printed_page": "55",
+      "section": "Corporate Social Responsibility Report, note"
+    },
+    {
+      "text": "In December 2024, final dividend of ` 95 per share (total dividend including tax thereon ` 30 838 lakhs) for the year ended June 30, 2024 was paid to holders of fully paid equity shares.",
+      "pdf_page": 127,
+      "printed_page": "125",
+      "section": "Notes to Financial Statements, dividends"
+    },
+    {
+      "text": "Accordingly, the Ind-AS financial statements for the current financial year of the Company as per the provisions of section 2(41) of the Companies Act, 2013, is for a period of nine months from July 1, 2024, to March 31, 2025.",
+      "pdf_page": 88,
+      "printed_page": "86",
+      "section": "Independent Auditors' Report, Other Matter"
+    },
+    {
+      "text": "The Board of Directors of the Company have, vide a circular resolution dated January 23, 2025, resolved to change the financial year end from June 30 to March 31.",
+      "pdf_page": 88,
+      "printed_page": "86",
+      "section": "Independent Auditors' Report, Other Matter"
+    },
+    {
+      "text": "have been prepared for the nine months period from July 1, 2025 to March 31, 2025.",
+      "pdf_page": 12,
+      "printed_page": "10",
+      "section": "Directors' Report, Financial Year (the document's text; the start date should read July 1, 2024)"
+    }
+  ]
+}

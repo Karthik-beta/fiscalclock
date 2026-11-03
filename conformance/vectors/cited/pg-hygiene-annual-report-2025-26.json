@@ -1,0 +1,114 @@
+{
+  "name": "pg-hygiene-annual-report-2025-26",
+  "description": "Procter & Gamble Hygiene and Health Care Limited Annual Report 2025-26 (financial year ended 31 March 2026), its first full year after the change from a July-June year. The week block and the calendar-month subdivision are illustrative; only fields the document states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"The Board of Directors of the Company, on January 23, 2025, had approved the change in Financial Year of the Company from “July 1 – June 30” period to “April 1 – March 31” period. The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on March 31, 2026.\" (Directors' Report, p. 9) \"*Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025, and hence not comparable with current Financial Year 2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) \"re-appointed M/s. Ashwin Solanki & Associates, as the Cost Auditors of the Company for the financial year 2026-27.\" and \"to audit the cost records of the Company for the financial year ending March 31, 2027, is being placed for the approval of the shareholders of the Company\" (p. 18). Establishes the 1 April start, start-year naming in the form 2025-26, the bounds of 2025-26 and the end of 2026-27. The nine-month year 2024-25 is outside spec version 1 and has no case; see research/filers/pg-hygiene.md.",
+    "url": "https://assets.ctfassets.net/oe48y40ukei6/3NtnlryjO6oVyBMEES6pLT/d4aee2a14d8cab5a4d777d8e5f8eba8a/ANNUAL_REPORT_2026__1_.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 4,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_next}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "c19bd41f55617c9b",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}-{yy_next}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2025
+      },
+      "expect_subset": {
+        "start": "2025-04-01",
+        "last_day": "2026-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2026
+      },
+      "expect_subset": {
+        "last_day": "2027-03-31"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-26"
+      },
+      "expect_subset": {
+        "level": "year",
+        "year": 2025,
+        "start": "2025-04-01",
+        "last_day": "2026-03-31"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2026-27"
+      },
+      "expect_subset": {
+        "level": "year",
+        "year": 2026,
+        "last_day": "2027-03-31"
+      }
+    }
+  ]
+}

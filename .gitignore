@@ -33,3 +33,6 @@ bindings/js/dist/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Annual-report PDFs that research/filers/check_quotes.py downloads
+research/filers/pdfs/
