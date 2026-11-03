@@ -120,7 +120,7 @@ lychee --config website/lychee.toml --no-progress --root-dir "$PWD/website/dist"
 
 `npm test` runs Playwright, which needs its browser once: `cd website && npx playwright install --with-deps chromium`.
 
-Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
+Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block. External sites go down, so in CI a pull request checks every link to a file in the repository from Markdown offline, and external links only in the Markdown and MDX files it changes. The weekly run checks every external link.
 
 CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas, and audits the workflows with [zizmor](https://docs.zizmor.sh/) (its accepted findings are in `.github/zizmor.yml`):
 
