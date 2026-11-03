@@ -122,7 +122,10 @@ class Location:
 _LONE_SURROGATE = _re.compile(r"[\ud800-\udfff]")
 
 
-def _unsupported(value: Any) -> dict[str, str]:
+def _unsupported(value: Any) -> Any:
+    # json.dumps serialises only dict, so other mappings are converted here.
+    if isinstance(value, Mapping):
+        return dict(value)
     return {"unsupported_type": type(value).__name__}
 
 
