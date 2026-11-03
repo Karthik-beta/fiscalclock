@@ -1,19 +1,35 @@
 name: release
 
-# A tag push builds, tests, attests and publishes. A manual run does
-# everything except publish, as a dry run. Each publish job uses a GitHub
-# environment that requires the maintainer's approval.
+# A tag push builds, tests, attests and publishes. A manual run, and a pull
+# request that changes how the packages are built, do everything except attest
+# and publish, as a dry run. Each publish job uses a GitHub environment that
+# requires the maintainer's approval. RELEASING.md describes the process.
 
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/core/Cargo.toml"
+      - "bindings/python/Cargo.toml"
+      - "bindings/python/pyproject.toml"
+      - "bindings/js/Cargo.toml"
+      - "bindings/js/package.json"
+      - "bindings/js/package-lock.json"
+      - "bindings/js/scripts/**"
+      - "scripts/smoke.py"
+      - "scripts/smoke.mjs"
+      - "scripts/release_notes.py"
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,6 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -40,20 +57,36 @@ jobs:
       - name: The changelog has a section for this version
         if: env.PUBLISH == 'true'
         run: python3 -I scripts/release_notes.py "$GITHUB_REF_NAME" > /dev/null
+      - name: ci and docs passed on the tagged commit
+        if: env.PUBLISH == 'true'
+        run: |
+          for workflow in ci.yml docs.yml; do
+            passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?head_sha=$GITHUB_SHA&status=success&per_page=1" --jq .total_count)
+            if [ "$passed" -eq 0 ]; then
+              echo "::error::$workflow has no successful run for $GITHUB_SHA. Wait for it to pass, or re-run that commit's run (gh run rerun), then re-run this job."
+              exit 1
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   crate:
     needs: check
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    outputs:
+      rust: ${{ steps.rust.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install Rust
+        id: rust
         run: |
           rustup toolchain install stable --profile minimal --no-self-update
           rustup default stable
+          echo "version=$(rustc --version | cut -d ' ' -f 2)" >> "$GITHUB_OUTPUT"
       - name: Package and verify the crate
         run: cargo package -p fiscalclock --locked
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -167,6 +200,12 @@ jobs:
           npm test
           mkdir -p ../../npm-dist
           npm pack --pack-destination ../../npm-dist
+      - name: npm accepts the tarball
+        # npm refuses even a dry run of a version it already has (npm 11.7.0,
+        # checked on 3 Nov 2026), so only tag runs, whose version is new, can
+        # check this before anything is published.
+        if: env.PUBLISH == 'true'
+        run: npm publish --dry-run --access public ./npm-dist/fiscalclock-*.tgz
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: npm
@@ -178,7 +217,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2025]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -201,6 +240,16 @@ jobs:
         run: |
           python -m pip install --no-index --find-links artefacts fiscalclock
           python -I scripts/smoke.py
+      - name: The sdist builds from source and works on CPython 3.10
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          python -m pip install --force-reinstall --no-deps artefacts/fiscalclock-*.tar.gz
+          python -I scripts/smoke.py
+      - name: The musllinux wheel installs and works on Alpine Linux
+        if: runner.os == 'Linux'
+        run: >-
+          docker run --rm -v "$PWD:/work" -w /work python:3.10-alpine
+          sh -c "pip install --no-index --find-links artefacts --only-binary :all: fiscalclock && python -I scripts/smoke.py"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.14t"
@@ -223,6 +272,7 @@ jobs:
 
   attest:
     needs: smoke
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -236,12 +286,11 @@ jobs:
       - name: List artefacts
         run: ls -l artefacts
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        if: env.PUBLISH == 'true'
         with:
           subject-path: artefacts/*
 
   publish-crates-io:
-    needs: attest
+    needs: [crate, attest]
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     environment:
@@ -254,10 +303,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install Rust
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: crate
+          path: attested
+      # This job can run days after the crate job, when stable may be a newer
+      # cargo, and cargo publish packages the crate again rather than uploading
+      # a file. So it uses the crate job's Rust and checks the result.
+      - name: Install the Rust version that packaged the crate
         run: |
-          rustup toolchain install stable --profile minimal --no-self-update
-          rustup default stable
+          rustup toolchain install "$RUST" --profile minimal --no-self-update
+          rustup default "$RUST"
+        env:
+          RUST: ${{ needs.crate.outputs.rust }}
+      - name: The crate to publish is the one that was tested and attested
+        run: |
+          cargo package -p fiscalclock --locked --no-verify
+          cmp target/package/fiscalclock-*.crate attested/fiscalclock-*.crate
       - name: Get a temporary crates.io token with trusted publishing
         id: crates-io-auth
         uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
