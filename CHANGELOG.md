@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The release workflow publishes to crates.io and npm with trusted publishing, as it already did to PyPI. The API tokens used to publish 0.1.0 have been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The package READMEs list every member with its arguments and show how to read `FiscalclockError`, and the API spec documents `details.years`, more error paths and the type of each dimension column.
 - Python: `Period.level` is typed as the `Level` literal instead of `str`, and the TypeScript `details` of an error as its documented shapes instead of `unknown`. Only type checkers see the difference.
+- Python: `validate`, `validate_json`, `call_json` and the `FiscalCalendar` constructor release the GIL while the core runs, as `FiscalCalendar.call_json` and the methods already did.
 
 ### Fixed
 
