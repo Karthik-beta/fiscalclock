@@ -4,9 +4,10 @@ import { bracketMatching, HighlightStyle, syntaxHighlighting } from "@codemirror
 import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { Decoration, EditorView, keymap, lineNumbers, type DecorationSet } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
-import { FiscalCalendar, FiscalclockError, validate, type ErrorObject, type Location, type Period } from "fiscalclock";
+import type { ErrorObject, FiscalCalendar, Location, Period } from "fiscalclock";
 import type { Example } from "../lib/examples";
 import { formatJson } from "../lib/json-format";
+import { LOAD_FAILED, LOAD_FAILED_HINT } from "../lib/lookup";
 import { decodeState, encodeState, type PlaygroundState } from "../lib/playground-state";
 import { renderYearStrip } from "../lib/year-strip";
 import { rangeForPath, type Range } from "./json-path";
@@ -39,6 +40,11 @@ const locationBox = $("pg-location");
 const stripBox = $("pg-strip");
 const stripHeading = $("pg-strip-heading");
 
+// A failed load replaces "Loading fiscalclock…" with a message, then stops the script, so nothing runs without the library.
+const fc = await import("fiscalclock").catch((error: unknown) => {
+  locationBox.replaceChildren(el("p", { class: "pg-hint" }, `${LOAD_FAILED}. ${LOAD_FAILED_HINT}`));
+  throw error;
+});
 
 const setErrorRanges = StateEffect.define<Range[]>();
 const errorMarks = StateField.define<DecorationSet>({
@@ -170,7 +176,7 @@ function attempt<T>(source: ErrorSource, errors: ShownError[], run: () => T): T 
   try {
     return run();
   } catch (e) {
-    if (!(e instanceof FiscalclockError)) throw e;
+    if (!(e instanceof fc.FiscalclockError)) throw e;
     errors.push(...e.errors.map((err) => ({ ...err, source })));
     return undefined;
   }
@@ -185,11 +191,11 @@ function render({ followDate }: { followDate: boolean }): void {
   let here: Location | undefined;
   let cal: FiscalCalendar | undefined;
 
-  const validation = validate(state.definition);
+  const validation = fc.validate(state.definition);
   if ("errors" in validation) {
     errors.push(...validation.errors.map((err) => ({ ...err, source: "definition" as const })));
   } else {
-    cal = new FiscalCalendar(state.definition);
+    cal = new fc.FiscalCalendar(state.definition);
     here = attempt("date", errors, () => cal!.locate(state.date));
     if (followDate && here && here.year.year !== state.year) {
       yearInput.value = String(here.year.year);
@@ -278,7 +284,7 @@ function labelOf(cal: FiscalCalendar, period: Period): Node {
   try {
     return document.createTextNode(cal.format(period));
   } catch (e) {
-    if (!(e instanceof FiscalclockError)) throw e;
+    if (!(e instanceof fc.FiscalclockError)) throw e;
     return el("span", { class: "pg-label-missing" }, `none (${e.code})`);
   }
 }

@@ -163,6 +163,13 @@ test("an unreadable fragment falls back to the first example with a notice", asy
   await expect(page.getByLabel("Example")).toHaveValue("nrf-53-week-years");
 });
 
+test("when the WebAssembly module cannot load, the results say so instead of loading forever", async ({ page }) => {
+  await page.route("**/*.wasm", (route) => route.abort());
+  await page.goto("/playground/");
+  await expect(results(page)).toContainText("fiscalclock could not be loaded");
+  await expect(results(page)).not.toContainText("Loading fiscalclock");
+});
+
 test("the keyboard can leave the editor with Tab", async ({ page }) => {
   await openPlayground(page);
   await editor(page).click();
