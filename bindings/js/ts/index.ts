@@ -99,12 +99,29 @@ function dateArg(value: unknown, name: string): unknown {
   return { unsupported_type: tag.slice(8, -1) };
 }
 
-function periodArg(period: PeriodRef): PeriodRef {
+function periodArg(period: PeriodRef): unknown {
+  // Anything that is not an object goes to the core, which reports it at "period".
+  if (period === null || typeof period !== "object") return period;
   return { level: period.level, year: period.year, index: period.index ?? null };
 }
 
+// A BigInt becomes {"unsupported_type": "BigInt"}, which the core reports at
+// its path. Input JSON cannot represent at all (a cycle, or nesting too deep)
+// becomes empty text, which the core rejects at path "".
+function jsonText(value: unknown): string {
+  try {
+    return JSON.stringify(value, (_key, v: unknown) => (typeof v === "bigint" ? { unsupported_type: "BigInt" } : v)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function definitionText(definition: string | object): string {
-  return typeof definition === "string" ? definition : JSON.stringify(definition);
+  if (typeof definition === "string") return definition;
+  // undefined, functions, symbols and BigInts have no JSON form. JSON null
+  // makes the core report that the definition is not an object, as it does
+  // for a number.
+  return jsonText(["object", "number", "boolean"].includes(typeof definition) ? definition : null);
 }
 
 /** Validates a definition. Returns the result object; does not throw for an invalid definition. */
@@ -150,7 +167,7 @@ export class FiscalCalendar {
   }
 
   #call<T>(op: string, args: Record<string, unknown>): T {
-    const out: unknown = JSON.parse(this.#cal.callJson(op, JSON.stringify(args)));
+    const out: unknown = JSON.parse(this.#cal.callJson(op, jsonText(args)));
     if (out !== null && typeof out === "object" && !Array.isArray(out) && "errors" in out) {
       throw new FiscalclockError((out as { errors: ErrorObject[] }).errors);
     }

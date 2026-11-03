@@ -1,6 +1,8 @@
 """Tests for the Python layer: type conversion, errors and timestamp rejection."""
 
+import dataclasses
 import datetime as dt
+import decimal
 import json
 import unittest
 
@@ -94,6 +96,72 @@ class Errors(unittest.TestCase):
 
     def test_error_is_a_value_error(self):
         self.assertTrue(issubclass(FiscalclockError, ValueError))
+
+
+class ValuesWithoutAJsonForm(unittest.TestCase):
+    """Values JSON cannot carry still give a coded error, with the same code and path as in JS."""
+
+    def setUp(self):
+        self.cal = FiscalCalendar(NRF)
+        self.q4 = self.cal.period("quarter", 2023, 4)
+
+    def assert_error(self, call, code, path):
+        with self.assertRaises(FiscalclockError) as cm:
+            call()
+        self.assertEqual((cm.exception.code, cm.exception.path), (code, path))
+
+    def test_unsupported_year_and_n(self):
+        class Thing:
+            pass
+
+        for value in [decimal.Decimal(2023), Thing(), b"2023"]:
+            self.assert_error(lambda: self.cal.period("quarter", value, 4), "INVALID_ARGUMENT", "year")
+            self.assert_error(lambda: self.cal.shift(self.q4, value), "INVALID_ARGUMENT", "n")
+
+    def test_numpy_integers(self):
+        try:
+            import numpy
+        except ImportError:
+            self.skipTest("numpy is not installed")
+        self.assert_error(lambda: self.cal.period("quarter", numpy.int64(2023), 4), "INVALID_ARGUMENT", "year")
+
+    def test_period_mapping_with_date_values(self):
+        self.assertEqual(self.cal.shift(dataclasses.asdict(self.q4), 1), self.cal.shift(self.q4, 1))
+
+    def test_period_that_is_not_a_mapping(self):
+        for value in [None, ("quarter", 2023, 4), "Q4 FY2023", 7]:
+            self.assert_error(lambda: self.cal.shift(value, 1), "INVALID_ARGUMENT", "period")
+
+    def test_definition_without_a_json_form(self):
+        for value in [json.dumps(NRF).encode(), {1, 2}, decimal.Decimal(1)]:
+            self.assert_error(lambda: FiscalCalendar(value), "INVALID_JSON", "")
+            self.assertEqual(fiscalclock.validate(value)["errors"][0]["code"], "INVALID_JSON")
+
+    def test_definition_with_an_unsupported_value(self):
+        self.assert_error(lambda: FiscalCalendar({**NRF, "spec_version": decimal.Decimal(1)}), "INVALID_TYPE", "spec_version")
+
+    def test_circular_definition(self):
+        cyclic = json.loads(json.dumps(NRF))
+        cyclic["self"] = cyclic
+        self.assert_error(lambda: FiscalCalendar(cyclic), "INVALID_JSON", "")
+
+    def test_lone_surrogates(self):
+        self.assert_error(lambda: self.cal.parse("\ud800"), "INVALID_ARGUMENT", "")
+        self.assert_error(lambda: FiscalCalendar({**NRF, "spec_version": "\udfff"}), "INVALID_JSON", "")
+
+    def test_non_ascii_text_reaches_the_core_unchanged(self):
+        definition = json.loads(json.dumps(NRF))
+        definition["naming"]["schemes"]["fy"]["templates"] = {"year": "Geschäftsjahr {yyyy}", "quarter": "第{q}四半期 {yyyy} 📅"}
+        cal = FiscalCalendar(definition)
+        q4 = cal.period("quarter", 2023, 4)
+        label = cal.format(q4)
+        self.assertEqual(label, "第4四半期 2023 📅")
+        self.assertEqual(cal.parse(label), q4)
+        for text in ["Geschäftsjahr 99999", "第9四半期 2023 📅"]:
+            with self.assertRaises(FiscalclockError) as cm:
+                cal.parse(text)
+            raw = cal.call_json("parse", json.dumps({"label": text}, ensure_ascii=False))
+            self.assertEqual(cm.exception.errors, json.loads(raw)["errors"])
 
 
 class TimestampsAreRejected(unittest.TestCase):

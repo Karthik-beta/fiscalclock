@@ -124,6 +124,32 @@ test("values JSON cannot carry still produce a coded error", () => {
   }
 });
 
+test("a BigInt year or n is a coded error at its path", () => {
+  assertError(() => cal.period("quarter", 2023n, 4), "INVALID_ARGUMENT", "year");
+  assertError(() => cal.shift(cal.period("quarter", 2023, 4), 1n), "INVALID_ARGUMENT", "n");
+});
+
+test("a period that is not an object is a coded error at period", () => {
+  for (const v of [null, undefined, "Q4 FY2023", 7]) {
+    assertError(() => cal.shift(v, 1), "INVALID_ARGUMENT", "period");
+  }
+});
+
+test("a definition without a JSON form is INVALID_JSON", () => {
+  const cyclic = structuredClone(NRF);
+  cyclic.self = cyclic;
+  for (const v of [undefined, 1n, Symbol("x"), () => 1, cyclic]) {
+    assertError(() => new FiscalCalendar(v), "INVALID_JSON", "");
+    assert.equal(validate(v).errors[0].code, "INVALID_JSON");
+  }
+  assertError(() => new FiscalCalendar({ ...NRF, spec_version: 1n }), "INVALID_TYPE", "spec_version");
+});
+
+test("lone surrogates are a coded error", () => {
+  assertError(() => cal.parse("\ud800"), "INVALID_ARGUMENT", "");
+  assertError(() => new FiscalCalendar({ ...NRF, spec_version: "\udfff" }), "INVALID_JSON", "");
+});
+
 test("real Temporal values, where the runtime has Temporal", { skip: typeof globalThis.Temporal === "undefined" && "no Temporal in this runtime" }, () => {
   const { Temporal } = globalThis;
   assert.deepEqual(cal.locate(Temporal.PlainDate.from("2024-02-03")), cal.locate("2024-02-03"));
