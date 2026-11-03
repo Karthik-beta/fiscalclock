@@ -286,16 +286,10 @@ class TimestampsAreRejected(unittest.TestCase):
     def test_error_bytes_come_from_the_core(self):
         with self.assertRaises(FiscalclockError) as cm:
             self.cal.locate(dt.datetime(2024, 2, 3))
-        expected = [
-            {
-                "code": "TIMESTAMP_REJECTED",
-                "path": "date",
-                "message": "a timestamp was passed where a civil date (year, month, day) is expected",
-                "hint": "convert the timestamp to a date in the time zone you mean, then pass that date",
-                "details": None,
-            }
-        ]
-        self.assertEqual(cm.exception.errors, expected)
+        [error] = cm.exception.errors
+        self.assertEqual((error["code"], error["path"], error["details"]), ("TIMESTAMP_REJECTED", "date", None))
+        # The wording is not part of the API, so compare it with the core's, not a literal.
+        self.assertEqual(cm.exception.errors, json.loads(fiscalclock._fiscalclock.timestamp_rejected("date"))["errors"])
 
     def test_date_subclass_that_is_not_a_datetime_is_not_accepted(self):
         class MyDate(dt.date):
