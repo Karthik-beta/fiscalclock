@@ -75,6 +75,7 @@ Rust core:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --release -p fiscalclock --locked
+cargo test -p fiscalclock --locked --test json_api
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p fiscalclock
 cargo build -p fiscalclock --target wasm32-unknown-unknown --release
 cargo package -p fiscalclock --locked
