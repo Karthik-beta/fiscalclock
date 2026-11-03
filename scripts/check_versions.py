@@ -3,7 +3,8 @@ each pinned tool version agrees everywhere it is written.
 
 With a tag argument (for example ``v0.1.0``), also checks that the tag names
 that version. The pinned tools are the minimum supported Rust version, maturin,
-wasm-bindgen and pandas; PINS lists every file that states one.
+wasm-bindgen, pandas and the release the website runs; PINS lists every
+file that states one.
 
 Standard library only, and needs Python 3.11 or later (``tomllib``). Run with
 ``python -I scripts/check_versions.py``.
@@ -56,6 +57,15 @@ PINS = {
         ("conformance/generators/pandas_vectors.py", r'(?:^PANDAS_VERSION = "|pandas==)(\d+\.\d+\.\d+)'),
         ("conformance/generators/README.md", PANDAS_PIN),
         (".github/workflows/docs.yml", PANDAS_PIN),
+    ],
+    # The site runs the published packages, so these may lag the version above,
+    # but every language's examples must run the same release.
+    "fiscalclock release the website runs": [
+        ("website/package.json", r'^    "fiscalclock": "([^"]+)"'),
+        ("website/package-lock.json", r'"node_modules/fiscalclock": \{\n\s+"version": "([^"]+)"'),
+        ("website/examples/python/requirements.txt", r"^fiscalclock==(\S+)$"),
+        ("website/examples/rust/Cargo.toml", r'^fiscalclock = "=([^"]+)"'),
+        ("website/examples/rust/Cargo.lock", r'name = "fiscalclock"\nversion = "([^"]+)"'),
     ],
 }
 
