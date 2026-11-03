@@ -26,18 +26,26 @@ export const examples: Example[] = Object.values(cited)
   .map(({ name, description, source, definition }) => ({ name, description, url: source.url ?? "", definition }))
   .sort((a, b) => Number(b.name.startsWith("nrf-")) - Number(a.name.startsWith("nrf-")) || a.name.localeCompare(b.name));
 
-// What a definition's year is, from `year.type` (spec/definition-v1.md).
-const YEAR_KINDS: Record<string, string> = { week_based: "52/53-week year", fixed_date: "fixed-date year" };
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// What a definition's year is, from `year` (spec/definition-v1.md). A fixed-date year names its first day,
+// so two calendars of one organisation, such as before and after a change of year end, get different labels.
+const YEAR_KINDS: Record<string, (year: { start?: { month: number; day: number } }) => string> = {
+  week_based: () => "52/53-week year",
+  fixed_date: ({ start }) => `year from ${start!.day} ${MONTHS[start!.month - 1]}`,
+};
 
 /**
- * A label short enough for a closed select, such as "Costco, 52/53-week year".
- * The organisation is the first word of the vector's name, spelt as its
- * description spells it; the build fails if the description does not name it.
+ * A label short enough for a closed select, such as "Costco, 52/53-week year"
+ * or "Reliance, year from 1 April". The organisation is the first word of the
+ * vector's name, spelt as its description spells it; the build fails if the
+ * description does not name it.
  */
 export function shortLabel({ name, description, definition }: Example): string {
   const word = name.split("-")[0]!;
   const organisation = description.match(new RegExp(`\\b${word}\\b`, "i"))?.[0];
-  const kind = YEAR_KINDS[(definition.year as { type: string }).type];
+  const year = definition.year as { type: string; start?: { month: number; day: number } };
+  const kind = YEAR_KINDS[year.type]?.(year);
   if (!organisation || !kind) throw new Error(`No short label for the example ${name}: name its organisation in the description and use a known year type.`);
   return `${organisation}, ${kind}`;
 }

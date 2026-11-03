@@ -1,0 +1,173 @@
+{
+  "name": "reliance-annual-report-2024-25",
+  "description": "Reliance Industries Limited Integrated Annual Report 2024-25 (financial year ended 31 March 2025). The week block, the calendar-month subdivision and the quarter template are illustrative; only fields the document states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"Financial Year April 1 to March 31\" (Corporate Governance Report, General Shareholder Information, p. 58) \"Financial Calendar (Tentative) Results for the quarter ending June 30, 2025 - Third week of July, 2025; September 30, 2025 - Third week of October, 2025; December 31, 2025 - Third week of January, 2026; and March 31, 2026 - Fourth week of April, 2026.\" (p. 58) \"There has been no revision in credit ratings during the FY 2024-25.\" and \"Annual listing fees for the FY 2025-26 has been paid by the Company to BSE Limited and National Stock Exchange of India Limited.\" (p. 58) \"The Board of Directors present the Company’s Forty-eighth Annual Report (Post-IPO) and the Company’s audited financial statements for the financial year ended March 31, 2025.\" (Board's Report, p. 76) Statement of Changes in Equity (p. 114): \"Balance as at 1st April, 2023\", \"Change during the year 2023-24\", \"Balance as at 31st March, 2024\", \"Change during the year 2024-25\" and \"B. Other Equity Balance as at 1st April, 2024\". Establishes the 1 April start, start-year naming in the form FY 2024-25, the bounds of 2023-24 and 2024-25, the end of FY 2025-26, and the last day of each quarter of FY 2025-26 (the four quarter ends listed in order).",
+    "url": "https://www.ril.com/ar2024-25/pdf/RIL-IAR-2025.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 4,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY {yyyy}-{yy_next}",
+            "quarter": "Q{q} FY {yyyy}-{yy_next}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "e4b9ec9719d7799b",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"Q{q} FY {yyyy}-{yy_next}\",\"year\":\"FY {yyyy}-{yy_next}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "start": "2023-04-01",
+        "last_day": "2024-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect_subset": {
+        "start": "2024-04-01",
+        "last_day": "2025-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2025
+      },
+      "expect_subset": {
+        "last_day": "2026-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 1
+      },
+      "expect_subset": {
+        "last_day": "2025-06-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 2
+      },
+      "expect_subset": {
+        "last_day": "2025-09-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 3
+      },
+      "expect_subset": {
+        "last_day": "2025-12-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 4
+      },
+      "expect_subset": {
+        "last_day": "2026-03-31"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-25"
+      },
+      "expect_subset": {
+        "level": "year",
+        "year": 2024,
+        "start": "2024-04-01",
+        "last_day": "2025-03-31"
+      }
+    }
+  ]
+}
