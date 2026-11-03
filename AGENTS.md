@@ -73,10 +73,11 @@ Rust core:
 
 ```sh
 cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --release -p fiscalclock
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --release -p fiscalclock --locked
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p fiscalclock
 cargo build -p fiscalclock --target wasm32-unknown-unknown --release
+cargo package -p fiscalclock --locked
 cargo +1.85 check -p fiscalclock
 ```
 
@@ -101,16 +102,34 @@ Evidence, vectors and versions:
 ```sh
 python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
 python -I conformance/generators/check.py
+uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py --check
+python -I research/evidence/check_quotes.py --offline
+python -I research/evidence/render_evidence.py --check
 python -I scripts/check_versions.py
 ```
+
+`check_quotes.py` without `--offline` fetches every quoted source. CI runs it weekly, so run it when you change a quote.
 
 Website (Node.js 24; `test:examples` also needs Python 3 and Cargo):
 
 ```sh
-cd website && npm ci --ignore-scripts && npm run build && npm run check && npm test && npm run test:examples
+(cd website && npm ci --ignore-scripts && npm run build && npm run check && npm test && npm run test:examples)
+lychee --config website/lychee.toml --no-progress --root-dir "$PWD/website/dist" "website/dist/**/*.html"
 ```
 
-Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
+`npm test` runs Playwright, which needs its browser once: `cd website && npx playwright install --with-deps chromium`.
+
+Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
+
+CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas:
+
+```sh
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-forms $(find .github/ISSUE_TEMPLATE -name '*.yml' ! -name config.yml)
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-config .github/ISSUE_TEMPLATE/config.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-workflows .github/workflows/*.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
+uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+```
 
 ## Commits and pull requests
 
