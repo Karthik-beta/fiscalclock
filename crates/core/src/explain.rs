@@ -1,10 +1,11 @@
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::fmt::Write;
 
 use crate::calendar::{FiscalCalendar, Level, Period};
 use crate::date::{Date, month_name};
-use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure};
+use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure, YearNumber};
 use crate::error::Error;
 
 /// The rule trace behind [`FiscalCalendar::locate`] for one date.
@@ -30,7 +31,7 @@ pub struct Step {
 fn span(p: &Period) -> String {
     let mut s = format!("{} to {} ({} days", p.start, p.last_day(), p.days);
     if let Some(w) = p.weeks {
-        s.push_str(&format!(", {w} weeks"));
+        let _ = write!(s, ", {w} weeks");
     }
     if p.has_extra_week {
         s.push_str(if p.level == Level::Week {
@@ -45,16 +46,21 @@ fn span(p: &Period) -> String {
 
 impl FiscalCalendar {
     /// Explains, level by level, why `date` falls where [`FiscalCalendar::locate`] says.
+    ///
+    /// The wording of each step is for people and may change in any release.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `date` when the fiscal year containing `date` is outside
+    /// the supported range.
     pub fn explain(&self, date: Date) -> Result<Explanation, Error> {
         let loc = self.locate(date)?;
         let ws = self.def.week_start;
-        let scheme = &self.def.schemes[self.def.default_scheme];
+        let scheme = self.default_scheme();
         let numbering = match scheme.year_number {
-            crate::definition::YearNumber::Start => "the calendar year of its first day",
-            crate::definition::YearNumber::End => "the calendar year of its last day",
-            crate::definition::YearNumber::Majority => {
-                "the calendar year that holds more than half of its days"
-            }
+            YearNumber::Start => "the calendar year of its first day",
+            YearNumber::End => "the calendar year of its last day",
+            YearNumber::Majority => "the calendar year that holds more than half of its days",
         };
         let offset = if scheme.offset == 0 {
             String::new()

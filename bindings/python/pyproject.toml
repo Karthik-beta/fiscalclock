@@ -33,7 +33,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/Karthik-beta/fiscalclock"
-Documentation = "https://github.com/Karthik-beta/fiscalclock/wiki"
+Documentation = "https://fiscalclock.karthik.nz"
 Issues = "https://github.com/Karthik-beta/fiscalclock/issues"
 Changelog = "https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md"
 

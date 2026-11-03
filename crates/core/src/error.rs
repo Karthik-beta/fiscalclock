@@ -8,7 +8,8 @@ use crate::calendar::{Level, Period};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ErrorCode {
-    /// The definition is not valid JSON or not an object.
+    /// The definition is not valid JSON, is not an object, or repeats a key in
+    /// some object.
     InvalidJson,
     /// A field the format does not define.
     UnknownField,
@@ -128,10 +129,11 @@ pub enum Details {
     /// The periods an ambiguous label could denote, ordered by start date,
     /// then scheme name, then level.
     Candidates(Vec<Candidate>),
-    /// The first affected years of a numbering error. For
+    /// Up to five affected years of a numbering error. For
     /// [`ErrorCode::YearNumberCollision`] these are the year numbers given
-    /// twice or skipped; for [`ErrorCode::MajorityTie`] the calendar years in
-    /// which the evenly split fiscal years start.
+    /// twice or skipped, including the scheme's `offset`. For
+    /// [`ErrorCode::MajorityTie`] they are the calendar years in which a tied
+    /// fiscal year starts, without the offset.
     Years(Vec<i64>),
 }
 
