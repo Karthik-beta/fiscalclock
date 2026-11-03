@@ -12,14 +12,14 @@ use pyo3::prelude::*;
 
 /// `fiscalclock::json::validate`.
 #[pyfunction]
-fn validate(definition: &str) -> String {
-    json::validate(definition)
+fn validate(py: Python<'_>, definition: &str) -> String {
+    py.detach(|| json::validate(definition))
 }
 
 /// `fiscalclock::json::call`.
 #[pyfunction]
-fn call(definition: &str, op: &str, args: &str) -> String {
-    json::call(definition, op, args)
+fn call(py: Python<'_>, definition: &str, op: &str, args: &str) -> String {
+    py.detach(|| json::call(definition, op, args))
 }
 
 /// `fiscalclock::json::timestamp_rejected`.
@@ -36,8 +36,8 @@ struct Calendar(FiscalCalendar);
 impl Calendar {
     /// Returns `(calendar, None)`, or `(None, errors)` with the core's errors JSON.
     #[staticmethod]
-    fn build(definition: &str) -> (Option<Calendar>, Option<String>) {
-        match FiscalCalendar::from_json(definition) {
+    fn build(py: Python<'_>, definition: &str) -> (Option<Calendar>, Option<String>) {
+        match py.detach(|| FiscalCalendar::from_json(definition)) {
             Ok(cal) => (Some(Calendar(cal)), None),
             Err(errors) => (None, Some(json::errors_json(errors.as_slice()))),
         }
