@@ -56,6 +56,10 @@ class FiscalclockError(ValueError):
             text += f"; and {len(errors) - 1} more"
         super().__init__(text)
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        # The default rebuilds from ``args``, the message text, not the errors.
+        return (type(self), (self.errors,), self.__dict__)
+
 
 @dataclass(frozen=True)
 class Period:

@@ -1,9 +1,11 @@
 """Tests for the Python layer: type conversion, errors and timestamp rejection."""
 
+import copy
 import dataclasses
 import datetime as dt
 import decimal
 import json
+import pickle
 import unittest
 
 import fiscalclock
@@ -96,6 +98,16 @@ class Errors(unittest.TestCase):
 
     def test_error_is_a_value_error(self):
         self.assertTrue(issubclass(FiscalclockError, ValueError))
+
+    def test_error_survives_pickle_and_copy(self):
+        with self.assertRaises(FiscalclockError) as cm:
+            FiscalCalendar(NRF).locate("2024-02-30")
+        original = cm.exception
+        for clone in [pickle.loads(pickle.dumps(original)), copy.copy(original), copy.deepcopy(original)]:
+            self.assertIsInstance(clone, FiscalclockError)
+            self.assertEqual(clone.errors, original.errors)
+            self.assertEqual((clone.code, clone.path, clone.message, clone.hint), (original.code, original.path, original.message, original.hint))
+            self.assertEqual(str(clone), str(original))
 
 
 class ValuesWithoutAJsonForm(unittest.TestCase):
