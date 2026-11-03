@@ -37,6 +37,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
         run: cargo test --release -p fiscalclock --locked
+      - name: JSON API tests with overflow checks
+        run: cargo test -p fiscalclock --locked --test json_api
       - name: Documentation builds without warnings
         run: cargo doc --no-deps -p fiscalclock
         env:
