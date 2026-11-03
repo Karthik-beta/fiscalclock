@@ -46,12 +46,16 @@ export type PeriodRef = Pick<Period, "level" | "year" | "index">;
 /** An ISO `YYYY-MM-DD` string or a `Temporal.PlainDate`. */
 export type DateLike = string | { readonly [Symbol.toStringTag]: "Temporal.PlainDate"; toString(): string };
 
+// `candidates` comes with AMBIGUOUS_LABEL (spec/api-v1.md), `years` with
+// YEAR_NUMBER_COLLISION and MAJORITY_TIE (spec/definition-v1.md).
+type ErrorDetails = null | { candidates: { period: Period; scheme: string; level: Level }[] } | { years: number[] };
+
 export interface ErrorObject {
   code: string;
   path: string;
   message: string;
   hint: string | null;
-  details: unknown;
+  details: ErrorDetails;
 }
 
 export type ValidateResult = { ok: true; calendar_id: string; canonical: string } | { errors: ErrorObject[] };
@@ -62,7 +66,7 @@ export class FiscalclockError extends Error {
   readonly code: string;
   readonly path: string;
   readonly hint: string | null;
-  readonly details: unknown;
+  readonly details: ErrorDetails;
 
   constructor(errors: ErrorObject[]) {
     const first = errors[0];
