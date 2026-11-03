@@ -1,10 +1,12 @@
 //! The JSON API that every binding wraps.
 //!
-//! Both functions take and return JSON text exactly as documented in
-//! `spec/api-v1.md`: keys in the documented order, no insignificant whitespace,
-//! and either the operation's result or `{"errors":[...]}`. Because every
-//! language calls these same functions, the same inputs give byte-identical
-//! output everywhere.
+//! [`validate`], [`call`] and [`FiscalCalendar::call_json`] take and return JSON
+//! text exactly as documented in `spec/api-v1.md`: keys in the documented
+//! order, no insignificant whitespace, and either the operation's result or
+//! `{"errors":[...]}`. [`errors_json`] and [`timestamp_rejected`] build that
+//! error form for failures a binding detects itself. Because every language
+//! calls these same functions, the same inputs give byte-identical output
+//! everywhere.
 
 use alloc::format;
 use alloc::string::String;
@@ -247,6 +249,9 @@ fn arg_index(a: &Map<String, Value>, name: &str, level: Level) -> Result<Option<
         Some(v) if v.is_i64() || v.is_u64() => match v.as_i64().and_then(|n| u32::try_from(n).ok())
         {
             Some(i) => Ok(Some(i)),
+            // Not a valid index for any level. A year takes no index, so the
+            // sentinel 0 reaches `resolve`, which rejects it as INVALID_ARGUMENT
+            // ("a year has no index") instead of PERIOD_NOT_FOUND.
             None if level == Level::Year => Ok(Some(0)),
             None => Err(Error::new(
                 ErrorCode::PeriodNotFound,

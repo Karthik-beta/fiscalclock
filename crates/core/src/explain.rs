@@ -45,6 +45,13 @@ fn span(p: &Period) -> String {
 
 impl FiscalCalendar {
     /// Explains, level by level, why `date` falls where [`FiscalCalendar::locate`] says.
+    ///
+    /// The wording of each step is for people and may change in any release.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `date` when the fiscal year containing `date` is outside
+    /// the supported range.
     pub fn explain(&self, date: Date) -> Result<Explanation, Error> {
         let loc = self.locate(date)?;
         let ws = self.def.week_start;

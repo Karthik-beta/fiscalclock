@@ -121,6 +121,12 @@ const MAX_DIMENSION_DAYS: i32 = 146_097;
 
 impl FiscalCalendar {
     /// Validates a JSON definition and builds the calendar.
+    ///
+    /// # Errors
+    ///
+    /// Returns every validation error found, sorted by path and then code. Any
+    /// code the error catalogue lists as raised by `validate` can appear, from
+    /// `INVALID_JSON` to `MAJORITY_TIE`.
     pub fn from_json(definition: &str) -> Result<FiscalCalendar, Errors> {
         Definition::from_json(definition).map(FiscalCalendar::new)
     }
@@ -136,8 +142,12 @@ impl FiscalCalendar {
             min_key: Key(0),
             max_key: Key(0),
         };
+        // A supported fiscal year must lie wholly inside the date range, so
+        // that its `end_exclusive` is representable. Year boundaries move a few
+        // days either side of 1 January, so the first and last supported keys
+        // are searched for rather than assumed.
         let first_day = Date::civil(1, 1, 2);
-        let end_limit = Date::civil(9999, 12, 31);
+        let end_limit = Date::MAX;
         cal.min_key = (-3..=5)
             .map(Key)
             .find(|&k| cal.year_bounds(k).0 >= first_day)
@@ -551,7 +561,7 @@ impl FiscalCalendar {
         }
     }
 
-    /// Resolves coordinates to a key and index, with errors under `prefix`.
+    /// Resolves coordinates to a key and index.
     fn resolve(
         &self,
         level: Level,
@@ -603,6 +613,11 @@ impl FiscalCalendar {
     }
 
     /// Where `date` falls at every level.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `date` when the fiscal year containing `date` is
+    /// outside the supported range.
     pub fn locate(&self, date: Date) -> Result<Location, Error> {
         self.locate_at(date, "date")
     }
@@ -653,12 +668,25 @@ impl FiscalCalendar {
     }
 
     /// The period with the given coordinates. `index` is `None` for a year.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` at `year` when the fiscal year is outside the supported
+    /// range. `INVALID_ARGUMENT` at `index` when a year is given an index or any
+    /// other level none. `PERIOD_NOT_FOUND` at `index` when the year has no such
+    /// quarter, period or week.
     pub fn period(&self, level: Level, year: i32, index: Option<u32>) -> Result<Period, Error> {
         let (key, index) = self.resolve(level, year, index)?;
         Ok(self.make(level, key, index))
     }
 
     /// The period `n` steps away at the same level, crossing years as needed.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period, and `OUT_OF_RANGE` at `n` when the
+    /// result lies outside the supported range.
     pub fn shift(&self, period: &Period, n: i64) -> Result<Period, Error> {
         let (key, index) = self.reresolve(period)?;
         let level = period.level;
@@ -721,6 +749,11 @@ impl FiscalCalendar {
     }
 
     /// The enclosing period one level up. A year has no parent.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE` or `PERIOD_NOT_FOUND` at `period` when its coordinates do
+    /// not name a period, and `INVALID_ARGUMENT` at `period` for a year.
     pub fn parent(&self, period: &Period) -> Result<Period, Error> {
         let (key, index) = self.reresolve(period)?;
         let i = index.unwrap_or(1);
@@ -743,6 +776,13 @@ impl FiscalCalendar {
     }
 
     /// The periods at `level` inside `period`, in order.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period. `LEVEL_NOT_NESTED` at `level` when
+    /// `level` is not below the period's level, or when asking for the weeks of
+    /// a quarter or period in a `fixed_date` year.
     pub fn children(&self, period: &Period, level: Level) -> Result<Vec<Period>, Error> {
         let (key, index) = self.reresolve(period)?;
         let fixed = matches!(self.def.structure, Structure::FixedDate(_));
@@ -791,6 +831,12 @@ impl FiscalCalendar {
     }
 
     /// The year periods with year numbers `from` to `to` inclusive, at most 10,000.
+    ///
+    /// # Errors
+    ///
+    /// `INVALID_ARGUMENT` at `to` when `from` is after `to` or more than 10,000
+    /// years are requested. `OUT_OF_RANGE` at `from` or `to` when that year is
+    /// outside the supported range.
     pub fn years(&self, from: i32, to: i32) -> Result<Vec<Period>, Error> {
         if from > to {
             return Err(Error::new(
@@ -849,6 +895,14 @@ impl FiscalCalendar {
     }
 
     /// The label of `period` under `scheme`, or the default scheme when `None`.
+    ///
+    /// # Errors
+    ///
+    /// `OUT_OF_RANGE`, `INVALID_ARGUMENT` or `PERIOD_NOT_FOUND` at `period` when
+    /// its coordinates do not name a period. `SCHEME_NOT_FOUND` at `scheme`.
+    /// `TEMPLATE_MISSING` at `period` when the scheme has no template for the
+    /// level. `OUT_OF_RANGE` at `period` when `{yyyy}` would need a year number
+    /// outside 1 to 9999.
     pub fn format(&self, period: &Period, scheme: Option<&str>) -> Result<String, Error> {
         let (key, index) = self.reresolve(period)?;
         let s = self.scheme(scheme)?;
@@ -891,6 +945,13 @@ impl FiscalCalendar {
     }
 
     /// The period a label denotes. Reports every match rather than choosing one.
+    ///
+    /// # Errors
+    ///
+    /// `LABEL_NOT_RECOGNISED` at `label` when no template matches.
+    /// `AMBIGUOUS_LABEL` at `label` when more than one period matches, with
+    /// every candidate in [`Details::Candidates`]. `OUT_OF_RANGE` at `label` when
+    /// every match names a fiscal year outside the supported range.
     pub fn parse(&self, label: &str) -> Result<Period, Error> {
         let mut candidates: Vec<Candidate> = Vec::new();
         let mut out_of_range_year = false;

@@ -51,7 +51,15 @@ pub(crate) enum Cell {
 }
 
 impl FiscalCalendar {
-    /// One row per day in `[start, end_exclusive)`, at most 3,660,000 days.
+    /// One row per day in `[start, end_exclusive)`, at most 146,097 days (400 years).
+    ///
+    /// # Errors
+    ///
+    /// `INVALID_ARGUMENT` at `end_exclusive` when `start` is after it or the
+    /// range is longer than 146,097 days. `OUT_OF_RANGE` at `start`, or at
+    /// `end_exclusive` for the range's last day, when that day's fiscal year is
+    /// outside the supported range. An empty range returns no rows without the
+    /// range check.
     pub fn dimension(&self, start: Date, end_exclusive: Date) -> Result<Vec<DimensionRow>, Error> {
         let days = self.dimension_span(start, end_exclusive)?;
         let mut rows = Vec::with_capacity(days as usize);
@@ -68,6 +76,10 @@ impl FiscalCalendar {
 
     /// The same rows as [`FiscalCalendar::dimension`], as RFC 4180 CSV with a
     /// header row, `\n` line endings and a final newline.
+    ///
+    /// # Errors
+    ///
+    /// The same as [`FiscalCalendar::dimension`].
     pub fn dimension_csv(&self, start: Date, end_exclusive: Date) -> Result<String, Error> {
         let rows = self.dimension(start, end_exclusive)?;
         let mut out = String::new();

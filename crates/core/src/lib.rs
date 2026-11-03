@@ -29,8 +29,11 @@
 //! assert_eq!(nrf.format(&here.quarter, None).unwrap(), "Q4 FY2023");
 //! ```
 //!
-//! Bindings for other languages wrap the two functions in [`json`], which take
-//! and return JSON text, so every language gives byte-identical results.
+//! Bindings for other languages call [`json::validate`], [`json::call`] and
+//! [`FiscalCalendar::call_json`], which take and return JSON text, and build
+//! their own failures with [`json::errors_json`] and
+//! [`json::timestamp_rejected`]. Every language therefore gives byte-identical
+//! results.
 //!
 //! The crate is `no_std` with `alloc`, reads no clock, environment or global
 //! state, and never panics on any input: every failure is an [`Error`] value.
