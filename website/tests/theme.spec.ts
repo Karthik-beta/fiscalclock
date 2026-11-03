@@ -3,7 +3,7 @@ import { THEMES, rgb, storeTheme, tokens } from "./site";
 
 const opposite = { light: "dark", dark: "light" } as const;
 
-test("the self-hosted IBM Plex faces load", async ({ page }) => {
+test("the self-hosted Mona Sans and IBM Plex Mono faces load", async ({ page }) => {
   await page.goto("/guides/style-check/");
   const faces = await page.evaluate(async () => {
     await document.fonts.ready;

@@ -4,7 +4,9 @@ import { expect, test } from "@playwright/test";
 interface VectorFile {
   cases: { op: string; args: Record<string, unknown>; expect_subset?: Record<string, unknown> }[];
 }
-const apple = JSON.parse(readFileSync(new URL("../../conformance/vectors/cited/apple-10q-2023-12-30.json", import.meta.url), "utf8")) as VectorFile;
+const vector = (file: string) => JSON.parse(readFileSync(new URL(`../../conformance/vectors/cited/${file}`, import.meta.url), "utf8")) as VectorFile;
+const apple = vector("apple-10q-2023-12-30.json");
+const reliance = vector("reliance-annual-report-2024-25.json");
 
 test("the landing page draws fiscal 2023 to scale with its 12 periods and the extra week", async ({ page }) => {
   await page.goto("/");
@@ -50,6 +52,26 @@ test("changing the calendar answers in the browser, matching the cited filing", 
   await lookup.getByLabel("Date (YYYY-MM-DD)").fill("2023-02-30");
   await expect(lookup.getByText("INVALID_DATE")).toBeVisible();
   await expect(lookup.getByLabel("Date (YYYY-MM-DD)")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("a fixed-date calendar answers with the cited quarter end, and a valid date clears the invalid mark", async ({ page }) => {
+  const quarter = reliance.cases.find((c) => c.op === "period" && c.args.level === "quarter" && c.args.year === 2025 && c.args.index === 2)!;
+  const lastDay = quarter.expect_subset!.last_day as string;
+  const endExclusive = new Date(Date.parse(lastDay) + 86_400_000).toISOString().slice(0, 10);
+
+  await page.goto("/");
+  const lookup = page.getByRole("form", { name: "Try a date" });
+  const date = lookup.getByLabel("Date (YYYY-MM-DD)");
+  await lookup.getByLabel("Calendar").selectOption({ label: "Reliance, year from 1 April" });
+  await date.fill("2025-02-30");
+  await expect(lookup.getByText("INVALID_DATE")).toBeVisible();
+  await expect(date).toHaveAttribute("aria-invalid", "true");
+
+  await date.fill(lastDay);
+  await expect(date).toHaveAttribute("aria-invalid", "false");
+  await expect(lookup.getByRole("row", { name: /^quarter/i })).toContainText(`, ${endExclusive})`);
+  await expect(lookup.getByRole("row", { name: /^year/i })).toContainText("[2025-04-01, 2026-04-01)");
+  await expect(lookup.getByText("INVALID_DATE")).toHaveCount(0);
 });
 
 for (const [width, shown] of [[375, true], [1280, false]] as const) {
