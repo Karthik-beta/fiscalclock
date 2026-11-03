@@ -10,8 +10,6 @@ globs:
 ignores:
   - "target/**"
   - "**/node_modules/**"
-  - "bindings/js/pkg/**"
   - "website/dist/**"
-  - ".venv/**"
-  - "website/.venv/**"
+  - "**/.venv/**"
   - "CODE_OF_CONDUCT.md"
