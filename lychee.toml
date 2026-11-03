@@ -19,7 +19,11 @@ exclude = [
   # intermediate (checked with openssl s_client on 3 Nov 2026), so lychee
   # cannot verify it; browsers fetch the intermediate and open the pages.
   '^https://credibility\.stanford\.edu/',
-  # The website is not deployed yet. Its own pages are checked offline in the
-  # built site by the website workflow; remove this once the domain serves it.
+  # The changelog links a release's tag and compare view in the release pull
+  # request, before the tag exists; they resolve once the release is made.
+  '^https://github\.com/Karthik-beta/fiscalclock/(releases/tag|compare)/v',
+  # Root-relative links in the MDX pages resolve to the site. Checking them
+  # online would test the deployed pages, not the ones in the change, so the
+  # website workflow checks them offline in the built site instead.
   '^https://fiscalclock\.karthik\.nz(/|$)',
 ]
