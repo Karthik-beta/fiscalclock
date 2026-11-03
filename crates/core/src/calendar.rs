@@ -756,7 +756,7 @@ impl FiscalCalendar {
                 }
                 Structure::FixedDate(_) => {
                     let span = i64::from(self.max_key.0 - self.min_key.0 + 1) * 54;
-                    if n.abs() > span {
+                    if n.unsigned_abs() > span.unsigned_abs() {
                         return Err(oor());
                     }
                     let mut key = key;

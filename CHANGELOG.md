@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The release workflow publishes to crates.io and npm with trusted publishing, as it already did to PyPI. The API tokens used to publish 0.1.0 have been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The package READMEs list every member with its arguments and show how to read `FiscalclockError`, and the API spec documents `details.years`, more error paths and the type of each dimension column.
 
+### Fixed
+
+- `shift` of a week in a `fixed_date` calendar by `-9223372036854775808` panicked in debug builds of the Rust crate, and in release builds stepped through every earlier fiscal year before failing. It now returns `OUT_OF_RANGE` at `n` at once.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
