@@ -80,6 +80,7 @@ test("the scan finds the inputs it is meant to find", () => {
     expect.arrayContaining([
       "conformance/vectors/oracle/nrf-4-5-4.json",
       "conformance/vectors/cited",
+      "conformance/vectors",
       "docs/examples/retail-4-5-4.json",
       "spec/api-v1.md",
       "design/tokens/generated/tokens.css",

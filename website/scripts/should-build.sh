@@ -21,8 +21,7 @@ set -- \
   ":/spec/definition-v1.md" \
   ":/spec/api-v1.md" \
   ":/CHANGELOG.md" \
-  ":/conformance/vectors/cited" \
-  ":/conformance/vectors/oracle/nrf-4-5-4.json" \
+  ":/conformance/vectors" \
   ":/docs/examples"
 
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"

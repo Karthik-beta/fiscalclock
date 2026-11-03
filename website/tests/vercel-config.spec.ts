@@ -16,7 +16,7 @@ const SAMPLE_PATHS = [
   "/guides/style-check/",
   "/404.html",
   "/_astro/page.cNngjUgL.js",
-  "/fonts/ibm-plex-sans/IBMPlexSans-Regular.woff2",
+  "/fonts/mona-sans/mona-sans-latin-wght-normal.woff2",
   "/pagefind/pagefind.js",
   "/playground/fiscalclock_bg.wasm",
   "/guides/style-check.md",
@@ -77,12 +77,12 @@ test("WebAssembly, Markdown copies and llms files get their content types", () =
   for (const file of ["/llms.txt", "/llms-full.txt", "/llms-small.txt"]) {
     expect(headersFor(file)["Content-Type"], file).toBe("text/plain; charset=utf-8");
   }
-  expect(headersFor("/fonts/ibm-plex-sans/LICENSE.txt")["Content-Type"]).toBeUndefined();
+  expect(headersFor("/fonts/mona-sans/LICENSE.txt")["Content-Type"]).toBeUndefined();
 });
 
 test("hashed assets are immutable, fonts are cached briefly, pages revalidate", () => {
   expect(headersFor("/_astro/page.cNngjUgL.js")["Cache-Control"]).toBe("public, max-age=31536000, immutable");
-  const font = headersFor("/fonts/ibm-plex-sans/IBMPlexSans-Regular.woff2")["Cache-Control"];
+  const font = headersFor("/fonts/mona-sans/mona-sans-latin-wght-normal.woff2")["Cache-Control"];
   expect(font).toMatch(/max-age=\d+/);
   expect(font).not.toMatch(/immutable/);
   // No rule, so Vercel's default "public, max-age=0, must-revalidate" applies.

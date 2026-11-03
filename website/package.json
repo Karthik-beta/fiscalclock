@@ -34,8 +34,8 @@
   "devDependencies": {
     "@astrojs/check": "0.9.12",
     "@axe-core/playwright": "4.14.0",
+    "@fontsource-variable/mona-sans": "5.3.0",
     "@ibm/plex-mono": "2.5.0",
-    "@ibm/plex-sans": "1.1.0",
     "@playwright/test": "1.64.1",
     "@types/mdast": "4.0.4",
     "@vercel/routing-utils": "6.6.0",
@@ -48,7 +48,6 @@
     "unified": "11.0.5"
   },
   "allowScripts": {
-    "@ibm/plex-mono": false,
-    "@ibm/plex-sans": false
+    "@ibm/plex-mono": false
   }
 }
