@@ -25,7 +25,6 @@ ROOT = Path(__file__).resolve().parents[1]
 CARGO_MSRV = r'^rust-version = "([^"]+)"'
 RUST_AND_LATER = r"Rust (\d+\.\d+) and later"
 MATURIN_ENV = r'MATURIN_VERSION: "([^"]+)"'
-WASM_BINDGEN_ENV = r'WASM_BINDGEN_VERSION: "([^"]+)"'
 PANDAS_PIN = r"pandas==(\d+\.\d+\.\d+)"
 
 # Each pin maps to (file, pattern) pairs. The pattern's one group is the
@@ -35,7 +34,7 @@ PINS = {
         ("crates/core/Cargo.toml", CARGO_MSRV),
         ("bindings/python/Cargo.toml", CARGO_MSRV),
         ("bindings/js/Cargo.toml", CARGO_MSRV),
-        (".github/workflows/ci.yml", r'toolchain: "(\d+\.\d+)"'),
+        (".github/workflows/ci.yml", r'MSRV: "(\d+\.\d+)"'),
         ("AGENTS.md", r"cargo \+(\d+\.\d+) check"),
         ("README.md", RUST_AND_LATER),
         ("crates/core/README.md", r"Minimum supported Rust version: (\d+\.\d+)\."),
@@ -48,8 +47,6 @@ PINS = {
         ("AGENTS.md", r"needs maturin (\d+\.\d+\.\d+)"),
     ],
     "wasm-bindgen": [
-        (".github/workflows/ci.yml", WASM_BINDGEN_ENV),
-        (".github/workflows/release.yml", WASM_BINDGEN_ENV),
         ("bindings/js/Cargo.toml", r'^wasm-bindgen = "=([^"]+)"'),
         ("Cargo.lock", r'name = "wasm-bindgen"\nversion = "([^"]+)"'),
     ],

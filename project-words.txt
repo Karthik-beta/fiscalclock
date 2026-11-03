@@ -6,7 +6,6 @@ Vishay
 Vishay's
 aarch
 cdylib
-dtolnay
 ecosyste
 fiscalclock
 fiscalyear
