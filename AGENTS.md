@@ -23,7 +23,7 @@ The source of truth for behaviour is the [PDR](https://github.com/Karthik-beta/f
 | `research/verification/` | Standard-library scripts that reproduce claims made in prose, and their committed output. | Library code. |
 | `docs/` | User documentation and the cookbook of example definitions, including `docs/examples/`, the illustrative definitions the website shows and its code examples read. | Normative rules (those go in `spec/`). |
 | `website/` | The documentation site at `https://fiscalclock.karthik.nz`: its pages, the code of its examples with their expected output, and its tests. | Calendar logic; example definitions (those go in `docs/`); hand edits to the files its scripts copy or generate. |
-| `.github/` | Workflows, issue and discussion forms, templates. | Secrets. |
+| `.github/` | Workflows, their zizmor config, issue and discussion forms, templates, Dependabot config. | Secrets. |
 
 ## Design rules
 
@@ -122,7 +122,7 @@ lychee --config website/lychee.toml --no-progress --root-dir "$PWD/website/dist"
 
 Documentation: `markdownlint-cli2 "**/*.md"`, `cspell --config cspell.json "**/*.md" "**/*.mdx" "**/*.yml" "**/*.yaml" "**/*.toml"`, `lychee --config lychee.toml "./**/*.md"`, `lychee --config lychee.toml --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"` and `yamllint --strict .`. markdownlint does not lint `.mdx`: it reads a fenced block indented inside a JSX component as an indented code block.
 
-CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas:
+CI also checks that the issue forms, issue template chooser, workflows, discussion forms and Dependabot config match GitHub's schemas, and audits the workflows with [zizmor](https://docs.zizmor.sh/) (its accepted findings are in `.github/zizmor.yml`):
 
 ```sh
 uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-forms $(find .github/ISSUE_TEMPLATE -name '*.yml' ! -name config.yml)
@@ -130,6 +130,7 @@ uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-config .github
 uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-workflows .github/workflows/*.yml
 uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
 uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+uvx zizmor==1.32.0 --offline .github/workflows
 ```
 
 ## Commits and pull requests

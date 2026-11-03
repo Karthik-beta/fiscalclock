@@ -86,6 +86,8 @@ jobs:
         run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
       - name: Dependabot config matches GitHub's schema
         run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+      - name: Workflows pass the zizmor security audits
+        run: uvx zizmor==1.32.0 --offline .github/workflows
 
   verification:
     runs-on: ubuntu-24.04
