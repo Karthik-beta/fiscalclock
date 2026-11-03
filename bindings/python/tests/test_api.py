@@ -6,7 +6,9 @@ import datetime as dt
 import decimal
 import json
 import pickle
+import types
 import unittest
+from collections.abc import Mapping
 from pathlib import Path
 
 import fiscalclock
@@ -37,6 +39,25 @@ class Basics(unittest.TestCase):
 
     def test_mapping_and_text_give_the_same_calendar(self):
         self.assertEqual(FiscalCalendar(json.dumps(NRF)).calendar_id, self.cal.calendar_id)
+
+    def test_any_mapping_is_a_definition(self):
+        class Frozen(Mapping):
+            def __init__(self, data):
+                self._data = data
+
+            def __getitem__(self, key):
+                return self._data[key]
+
+            def __iter__(self):
+                return iter(self._data)
+
+            def __len__(self):
+                return len(self._data)
+
+        nested = {**NRF, "week": types.MappingProxyType(NRF["week"])}
+        for definition in [types.MappingProxyType(NRF), Frozen(NRF), nested]:
+            self.assertEqual(FiscalCalendar(definition).calendar_id, self.cal.calendar_id)
+            self.assertTrue(fiscalclock.validate(definition)["ok"])
 
     def test_period_has_native_dates(self):
         fy = self.cal.period("year", 2023)
