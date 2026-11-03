@@ -1,9 +1,6 @@
-Bikram
-IANA
 Karthik
 Parameshwara
 RUSTDOCFLAGS
-Sambat
 Swatinem
 Vishay
 Vishay's

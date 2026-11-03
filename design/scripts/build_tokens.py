@@ -349,16 +349,16 @@ def self_test() -> int:
     for expected, semantic in cases.items():
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            (base / "p.tokens.json").write_text(json.dumps(good))
+            (base / "p.tokens.json").write_text(json.dumps(good), encoding="utf-8", newline="\n")
             light = semantic or {"color": {"$type": "color", "x": {"$value": "{palette.a}"}}}
             dark = semantic or {"color": {"$type": "color", "y": {"$value": "{palette.a}"}}}
-            (base / "l.tokens.json").write_text(json.dumps(light))
-            (base / "d.tokens.json").write_text(json.dumps(dark))
+            (base / "l.tokens.json").write_text(json.dumps(light), encoding="utf-8", newline="\n")
+            (base / "d.tokens.json").write_text(json.dumps(dark), encoding="utf-8", newline="\n")
             (base / "r.json").write_text(json.dumps({
                 "version": "2025.10", "sets": {"primitives": {"sources": [{"$ref": "p.tokens.json"}]}},
                 "modifiers": {"theme": {"contexts": {"light": [{"$ref": "l.tokens.json"}], "dark": [{"$ref": "d.tokens.json"}]}, "default": "light"}},
-                "resolutionOrder": [{"$ref": "#/sets/primitives"}, {"$ref": "#/modifiers/theme"}]}))
-            (base / "c.json").write_text(json.dumps({"pairs": []}))
+                "resolutionOrder": [{"$ref": "#/sets/primitives"}, {"$ref": "#/modifiers/theme"}]}), encoding="utf-8", newline="\n")
+            (base / "c.json").write_text(json.dumps({"pairs": []}), encoding="utf-8", newline="\n")
             try:
                 build(base / "r.json", base / "c.json")
                 print(f"FAIL {expected}: accepted")
