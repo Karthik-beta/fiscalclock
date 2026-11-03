@@ -8,7 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Cited conformance vectors for Indian listed companies (Reliance Industries, Procter & Gamble Hygiene and Health Care, Siemens Limited and ABB India), each quoting the company's own annual report, and filer records that also cover the transition periods of P&G Hygiene, Siemens Limited, Linde India and Thomas Cook (India).
+- A documentation site at <https://fiscalclock.karthik.nz>, with guides, a date lookup on the first screen, a playground, and code examples in Rust, Python and JavaScript that CI runs against their expected output ([#40](https://github.com/Karthik-beta/fiscalclock/pull/40), [#41](https://github.com/Karthik-beta/fiscalclock/pull/41)).
+- The fiscalclock visual identity: logo, icons, README banners and design tokens, in [`assets/brand/`](assets/brand/README.md) and on the wiki's [Design system](https://github.com/Karthik-beta/fiscalclock/wiki/Design-System) page ([#39](https://github.com/Karthik-beta/fiscalclock/pull/39)).
+- A machine-readable evidence register, [`research/evidence/`](research/evidence/README.md), that records the source or check behind every factual claim and checks quotes against their sources.
+- Cited conformance vectors from the Kroger and Costco annual reports, and NRF's published 53-week years checked against the NRF 4-5-4 definition.
+- Week-based year vectors from the `FY5253` offset of pandas 3.0.6, a second source that shares no code with the project's oracle.
+- Cited conformance vectors for Indian listed companies (Reliance Industries, Procter & Gamble Hygiene and Health Care, Siemens Limited and ABB India), each quoting the company's own annual report, and filer records that also cover the transition periods of P&G Hygiene, Siemens Limited, Linde India and Thomas Cook (India) ([#42](https://github.com/Karthik-beta/fiscalclock/pull/42)).
+
+### Changed
+
+- The release workflow publishes to crates.io and npm with trusted publishing, as it already did to PyPI. The API tokens used to publish 0.1.0 have been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
+- The package READMEs list every member with its arguments and show how to read `FiscalclockError`, and the API spec documents `details.years`, more error paths and the type of each dimension column.
 
 ## [0.1.0] - 2026-10-31
 
