@@ -20,6 +20,8 @@ def section(text, version):
 
 
 def main():
+    if len(sys.argv) != 2:
+        sys.exit("usage: python -I scripts/release_notes.py <version>, for example 0.1.0 or v0.1.0")
     version = sys.argv[1].removeprefix("v")
     notes = section(Path(__file__).resolve().parents[1].joinpath("CHANGELOG.md").read_text(encoding="utf-8"), version)
     if not notes:
