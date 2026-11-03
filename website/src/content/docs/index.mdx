@@ -1,11 +1,12 @@
 ---
-title: Compute fiscal calendars from a JSON definition
+title: Fiscal calendars, defined as data
 description: fiscalclock is an open-source fiscal calendar engine for Rust, Python and JavaScript. Describe a fiscal calendar as JSON, and it tells you which fiscal year, quarter, period and week any date falls in.
 template: splash
 editUrl: false
 ---
 
 import { Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import Hero from "../../components/Hero.astro";
 import RawOutput from "../../components/RawOutput.astro";
 import YearStripFigure from "../../components/YearStripFigure.astro";
 import * as fy from "../../lib/landing";
@@ -14,54 +15,24 @@ import askQuarterJs from "../../../examples/js/ask_quarter.mjs?raw";
 import askQuarterRs from "../../../examples/rust/src/bin/ask_quarter.rs?raw";
 import "../../styles/landing.css";
 
-<div class="landing-top not-content">
-<div class="landing-intro">
+<Hero />
 
-<p class="landing-summary">
-  Describe your organisation's fiscal calendar as a JSON definition, and fiscalclock tells you which fiscal year,
-  quarter, period and week any date falls in, the bounds of every period, and the labels you use for them. One Rust
-  core gives the same answers in Python, JavaScript and Rust.
-</p>
-
-<Tabs syncKey="lang">
-  <TabItem label="Python"><Code code="pip install fiscalclock" lang="sh" frame="none" /></TabItem>
-  <TabItem label="JavaScript"><Code code="npm install fiscalclock" lang="sh" frame="none" /></TabItem>
-  <TabItem label="Rust"><Code code="cargo add fiscalclock" lang="sh" frame="none" /></TabItem>
-</Tabs>
-
-<p class="landing-actions">
-  <a class="landing-primary" href="/start-here/quick-start/">Get started</a>
-  <a href="/playground/">Try it in the playground</a>
-</p>
-
-</div>
-<div class="landing-definition">
-
-<p class="landing-label">An illustrative 4-5-4 definition, not any organisation's published calendar. Its year rule gives the 53-week years NRF publishes. fiscalclock has no built-in calendars.</p>
-
-<Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
-
-</div>
-</div>
-
-<div class="landing-strip">
-
-<YearStripFigure id="fy2023" title={`${fy.yearLabel}: ${fy.year.days} days, ${fy.year.weeks} weeks`} periods={fy.periods} quarters={fy.quarters}>
-  Fiscal 2023 under that definition, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
-  Each period is a half-open interval, so the date under a boundary line is the first day of the period to its right.
-  The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock 0.1.0 npm package
-  when this page was built, and the build fails unless the year has the 53 weeks that{" "}
-  <a href={fy.sourceUrl}>NRF's list of 53-week years</a> gives it and the dates match the{" "}
-  <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
-</YearStripFigure>
-
+<div class="evidence not-content">
+<p><strong>{fy.vectorCases} test cases</strong> in {fy.vectorFiles} <a href="https://github.com/Karthik-beta/fiscalclock/tree/main/conformance">conformance files</a>, with expected results from cited sources or independent generators, never from fiscalclock itself.</p>
+<p><strong>Byte-identical JSON</strong> from Rust, Python and JavaScript on Linux, macOS and Windows, compared on every push by <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml">CI</a>.</p>
+<p><strong>Build provenance</strong> on every release file, published by a <a href="https://github.com/Karthik-beta/fiscalclock/attestations">release workflow</a> that stores no registry tokens.</p>
+<p><strong>No clock, no global state.</strong> The core reads no clock, environment variable or global state, and is licensed <a href="https://github.com/Karthik-beta/fiscalclock#licence">MIT OR Apache-2.0</a>.</p>
 </div>
 
 <div class="landing-prose">
 
-## Ask it a question
+## The same answer in every language
 
-Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition above as `retail-4-5-4.json` and ask:
+This definition gives the 53-week years NRF publishes for its 4-5-4 retail calendar. It is an illustrative example, not any organisation's published calendar, and fiscalclock has no built-in calendars.
+
+<Code code={fy.definitionText} lang="json" title="retail-4-5-4.json" wrap hangingIndent={2} />
+
+Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definition as `retail-4-5-4.json` and ask:
 
 <Tabs syncKey="lang">
   <TabItem label="Python"><Code code={askQuarterPy} lang="python" /></TabItem>
@@ -72,6 +43,28 @@ Which fiscal quarter is 3 Feb 2024 in, and what is it called? Save the definitio
 All three print the same two lines: the label, then the core's JSON for the date, byte for byte the same in every language. Each snippet is a file in `website/examples/` that `npm run test:examples` runs against version 0.1.0 of its package, and it must print exactly the output below.
 
 <RawOutput text={fy.askOutput} label="Output" />
+
+## A year, drawn to scale
+
+<YearStripFigure id="fy2023" title={`${fy.yearLabel}: ${fy.year.days} days, ${fy.year.weeks} weeks`} periods={fy.periods} quarters={fy.quarters}>
+  Fiscal 2023 under the definition above, drawn to scale: 53 weeks from 29 Jan 2023 up to, but not including, 4 Feb 2024.
+  Each period is a half-open interval, so the date under a boundary line is the first day of the period to its right.
+  The extra 53rd week is the last week of period 12. The dates were computed by the fiscalclock 0.1.0 npm package
+  when this page was built, and the build fails unless the year has the 53 weeks that{" "}
+  <a href={fy.sourceUrl}>NRF's list of 53-week years</a> gives it and the dates match the{" "}
+  <a href="https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/oracle/nrf-4-5-4.json">dates from an independent implementation</a> of the spec.
+</YearStripFigure>
+
+## For AI agents
+
+Every page has a plain Markdown copy, so an agent can read the docs without parsing HTML:
+
+- [`/llms.txt`](/llms.txt) lists the pages, and [`/llms-full.txt`](/llms-full.txt) holds all of them in one file. [`/llms-small.txt`](/llms-small.txt) is a shorter version.
+- Add `.md` to any page's address for its Markdown, such as [`/start-here/quick-start.md`](/start-here/quick-start.md). Each docs page also has a "Copy page as Markdown" button.
+- Errors are objects with a stable `code`, a JSON `path` into the definition, a `message` and, where one helps, a `hint`, listed in the [API spec](/reference/spec/api-v1/). An agent can act on the code instead of parsing a sentence.
+- Ambiguous input is an error that lists every candidate reading. fiscalclock never picks one silently.
+
+A command-line interface and an MCP server are planned for version 0.4, as the [roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) describes. Neither exists yet.
 
 ## Why you can check the results
 

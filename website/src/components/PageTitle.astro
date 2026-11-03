@@ -3,12 +3,15 @@ import Default from "@astrojs/starlight/components/PageTitle.astro";
 import { markdownCopyOf } from "../agents/markdown-copy.ts";
 
 const { id, data } = Astro.locals.starlightRoute.entry;
-// The landing page keeps its Markdown copy and head link, but not these controls under its headline.
+// The landing page's hero (src/components/Hero.astro) holds its headline, so
+// that page alone skips the default title. Splash pages show no Markdown
+// controls, but keep their Markdown copy and the head link to it.
+const landing = id === "";
 const href = await markdownCopyOf(id);
 const showControls = href !== undefined && data.template !== "splash";
 ---
 
-<Default />
+{!landing && <Default />}
 {
   showControls && (
     <div class="page-markdown" data-page-markdown={href}>

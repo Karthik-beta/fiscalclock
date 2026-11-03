@@ -41,7 +41,7 @@ Decision DD-033 makes AI agents part of the audience. The build publishes:
 
 ## Install scripts
 
-`@ibm/plex-sans` and `@ibm/plex-mono` declare a `postinstall` script, `ibmtelemetry --config=telemetry.yml`, in their `package.json`. No other dependency has an install script (`npm install-scripts ls` lists only these two), so `package.json` denies them in `allowScripts`, which npm 11.7.0 honours, and [`vercel.json`](vercel.json) installs with `npm ci --ignore-scripts`.
+`@ibm/plex-mono` declares a `postinstall` script, `ibmtelemetry --config=telemetry.yml`, in its `package.json`. No other dependency has an install script (`npm install-scripts ls` lists only this one), so `package.json` denies it in `allowScripts`, which npm 11.7.0 honours, and [`vercel.json`](vercel.json) installs with `npm ci --ignore-scripts`.
 
 ## Landing page and playground
 

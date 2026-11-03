@@ -15,6 +15,10 @@ exclude = [
   # packages.ecosyste.ms answers link checkers with 402; both pages exist.
   '^https://(www\.)?sec\.gov/',
   '^https://packages\.ecosyste\.ms/',
+  # credibility.stanford.edu sends its certificate without the InCommon
+  # intermediate (checked with openssl s_client on 3 Nov 2026), so lychee
+  # cannot verify it; browsers fetch the intermediate and open the pages.
+  '^https://credibility\.stanford\.edu/',
   # The website is not deployed yet. Its own pages are checked offline in the
   # built site by the website workflow; remove this once the domain serves it.
   '^https://fiscalclock\.karthik\.nz(/|$)',

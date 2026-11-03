@@ -14,8 +14,7 @@ test("the self-hosted IBM Plex faces load", async ({ page }) => {
   });
   expect(faces.filter(({ status }) => status === "error")).toEqual([]);
   const loaded = faces.filter(({ status }) => status === "loaded").map(({ face }) => face);
-  expect(loaded).toContain("IBM Plex Sans 400 normal");
-  expect(loaded).toContain("IBM Plex Sans 600 normal");
+  expect(loaded).toContain("Mona Sans 200 900 normal");
   expect(loaded).toContain("IBM Plex Mono 400 normal");
 });
 

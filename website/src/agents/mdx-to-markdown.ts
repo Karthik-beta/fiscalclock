@@ -88,6 +88,16 @@ export const COMPONENTS: Record<string, ToMarkdown> = {
     return [caption(requiredValueProp(element, "label", context)), { type: "code", lang: "text", value: text.replace(/\n$/, "") }];
   },
   YearStripFigure: (_element, children) => children,
+  // The hero's lookup needs a browser; its Markdown is the summary and the install commands.
+  Hero: (_element, _children, context) => [
+    paragraph({
+      type: "text",
+      value:
+        "Describe your fiscal calendar as JSON. fiscalclock tells you which fiscal year, quarter, period and week any date falls in, with the bounds and labels of each. One Rust core gives the same answer in Python, JavaScript and Rust.",
+    }),
+    { type: "code", lang: "sh", value: ["pip install fiscalclock", "npm install fiscalclock", "cargo add fiscalclock"].join("\n") },
+    paragraph({ type: "link", url: absolute("/playground/", context.page), children: [{ type: "text", value: "Try a date in the playground" }] }),
+  ],
 };
 
 const PARSERS = {
