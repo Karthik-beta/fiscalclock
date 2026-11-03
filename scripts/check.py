@@ -192,6 +192,7 @@ GROUPS = {
         Step("cspell", ["cspell", "--no-progress", "--config", "cspell.json",
                         Files(("*.md", "*.mdx", "*.yml", "*.yaml", "*.toml"))]),
         Step("yamllint", ["uvx", YAMLLINT, "--strict", Files(("*.yml", "*.yaml"))]),
+        Step("local_links", ["lychee", "--config", "lychee.toml", "--no-progress", "--offline", Files(("*.md",))]),
     ],
     "links": [
         Step("lychee_md", ["lychee", "--config", "lychee.toml", "--no-progress", Files(("*.md",))]),

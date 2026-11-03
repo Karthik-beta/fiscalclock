@@ -83,7 +83,7 @@ These are the commands CI runs (`.github/workflows/ci.yml` and `docs.yml`). Run 
 | Any other Markdown, MDX, YAML or TOML | `docs` |
 | `.github/` | `workflows docs` |
 
-The `links` group checks every external link online, as the weekly CI run does; run it when you add or change external links. A third-party site that is down fails it without any fault in the change.
+The `docs` group checks links between files in the repository offline, as every CI run does. The `links` group checks every external link online, as the weekly CI run does; run it when you add or change external links. A third-party site that is down fails it without any fault in the change.
 
 Tools, from a fresh clone:
 
