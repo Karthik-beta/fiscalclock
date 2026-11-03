@@ -158,6 +158,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
+          package-manager-cache: false
       - name: Build, test and pack
         working-directory: bindings/js
         run: |
@@ -211,6 +212,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+          package-manager-cache: false
       - name: The packed npm tarball installs and works on Node.js 22
         run: |
           mkdir smoke-npm
@@ -301,6 +303,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
       - name: Publish to npm with trusted publishing and provenance
         run: npm publish ./npm-dist/fiscalclock-*.tgz --provenance --access public
 

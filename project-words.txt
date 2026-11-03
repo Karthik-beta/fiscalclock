@@ -5,6 +5,7 @@ Swatinem
 Vishay
 Vishay's
 aarch
+adhoc
 cdylib
 ecosyste
 fiscalclock
@@ -23,3 +24,4 @@ pypistats
 streetsidesoftware
 textarea
 truthy
+zizmor
