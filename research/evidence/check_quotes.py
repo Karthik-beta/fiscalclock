@@ -143,9 +143,11 @@ def fetch(url: str) -> tuple[str | None, str]:
         return None, f"unsupported Content-Encoding {encoding!r}"
     try:
         if encoding == "gzip":
+            if not raw:
+                return None, "empty body with Content-Encoding 'gzip'"
             raw = gzip.decompress(raw)
         body = raw.decode(charset, errors="replace")
-    except (OSError, EOFError, zlib.error, LookupError) as error:
+    except (OSError, EOFError, zlib.error, LookupError, UnicodeError) as error:
         return None, f"{type(error).__name__}: {error}"
     return page_text(body, content_type.lower()), ""
 

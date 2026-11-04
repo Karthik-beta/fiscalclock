@@ -28,7 +28,7 @@ Before anything is published, the `check` job confirms these:
 - `CHANGELOG.md` has a section for the version;
 - `ci` and `docs` have a successful run for the tagged commit.
 
-If the last check fails because CI is still running, wait for it to finish, then re-run the failed job. If CI was cancelled because a newer commit reached `main` first, re-run that cancelled run (`gh run rerun <run-id>`), or run the workflow on the tag (`gh workflow run ci.yml --ref "v$VERSION"`). Both use the tagged commit; a new run on `main` would test `main`'s latest commit instead.
+If the last check fails because CI is still running, wait for it to finish, then re-run the failed job. If CI was cancelled because a newer commit reached `main` first, re-run that cancelled run (`gh run rerun <run-id>`), or run the workflow on the tag (`gh workflow run ci.yml --ref "v$VERSION"`). A re-run "will also use the same GITHUB_SHA (commit SHA) and GITHUB_REF (git ref) of the original event that triggered the workflow run" ([GitHub: re-running workflows and jobs](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)), so it tests the tagged commit. For a `workflow_dispatch` run, `GITHUB_REF` is the "Branch or tag that received dispatch" and `GITHUB_SHA` is the "Last commit on the GITHUB_REF branch or tag" ([GitHub: events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)). `--ref` takes a "Branch or tag name" ([`gh workflow run`](https://cli.github.com/manual/gh_workflow_run)), so `--ref "v$VERSION"` tests the tagged commit, while `--ref main` would test `main`'s latest commit instead.
 
 ## 3. What runs before publishing
 
