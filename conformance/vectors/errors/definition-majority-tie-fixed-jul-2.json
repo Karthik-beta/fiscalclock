@@ -1,0 +1,55 @@
+{
+  "name": "definition-majority-tie-fixed-jul-2",
+  "description": "Invalid definition. Fixed-date year starting 2 July, numbered by 'majority'. A year that contains 29 February has 366 days, 183 from 2 July to 31 December and 183 after, so no calendar year holds more than half. Only code and path are asserted; details.years is not, because the spec only says it lists the first affected years.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, Year numbers must be unique; path from spec/api-v1.md, Paths for common errors",
+    "url": null,
+    "checked_by": "conformance/generators/fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range; code and path asserted by the generator"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 2
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 2,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "majority",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "MAJORITY_TIE",
+        "path": "naming.schemes.fy.year_number"
+      }
+    }
+  ]
+}

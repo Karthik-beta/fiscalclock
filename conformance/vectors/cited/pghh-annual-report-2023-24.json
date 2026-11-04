@@ -1,0 +1,67 @@
+{
+  "name": "pghh-annual-report-2023-24",
+  "description": "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2023-24 (financial year ended 30 June 2024), the last full year of its July-June calendar. The week block, the calendar-month subdivision and the label template are illustrative; only fields the document states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"The Company’s Financial Year is July 1st to June 30th.\" (Report of the Directors, p. 8) \"Presently, the Company follows July-June Financial Year.\" (Corporate Governance Report, p. 71) \"Financial Year reported July 1, 2023 to June 30, 2024\" (Business Responsibility & Sustainability Report, p. 19). Establishes the 1 July start and the bounds of the year that began on 1 July 2023. The company left this calendar after 30 June 2024; see research/filers/pg-hygiene.md.",
+    "url": "https://assets.ctfassets.net/oe48y40ukei6/7aXOHTgxcGULOBM2hYlblW/6ef76eff5f3da3ecad126944fbaf3391/PGHH_ANNUAL_REPORT_2024.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_next}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "5f18cbe22cf8cec7",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}-{yy_next}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":7},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "start": "2023-07-01",
+        "last_day": "2024-06-30"
+      }
+    }
+  ]
+}

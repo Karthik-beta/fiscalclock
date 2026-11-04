@@ -1,0 +1,123 @@
+{
+  "name": "canonical-non-ascii",
+  "description": "Canonical form with non-ASCII and control characters. The Japanese templates ('年度', fiscal year) are written as raw UTF-8; the tab is written as \\t, U+001F as \\u001f with lower-case hex digits, and the quote and backslash as \\\" and \\\\. Keys are sorted by their UTF-8 bytes, offset 0 and null century_pivot and short_month are written out. The expected canonical string is typed into the generator by hand and calendar_id is SHA-256 of its UTF-8 bytes, first 16 hex digits.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "Canonical string typed by hand in oracle_vectors.CANONICAL_NON_ASCII; fiscal_oracle.canonical agrees (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 4,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "jp",
+      "schemes": {
+        "jp": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}年度",
+            "quarter": "{yyyy}年度 第{q}四半期"
+          }
+        },
+        "tab": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY\t{yyyy}\u001f\"\\"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "3975543ec8b50076",
+        "canonical": "{\"naming\":{\"default\":\"jp\",\"schemes\":{\"jp\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"{yyyy}年度 第{q}四半期\",\"year\":\"{yyyy}年度\"},\"year_number\":\"start\"},\"tab\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"FY\\t{yyyy}\\u001f\\\"\\\\\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2024年度",
+        "scheme": "jp"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 2
+        }
+      },
+      "expect": {
+        "label": "2024年度 第2四半期",
+        "scheme": "jp"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2024年度 第2四半期"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 2,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "scheme": "tab"
+      },
+      "expect": {
+        "label": "FY\t2024\u001f\"\\",
+        "scheme": "tab"
+      }
+    }
+  ]
+}

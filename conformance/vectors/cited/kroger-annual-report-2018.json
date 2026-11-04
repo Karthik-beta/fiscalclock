@@ -1,0 +1,241 @@
+{
+  "name": "kroger-annual-report-2018",
+  "description": "The Kroger Co. 2019 Proxy Statement and 2018 Annual Report (fiscal year ended 2 February 2019), which reproduces the Form 10-K text. The extra week's period (13) and the label templates are illustrative; only fields the document states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"Kroger’s fiscal year ends on the Saturday closest to January 31.\" (p. A-3) \"The reported periods conform to our fiscal calendar composed of thirteen 28-day periods. The fourth quarter of 2018 contained three 28-day periods.\" (p. A-4) \"First period - four weeks November 11, 2018 to December 8, 2018\", \"Second period - four weeks December 9, 2018 to January 5, 2019\" and \"January 6, 2019 to February 2, 2019\" (third period; Issuer Purchases of Equity Securities table, p. A-4).\"All references to 2018, 2017 and 2016 are to the fiscal years ended February 2, 2019, February 3, 2018 and January 28, 2017, respectively, unless specifically indicated otherwise.\" (p. A-5) \"The Company’s fiscal year ends on the Saturday nearest January 31. The last three fiscal years consist of the 52-week period ended February 2, 2019, 53-week period ended February 3, 2018 and 52-week period ended January 28, 2017.\" (Note 1, p. A-35) Note 21, Quarterly Data (pp. A-77 and A-78): 2018 quarters of 16, 12, 12 and 12 weeks (52 weeks); 2017 quarters of 16, 12, 12 and 13 weeks (53 weeks). Establishes the year-end rule, start-year naming, thirteen four-week periods, the three fiscal year ends and week counts, the quarter week counts, and the start and last day of the three fourth-quarter periods of 2018 (periods 11 to 13, because the 16- and 12-week quarters before them hold ten four-week periods).",
+    "url": "https://s202.q4cdn.com/463742399/files/doc_financials/2018/ar/2018-Annual-Report.pdf",
+    "checked_by": "Quotes compared character for character with the text that pdftotext -layout -enc UTF-8 extracted from the PDF (line breaks joined) on 2026-11-01; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "quarters": [
+        4,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 13
+      }
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "Q{q} FY{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "5467240b123d2697",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"Q{q} FY{yyyy}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"extra_week\":{\"period\":13},\"periods\":[4,4,4,4,4,4,4,4,4,4,4,4,4],\"quarters\":[4,3,3,3],\"type\":\"week_pattern\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"sunday\"},\"year\":{\"anchor\":{\"day\":\"last\",\"edge\":\"end\",\"month\":1,\"rule\":\"nearest\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2018
+      },
+      "expect_subset": {
+        "last_day": "2019-02-02",
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2017
+      },
+      "expect_subset": {
+        "last_day": "2018-02-03",
+        "weeks": 53,
+        "has_extra_week": true
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2016
+      },
+      "expect_subset": {
+        "last_day": "2017-01-28",
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2018,
+        "index": 1
+      },
+      "expect_subset": {
+        "weeks": 16
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2018,
+        "index": 2
+      },
+      "expect_subset": {
+        "weeks": 12
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2018,
+        "index": 3
+      },
+      "expect_subset": {
+        "weeks": 12
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2018,
+        "index": 4
+      },
+      "expect_subset": {
+        "start": "2018-11-11",
+        "last_day": "2019-02-02",
+        "weeks": 12
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2017,
+        "index": 1
+      },
+      "expect_subset": {
+        "weeks": 16
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2017,
+        "index": 2
+      },
+      "expect_subset": {
+        "weeks": 12
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2017,
+        "index": 3
+      },
+      "expect_subset": {
+        "weeks": 12
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2017,
+        "index": 4
+      },
+      "expect_subset": {
+        "weeks": 13
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2018,
+        "index": 11
+      },
+      "expect_subset": {
+        "start": "2018-11-11",
+        "last_day": "2018-12-08",
+        "weeks": 4
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2018,
+        "index": 12
+      },
+      "expect_subset": {
+        "start": "2018-12-09",
+        "last_day": "2019-01-05",
+        "weeks": 4
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2018,
+        "index": 13
+      },
+      "expect_subset": {
+        "start": "2019-01-06",
+        "last_day": "2019-02-02",
+        "weeks": 4
+      }
+    }
+  ]
+}

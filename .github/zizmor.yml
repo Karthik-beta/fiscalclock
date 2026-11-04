@@ -1,0 +1,7 @@
+# zizmor (https://docs.zizmor.sh) runs in the docs workflow.
+rules:
+  adhoc-packages:
+    ignore:
+      # The release smoke test installs the npm tarball the same run built;
+      # testing that file is the point, so it cannot come from a lockfile.
+      - release.yml

@@ -1,0 +1,22 @@
+[package]
+name = "fiscalclock"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Karthik-beta/fiscalclock"
+homepage = "https://fiscalclock.karthik.nz"
+description = "Fiscal calendar engine: compute any fiscal calendar from a JSON definition"
+readme = "README.md"
+# The tests read the shared vectors under conformance/, so they are not shipped.
+include = ["src/**/*.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
+keywords = ["fiscal", "calendar", "4-5-4", "retail", "accounting"]
+categories = ["date-and-time", "finance", "no-std"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+sha2 = { version = "0.10", default-features = false }
+
+[dev-dependencies]
+proptest = "1"

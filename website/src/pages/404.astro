@@ -1,0 +1,21 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "Page not found",
+    description: "There is no page at this address on the fiscalclock website.",
+    template: "splash",
+    editUrl: false,
+    pagefind: false,
+  }}
+>
+  <p>There is no page at this address. Search the site, or start from one of these pages:</p>
+  <ul>
+    <li><a href="/start-here/quick-start/">Quick start</a></li>
+    <li><a href="/playground/">Playground</a></li>
+    <li><a href="/reference/api/">API reference</a></li>
+    <li><a href="/reference/spec/definition-v1/">Definition format spec</a></li>
+  </ul>
+</StarlightPage>

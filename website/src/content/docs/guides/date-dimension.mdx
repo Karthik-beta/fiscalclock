@@ -1,0 +1,78 @@
+---
+title: Date dimension
+description: Build a table with one row per day and its fiscal year, quarter, period, week, bounds and labels, and load it into pandas or a SQL database.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import dimensionFramePy from "../../../../examples/python/dimension_frame.py?raw";
+import dimensionFramePyOut from "../../../../examples/python/dimension_frame.out?raw";
+import dimensionFrameJs from "../../../../examples/js/dimension_frame.mjs?raw";
+import dimensionFrameJsOut from "../../../../examples/js/dimension_frame.out?raw";
+import dimensionFrameRs from "../../../../examples/rust/src/bin/dimension_frame.rs?raw";
+import dimensionFrameRsOut from "../../../../examples/rust/src/bin/dimension_frame.out?raw";
+import dimensionCsvPy from "../../../../examples/python/dimension_csv.py?raw";
+import dimensionCsvPyOut from "../../../../examples/python/dimension_csv.out?raw";
+import dimensionCsvJs from "../../../../examples/js/dimension_csv.mjs?raw";
+import dimensionCsvJsOut from "../../../../examples/js/dimension_csv.out?raw";
+import dimensionCsvRs from "../../../../examples/rust/src/bin/dimension_csv.rs?raw";
+import dimensionCsvRsOut from "../../../../examples/rust/src/bin/dimension_csv.out?raw";
+
+A date dimension is a table with one row per calendar day and columns that describe the day, such as its fiscal year and quarter. Reports join it to other tables on the date, so that every report groups days into fiscal periods the same way. fiscalclock builds one from a definition with `dimension`, which returns rows, or `dimension_csv`, which returns the same rows as CSV text.
+
+Both take a half-open range of dates, `start` up to but not including `end_exclusive`, of at most 146,097 days (400 years). An empty range gives no rows ([API spec](/reference/spec/api-v1/#dimension)).
+
+## Into pandas or SQL
+
+This example builds the dimension for fiscal year 2023 of the example definition from [the quick start](/start-here/quick-start/), using the year's own bounds as the range, and counts the days in each quarter. The Python version loads the rows into a pandas `DataFrame`, writes them to an SQLite table and queries the first day of the extra week.
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={dimensionFramePy} lang="python" title="dimension_frame.py" />
+    <Code code={dimensionFramePyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={dimensionFrameJs} lang="js" title="dimension_frame.mjs" />
+    <Code code={dimensionFrameJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={dimensionFrameRs} lang="rust" title="dimension_frame.rs" />
+    <Code code={dimensionFrameRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+To load the dimension into another database, write the output of `dimension_csv` to a file and use the database's CSV import.
+
+## Columns
+
+Each row has these columns, in this order ([API spec](/reference/spec/api-v1/#dimension)):
+
+| Columns | Meaning |
+| --- | --- |
+| `date` | The day, as `YYYY-MM-DD`. |
+| `calendar_id` | The [identifier of the definition](/guides/write-a-definition/#two-definitions-one-calendar) that produced the row. |
+| `fiscal_year`, `quarter`, `period`, `week` | The fiscal year number under the default scheme, and the 1-based index of the quarter, period and week within the year. |
+| `day_of_year`, `day_of_quarter`, `day_of_period`, `day_of_week` | 1-based positions of the day. `day_of_week` is 1 on `week.starts_on`. |
+| `year_start`, `year_last_day`, and the same pair for `quarter`, `period` and `week` | The first and last day of each period containing the day. |
+| `year_has_extra_week`, `period_has_extra_week`, `week_is_extra_week` | Whether the year or period contains the extra week, and whether the day's week is the extra week. |
+| `label_<scheme>_<level>` | One column per template in the definition, ordered by scheme name and then by level. A label that cannot be formatted is `null` in JSON and an empty field in CSV. |
+
+The bounds columns hold each period's first and last day, both inclusive. The other operations also return each period's `end_exclusive`, the day after its last day ([Dates and intervals](/guides/dates-and-intervals/#half-open-intervals)).
+
+## CSV
+
+`dimension_csv` returns RFC 4180 CSV with a header row, `\n` line endings and a final newline. Booleans are `true` and `false`, and a field is quoted only when it contains a comma, a quote or a line break. All three packages return the same text:
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={dimensionCsvPy} lang="python" title="dimension_csv.py" />
+    <Code code={dimensionCsvPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={dimensionCsvJs} lang="js" title="dimension_csv.mjs" />
+    <Code code={dimensionCsvJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={dimensionCsvRs} lang="rust" title="dimension_csv.rs" />
+    <Code code={dimensionCsvRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>

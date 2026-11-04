@@ -1,0 +1,37 @@
+title: "Calendar: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a real organisation's fiscal calendar. With a primary source, it can become a conformance vector that tests every release.
+  - type: input
+    id: organisation
+    attributes:
+      label: Organisation
+    validations:
+      required: true
+  - type: input
+    id: source-url
+    attributes:
+      label: Source link
+      description: A filing, statute or official publication that states the calendar rule.
+    validations:
+      required: true
+  - type: textarea
+    id: quote
+    attributes:
+      label: Verbatim quote
+      description: The exact sentence that states the rule, copied character for character.
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Calendar definition
+      description: Optional. A definition in the spec version 1 format.
+      render: json
+  - type: textarea
+    id: periods
+    attributes:
+      label: Reported period dates
+      description: Period start and end dates the source reports, and where each appears.
