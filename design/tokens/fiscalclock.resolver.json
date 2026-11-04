@@ -1,0 +1,40 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "version": "2025.10",
+  "name": "fiscalclock",
+  "description": "fiscalclock design tokens: primitives plus a light and a dark semantic theme.",
+  "sets": {
+    "primitives": {
+      "sources": [
+        {
+          "$ref": "primitives.tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "theme": {
+      "contexts": {
+        "light": [
+          {
+            "$ref": "semantic.light.tokens.json"
+          }
+        ],
+        "dark": [
+          {
+            "$ref": "semantic.dark.tokens.json"
+          }
+        ]
+      },
+      "default": "light"
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/primitives"
+    },
+    {
+      "$ref": "#/modifiers/theme"
+    }
+  ]
+}

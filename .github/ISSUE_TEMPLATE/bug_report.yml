@@ -1,0 +1,70 @@
+name: Bug report
+description: An operation returns a wrong result, an unexpected error or a crash.
+title: "Bug: "
+labels: ["type: bug", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the wrong result concerns a real organisation's published calendar, use the **Wrong result for a real calendar** form instead.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - Rust crate
+        - Python package
+        - npm package
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: fiscalclock version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Calendar definition
+      description: The full JSON definition. Remove anything confidential; the smallest definition that still shows the problem is best.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Operation and inputs
+      description: The operation and its arguments, such as `locate("2026-02-01")` or `parse("FY26 Q3")`.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What you expected and why. Link any source that states the expected dates.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: The output, or the full error JSON.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: A short script that reproduces the problem from a clean install.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched open and closed issues for duplicates.
+          required: true

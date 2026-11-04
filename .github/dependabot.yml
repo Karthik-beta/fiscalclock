@@ -1,0 +1,75 @@
+# Monthly, one grouped pull request per ecosystem for minor and patch updates;
+# major updates come one per pull request. Security updates are separate and
+# not limited by this schedule.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+    labels:
+      - "type: chore"
+      - "area: infra"
+
+  # The Rust workspace: the core, and pyo3 and wasm-bindgen in the bindings.
+  # The workflows read the wasm-bindgen CLI version from Cargo.lock.
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    groups:
+      rust:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+    labels:
+      - "type: chore"
+      - "area: infra"
+
+  - package-ecosystem: npm
+    directory: /bindings/js
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    ignore:
+      # The types must match the oldest Node.js in package.json "engines", or
+      # the binding could use APIs that its users' Node.js does not have.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    groups:
+      js-binding:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+    labels:
+      - "type: chore"
+      - "area: infra"
+
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    ignore:
+      # The site runs a published release; scripts/check_versions.py requires
+      # every example language to run the same one, so it moves by hand.
+      - dependency-name: fiscalclock
+    groups:
+      website:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+    labels:
+      - "type: chore"
+      - "area: infra"

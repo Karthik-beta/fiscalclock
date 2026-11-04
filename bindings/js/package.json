@@ -1,0 +1,36 @@
+{
+  "name": "fiscalclock",
+  "version": "0.1.0",
+  "description": "Fiscal calendar engine: compute any fiscal calendar from a JSON definition",
+  "license": "MIT OR Apache-2.0",
+  "author": "Karthik Parameshwara",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Karthik-beta/fiscalclock.git",
+    "directory": "bindings/js"
+  },
+  "homepage": "https://fiscalclock.karthik.nz",
+  "bugs": "https://github.com/Karthik-beta/fiscalclock/issues",
+  "keywords": ["fiscal", "calendar", "4-5-4", "retail", "accounting", "webassembly"],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "node": "./dist/node.js",
+      "default": "./dist/web.js"
+    }
+  },
+  "files": ["dist", "LICENSE-MIT", "LICENSE-APACHE", "README.md"],
+  "sideEffects": ["./dist/node.js", "./dist/web.js"],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,19 @@
+title: "Question: "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Calendar definition
+      description: If the question is about a specific calendar, include its definition.
+      render: json
+  - type: input
+    id: version
+    attributes:
+      label: fiscalclock version and package
+      placeholder: "0.1.0, Python package"
