@@ -133,8 +133,8 @@ def _json_text(value: Any, separators: Optional[tuple[str, str]] = None) -> str:
     # A value JSON cannot carry becomes {"unsupported_type": ...}, which the
     # core reports at its path. Input JSON cannot represent at all (a cycle, a
     # key that is not a string) becomes empty text, which the core rejects at
-    # path "". A lone surrogate cannot cross into Rust as UTF-8, so it is
-    # escaped as JSON.stringify escapes it, and the core reports it.
+    # path "". A lone surrogate cannot cross into Rust as UTF-8, so
+    # _core_text changes it and the core reports it.
     try:
         text = _json.dumps(value, ensure_ascii=False, separators=separators, default=_unsupported)
     except (TypeError, ValueError, RecursionError):
@@ -144,9 +144,11 @@ def _json_text(value: Any, separators: Optional[tuple[str, str]] = None) -> str:
 
 def _core_text(text: str) -> str:
     # PyO3 raises UnicodeEncodeError for a lone surrogate, so every string
-    # that goes to the core as text is escaped first. The core then reports
-    # it as invalid JSON, or as an unknown operation name.
-    return _LONE_SURROGATE.sub(lambda m: f"\\u{ord(m.group()):04x}", text)
+    # that goes to the core as text is changed first. A \uXXXX escape would
+    # merge with a neighbouring backslash or escape into valid JSON. U+0000
+    # is invalid JSON wherever it stands, so the core reports invalid JSON,
+    # or an unknown operation name.
+    return _LONE_SURROGATE.sub("\x00", text)
 
 
 def _definition_text(definition: Union[str, Mapping[str, Any]]) -> str:

@@ -250,13 +250,23 @@ class ValuesWithoutAJsonForm(unittest.TestCase):
             return error["code"], error["path"]
 
         text = json.dumps(NRF)
-        for bad in ["\ud800", '{"spec_version":"\udfff"}']:
+        backslash = chr(92)
+        beside_escape_text = [
+            backslash + "\udfff",
+            backslash + "ud83d\udc00",
+            "\ud83d" + backslash + "udc00",
+        ]
+        definitions = ["\ud800", '{"spec_version":"\udfff"}']
+        definitions += ['{"spec_version":"' + x + '"}' for x in beside_escape_text]
+        arguments = ["\ud800"] + ['{"date":"' + x + '"}' for x in beside_escape_text]
+        for bad in definitions:
             self.assertEqual(first_error(fiscalclock.validate_json(bad)), ("INVALID_JSON", ""))
             self.assertEqual(fiscalclock.validate(bad)["errors"][0]["code"], "INVALID_JSON")
             self.assert_error(lambda: FiscalCalendar(bad), "INVALID_JSON", "")
             self.assertEqual(first_error(fiscalclock.call_json(bad, "locate", "{}")), ("INVALID_JSON", ""))
         for call in [fiscalclock.call_json, lambda *a: self.cal.call_json(*a[1:])]:
-            self.assertEqual(first_error(call(text, "locate", "\ud800")), ("INVALID_ARGUMENT", ""))
+            for bad in arguments:
+                self.assertEqual(first_error(call(text, "locate", bad)), ("INVALID_ARGUMENT", ""))
             self.assertEqual(first_error(call(text, "\udfff", "{}")), ("INVALID_ARGUMENT", "op"))
 
     def test_non_ascii_text_reaches_the_core_unchanged(self):
