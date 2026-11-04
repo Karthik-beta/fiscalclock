@@ -126,24 +126,29 @@ def fetch(url: str) -> tuple[str | None, str]:
     request = urllib.request.Request(url, headers={
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate",
+        "Accept-Encoding": "gzip",
         "Accept-Language": "en",
     })
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             raw = response.read()
-            encoding = response.headers.get("Content-Encoding", "")
+            encoding = response.headers.get("Content-Encoding", "").lower()
             content_type = response.headers.get("Content-Type", "")
             charset = response.headers.get_content_charset() or "utf-8"
     except urllib.error.HTTPError as error:
         return None, f"HTTP {error.code}"
     except (urllib.error.URLError, TimeoutError, OSError) as error:
         return None, f"{type(error).__name__}: {getattr(error, 'reason', error)}"
-    if encoding == "gzip":
-        raw = gzip.decompress(raw)
-    elif encoding == "deflate":
-        raw = zlib.decompress(raw)
-    body = raw.decode(charset, errors="replace")
+    if encoding not in ("", "identity", "gzip"):
+        return None, f"unsupported Content-Encoding {encoding!r}"
+    try:
+        if encoding == "gzip":
+            if not raw:
+                return None, "empty body with Content-Encoding 'gzip'"
+            raw = gzip.decompress(raw)
+        body = raw.decode(charset, errors="replace")
+    except (OSError, EOFError, zlib.error, LookupError, UnicodeError) as error:
+        return None, f"{type(error).__name__}: {error}"
     return page_text(body, content_type.lower()), ""
 
 

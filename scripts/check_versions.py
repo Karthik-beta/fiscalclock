@@ -35,7 +35,7 @@ PINS = {
         ("bindings/python/Cargo.toml", CARGO_MSRV),
         ("bindings/js/Cargo.toml", CARGO_MSRV),
         (".github/workflows/ci.yml", r'MSRV: "(\d+\.\d+)"'),
-        ("AGENTS.md", r"cargo \+(\d+\.\d+) check"),
+        ("AGENTS.md", r"cargo \+(\d+\.\d+) (?:check|test)"),
         ("README.md", RUST_AND_LATER),
         ("crates/core/README.md", r"Minimum supported Rust version: (\d+\.\d+)\."),
         ("website/src/content/docs/start-here/install.mdx", RUST_AND_LATER),

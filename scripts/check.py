@@ -138,7 +138,9 @@ GROUPS = {
         Step("doc", ["cargo", "doc", "--no-deps", "-p", "fiscalclock"], env={"RUSTDOCFLAGS": "-D warnings"}),
         Step("wasm_build", ["cargo", "build", "-p", "fiscalclock", "--target", "wasm32-unknown-unknown", "--release"]),
         Step("package", ["cargo", "package", "-p", "fiscalclock", "--locked"]),
-        Step("msrv", ["cargo", f"+{MSRV}", "check", "-p", "fiscalclock"]),
+        Step("msrv", ["cargo", f"+{MSRV}", "check", "-p", "fiscalclock", "--locked"]),
+        Step("msrv_conformance", ["cargo", f"+{MSRV}", "test", "--release", "-p", "fiscalclock", "--locked",
+                                  "--test", "conformance"]),
     ],
     "python": [
         Step("py_venv", [sys.executable, "-m", "venv", VENV]),
