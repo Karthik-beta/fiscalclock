@@ -1,0 +1,55 @@
+{
+  "name": "definition-short-month-policy-missing",
+  "description": "Invalid definition. Rule: start.day >= 29 without short_month is rejected with SHORT_MONTH_POLICY_MISSING. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 31
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 31,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "SHORT_MONTH_POLICY_MISSING",
+        "path": "year.short_month"
+      }
+    }
+  ]
+}

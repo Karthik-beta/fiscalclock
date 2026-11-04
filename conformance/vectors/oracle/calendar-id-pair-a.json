@@ -1,0 +1,56 @@
+{
+  "name": "calendar-id-pair-a",
+  "description": "First of a pair that differ only in key order, $schema and a written-out default (offset 0); both must have calendar_id ee12e36448ae0a13. Whitespace differences cannot be expressed in a parsed JSON definition.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "hashlib.sha256 over the canonical form built in fiscal_oracle.canonical"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "cal",
+      "schemes": {
+        "cal": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "ee12e36448ae0a13",
+        "canonical": "{\"naming\":{\"default\":\"cal\",\"schemes\":{\"cal\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    }
+  ]
+}

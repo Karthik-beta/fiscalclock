@@ -1,0 +1,90 @@
+{
+  "name": "api-location-example",
+  "description": "The Location example in spec/api-v1.md (2024-02-03, the last day of a 53-week year). Only the fields the example prints are asserted. The spec does not print the definition behind this example; it is read as the NRF 4-5-4 calendar from spec/definition-v1.md (Saturday nearest 31 January, weeks start Sunday) with periods 4-5-4, quarters of 3 periods, extra week in period 12, named by start year.",
+  "source": {
+    "kind": "spec",
+    "citation": "spec/api-v1.md, Values > Location",
+    "url": null,
+    "checked_by": "Transcribed from the spec text 2026-10-31; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 12
+      }
+    },
+    "naming": {
+      "default": "nrf",
+      "schemes": {
+        "nrf": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "efc8868a4b19eaab",
+        "canonical": "{\"naming\":{\"default\":\"nrf\",\"schemes\":{\"nrf\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"FY{yyyy} P{pp}\",\"quarter\":\"FY{yyyy} Q{q}\",\"week\":\"FY{yyyy} W{ww}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"extra_week\":{\"period\":12},\"periods\":[4,5,4,4,5,4,4,5,4,4,5,4],\"quarters\":[3,3,3,3],\"type\":\"week_pattern\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"sunday\"},\"year\":{\"anchor\":{\"day\":\"last\",\"edge\":\"end\",\"month\":1,\"rule\":\"nearest\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2024-02-03"
+      },
+      "expect_subset": {
+        "date": "2024-02-03",
+        "day_of_year": 371,
+        "day_of_quarter": 98,
+        "day_of_period": 35,
+        "day_of_week": 7
+      }
+    }
+  ]
+}

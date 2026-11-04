@@ -1,0 +1,251 @@
+{
+  "name": "runtime-fixed-jan-1",
+  "description": "Runtime errors on a 1 January fixed-date calendar. Fiscal year 1 starts 0001-01-01 and fiscal year 9999 ends 9999-12-31, so neither lies wholly in 0001-01-02..9999-12-30 and both are OUT_OF_RANGE. Formatting {yyyy} for a year number above 9999 after offset (9500 + 543) is OUT_OF_RANGE. Weeks do not nest in quarters or periods of a fixed-date year.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/api-v1.md error catalogue and conventions; expected values computed by conformance/generators/fiscal_oracle.py",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "cal",
+      "schemes": {
+        "cal": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}",
+            "quarter": "{yyyy}-Q{q}"
+          }
+        },
+        "be": {
+          "year_number": "start",
+          "offset": 543,
+          "templates": {
+            "year": "BE {yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "8d45fab5d76fbc74",
+        "canonical": "{\"naming\":{\"default\":\"cal\",\"schemes\":{\"be\":{\"century_pivot\":null,\"offset\":543,\"templates\":{\"year\":\"BE {yyyy}\"},\"year_number\":\"start\"},\"cal\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"{yyyy}-Q{q}\",\"year\":\"{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 1
+        },
+        "level": "week"
+      },
+      "expect_error": {
+        "code": "LEVEL_NOT_NESTED",
+        "path": "level"
+      }
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 1
+        },
+        "level": "week"
+      },
+      "expect_error": {
+        "code": "LEVEL_NOT_NESTED",
+        "path": "level"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 1
+        }
+      },
+      "expect_error": {
+        "code": "TEMPLATE_MISSING",
+        "path": "period"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 1
+        },
+        "scheme": "be"
+      },
+      "expect_error": {
+        "code": "TEMPLATE_MISSING",
+        "path": "period"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 9500,
+          "index": null
+        },
+        "scheme": "be"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "period"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0001-01-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0001-06-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0001-12-31"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "9999-01-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "9999-12-31"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "year"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 9999
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "year"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 12000
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "year"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 9998,
+          "index": null
+        },
+        "n": 1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "n"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "n"
+      }
+    }
+  ]
+}
