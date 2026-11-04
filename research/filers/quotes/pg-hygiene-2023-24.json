@@ -1,0 +1,43 @@
+{
+  "company": "Procter & Gamble Hygiene and Health Care Limited",
+  "slug": "pg-hygiene",
+  "document": "Annual Report 2023-24",
+  "url": "https://assets.ctfassets.net/oe48y40ukei6/7aXOHTgxcGULOBM2hYlblW/6ef76eff5f3da3ecad126944fbaf3391/PGHH_ANNUAL_REPORT_2024.pdf",
+  "host_evidence": "Linked as \"ANNUAL REPORT 2024\" under Annual Report & Returns on https://in.pg.com/india-investors/pghh/shareholder-info/info/ (the company's own site; the file is on its Contentful CDN assets.ctfassets.net). The last report under the July to June year.",
+  "pdf": "PGHH_ANNUAL_REPORT_2024.pdf",
+  "retrieved": "2026-11-03",
+  "sha256": "c2ac2b0aee19672f233b78a6e054d55ce4bf858fd681590d99890cd71be667cd",
+  "pages": 160,
+  "quotes": [
+    {
+      "text": "The Company’s Financial Year is July 1st to June 30th.",
+      "pdf_page": 10,
+      "printed_page": "8",
+      "section": "Report of the Directors, Financial Year"
+    },
+    {
+      "text": "The Board of Directors have the pleasure of presenting the 60th Annual Report including the Audited Financial Statements of the Company for the Financial Year ended June 30, 2024.",
+      "pdf_page": 10,
+      "printed_page": "8",
+      "section": "Report of the Directors"
+    },
+    {
+      "text": "Presently, the Company follows July-June Financial Year.",
+      "pdf_page": 73,
+      "printed_page": "71",
+      "section": "Corporate Governance Report, Financial Calendar"
+    },
+    {
+      "text": "Financial Year reported July 1, 2023 to June 30, 2024",
+      "pdf_page": 21,
+      "printed_page": "19",
+      "section": "Business Responsibility & Sustainability Report, General Disclosures"
+    },
+    {
+      "text": "STATEMENT OF PROFIT AND LOSS FOR THE YEAR ENDED JUNE 30, 2024",
+      "pdf_page": 97,
+      "printed_page": "95",
+      "section": "Statement of Profit and Loss"
+    }
+  ]
+}

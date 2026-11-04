@@ -1,0 +1,97 @@
+---
+title: Style check
+description: A test page that shows every element the site theme styles, in both themes. It is not documentation.
+sidebar:
+  hidden: true
+pagefind: false
+head:
+  - tag: meta
+    attrs:
+      name: robots
+      content: noindex
+---
+
+import { Aside, Code, Tabs, TabItem } from "@astrojs/starlight/components";
+import definition from "../../../fixtures/style-check/definition.json?raw";
+
+This page exists to check the site theme. It shows every element the theme styles so that the automated accessibility tests and the screenshot review cover them in light and dark. It is not documentation. The calendar, code and dates are copied from the examples in the [Python package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/python/README.md), the [npm package README](https://github.com/Karthik-beta/fiscalclock/blob/main/bindings/js/README.md) and the [Rust crate README](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/README.md).
+
+## Text and links
+
+A paragraph of running text with a [link to the specification](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md), some *emphasis*, some **strong text** and inline code such as `end_exclusive` and `FiscalCalendar`. Every period is the half-open interval `[start, end_exclusive)`.
+
+### A third-level heading
+
+The year in the example ends on <time datetime="2024-02-03">3 Feb 2024</time>.
+
+#### A fourth-level heading
+
+> A blockquote. Every period exposes `start` and `end_exclusive`; `last_day` is derived.
+
+- An unordered list item.
+- A second item with a [link](https://github.com/Karthik-beta/fiscalclock).
+  - A nested item.
+
+1. An ordered list item.
+2. A second item.
+
+## Code
+
+<Code code={definition} lang="json" title="definition.json" />
+
+```sh
+pip install fiscalclock
+```
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    ```python
+    import datetime as dt
+    from fiscalclock import FiscalCalendar
+
+    # The definition shown above, as a dict.
+    cal = FiscalCalendar(definition)
+    fy2023 = cal.period("year", 2023)
+    assert fy2023.start == dt.date(2023, 1, 29)
+    assert fy2023.weeks == 53
+    ```
+  </TabItem>
+  <TabItem label="JavaScript">
+    ```js
+    import { FiscalCalendar } from "fiscalclock";
+
+    // The definition shown above, as an object.
+    const cal = new FiscalCalendar(definition);
+    const fy2023 = cal.period("year", 2023);
+    fy2023.start; // "2023-01-29"
+    fy2023.weeks; // 53
+    ```
+  </TabItem>
+  <TabItem label="Rust">
+    ```rust
+    use fiscalclock::{Date, FiscalCalendar, Level};
+
+    // The definition shown above, as a JSON string.
+    let cal = FiscalCalendar::from_json(definition).unwrap();
+    let fy2023 = cal.period(Level::Year, 2023, None).unwrap();
+    assert_eq!(fy2023.start, Date::from_ymd(2023, 1, 29).unwrap());
+    assert_eq!(fy2023.weeks, Some(53));
+    ```
+  </TabItem>
+</Tabs>
+
+## Asides
+
+<Aside type="note">A note aside with a [link](https://github.com/Karthik-beta/fiscalclock) and `inline code`.</Aside>
+
+<Aside type="tip">A tip aside.</Aside>
+
+<Aside type="caution">A caution aside.</Aside>
+
+<Aside type="danger">A danger aside.</Aside>
+
+## Table
+
+| Period | Start | Last day | End (exclusive) | Weeks |
+| --- | --- | --- | --- | --- |
+| FY2023 | <time>2023-01-29</time> | <time>2024-02-03</time> | <time>2024-02-04</time> | 53 |

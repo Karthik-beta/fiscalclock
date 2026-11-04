@@ -1,0 +1,51 @@
+name: Wrong result for a real calendar
+description: fiscalclock disagrees with an organisation's published fiscal calendar.
+title: "Wrong result: "
+labels: ["type: bug", "calendar: real-world", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Real calendars become permanent regression tests, so each report needs a primary source: a filing, a statute or an official publication. See [CONTRIBUTING.md](https://github.com/Karthik-beta/fiscalclock/blob/main/CONTRIBUTING.md#contributing-a-real-world-calendar-as-a-conformance-vector).
+  - type: input
+    id: organisation
+    attributes:
+      label: Organisation
+      placeholder: "Example Corp (SEC CIK 0000000000)"
+    validations:
+      required: true
+  - type: input
+    id: source-url
+    attributes:
+      label: Source link
+      description: A link to the filing, statute or official publication itself.
+    validations:
+      required: true
+  - type: textarea
+    id: quote
+    attributes:
+      label: Verbatim quote
+      description: The exact sentence that states the calendar rule, copied character for character.
+    validations:
+      required: true
+  - type: textarea
+    id: definition
+    attributes:
+      label: Calendar definition
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: disagreement
+    attributes:
+      label: Dates that disagree
+      description: For each period, the dates the source reports, where in the source each appears, and the dates fiscalclock returns.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: fiscalclock version
+      placeholder: "0.1.0"
+    validations:
+      required: true
