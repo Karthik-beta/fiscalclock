@@ -16,7 +16,7 @@
 
 fiscalclock is an open-source fiscal calendar engine. You describe your organisation's fiscal calendar as a JSON definition, and it tells you which fiscal year, quarter, period and week any date falls in, the bounds of every period, and the labels your organisation uses for them.
 
-**Status:** 0.1.0 is the first release. The definition format and API are version 1 drafts and may change before 1.0; every change is recorded in the [changelog](CHANGELOG.md). The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
+**Status:** As of 4 Nov 2026, 0.1.0 is the first release (published 31 Oct 2026; see the [release notes](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.1.0)). The definition format and API are version 1 drafts and may change before 1.0; every change is recorded in the [changelog](CHANGELOG.md). The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
 
 ## Why it exists
 
