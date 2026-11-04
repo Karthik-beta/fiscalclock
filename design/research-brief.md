@@ -6,7 +6,7 @@ This brief condenses seven research tracks into the constraints and choices that
 
 ## What the identity has to do
 
-fiscalclock computes dates that end up in financial reports. Its whole method is "shown, not claimed": cited sources, independent generators, byte-identical output in three languages. The identity's job is to make that method visible and to stay out of its way. The owner's answers ([`DECISIONS.md`](DECISIONS.md), DD-001 to DD-012) add: independent of any sibling project, every audience from Rust developers to finance teams and AI agents, dark mode equal to light, a balanced personality that leans very slightly serious and quiet, and open-licence fonts only.
+fiscalclock computes dates that end up in financial reports. Its whole method is "shown, not claimed": cited sources, independent generators, byte-identical output in three languages (a [CI job](../.github/workflows/ci.yml) compares every binding's raw output with the Rust core's with `cmp`, as [the README](../README.md#why-you-can-check-the-results) describes; to repeat it locally, run the `cmp` commands in [AGENTS.md](../AGENTS.md#build-test-and-lint) after the conformance runs). The identity's job is to make that method visible and to stay out of its way. The owner's answers ([`DECISIONS.md`](DECISIONS.md), DD-001 to DD-012) add: independent of any sibling project, every audience from Rust developers to finance teams and AI agents, dark mode equal to light, a balanced personality that leans very slightly serious and quiet, and open-licence fonts only.
 
 ## 1. What respected docs sites have in common
 

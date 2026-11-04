@@ -368,6 +368,11 @@ def self_test() -> int:
                 failed += not ok
                 print(f"{'ok  ' if ok else 'FAIL'} {expected}: {err}".splitlines()[0])
     print(f"{len(cases) - failed}/{len(cases)} invalid inputs rejected as expected")
+    mixed = ["IBM Plex Sans", "system-ui", "-apple-system", "Segoe UI", "sans-serif"]
+    want = '"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif'
+    got = css_value("fontFamily", mixed)
+    print(f"{'ok  ' if got == want else 'FAIL'} fontFamily quotes names and leaves generic keywords bare: {got}")
+    failed += got != want
     return 1 if failed else 0
 
 

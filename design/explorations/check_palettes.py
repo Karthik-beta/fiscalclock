@@ -2,9 +2,11 @@
 
 Run from the repository root: python -I design/explorations/check_palettes.py
 """
+import re
 import sys
+from pathlib import Path
 
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from contrast import contrast_ratio, format_ratio  # noqa: E402
 
 DIRECTIONS = {
@@ -50,6 +52,18 @@ PAIRS = [
     ("info", "surface", 4.5, "1.4.3 text"),
 ]
 
+BADGE_RULE = re.compile(r"\.badge span:(first|last)-child \{ background: (#[0-9a-fA-F]{3,6}); color: (#[0-9a-fA-F]{3,6}); \}")
+
+
+def badge_pairs():
+    """The two badge colour pairs that brand-directions.html draws, read from its stylesheet."""
+    css = Path(__file__).with_name("brand-directions.html").read_text(encoding="utf-8")
+    pairs = {m.group(1): (m.group(3), m.group(2)) for m in BADGE_RULE.finditer(css)}
+    if set(pairs) != {"first", "last"}:
+        sys.exit("brand-directions.html: badge colour rules not found")
+    return pairs
+
+
 failures = 0
 for name, themes in DIRECTIONS.items():
     for theme, p in themes.items():
@@ -65,4 +79,9 @@ for name, themes in DIRECTIONS.items():
         rows.append(f"  {'ok  ' if r >= 4.5 else 'FAIL'} bg-on-accent button text             {format_ratio(r):>8}  (>= 4.5)")
         print(f"{name} / {theme}")
         print("\n".join(rows))
+for part, (fg, bg) in badge_pairs().items():
+    r = contrast_ratio(fg, bg)
+    failures += r < 4.5
+    print(f"{'ok  ' if r >= 4.5 else 'FAIL'} README badge {part}-child text {fg} on {bg}  {format_ratio(r):>8}  (>= 4.5, 1.4.3 text)")
 print("failures:", failures)
+sys.exit(1 if failures else 0)
