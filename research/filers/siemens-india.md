@@ -4,7 +4,7 @@
 
 Siemens Limited (India) followed an October to September financial year until 30 September 2024, then changed to April to March through a one-time 18-month transition year from 1 October 2024 to 31 March 2026; spec version 1 can express the October to September year and the April to March year as two separate definitions, but not the 18-month transition period.
 
-Last reviewed: 3 Nov 2026
+Last reviewed: 4 Nov 2026
 
 ## Document
 
@@ -83,7 +83,7 @@ Printed page 23 (PDF page 25), Notice, explanatory statement, Item No. 6, footno
 
 > The turnover of Sunsole for FY 2025-26 ended March 31, 2026 was ` 22 million
 
-Printed page 38 (PDF page 40), Directors' Report, subsidiaries.
+Printed page 38 (PDF page 40), Directors' Report, item 5(ii), "Associate company". The same item introduces Sunsole Renewables Private Limited as "Associate company of the Company", which is why this page calls it an associate. Item 5(i), just above it, covers the subsidiaries.
 
 > The Directors have pleasure in presenting the 68th Annual Report of your Company and the Audited Financial Statements for eighteen months financial year ended March 31, 2026 (“FY 2024-26”).
 
