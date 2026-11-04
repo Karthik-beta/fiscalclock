@@ -29,7 +29,7 @@ Run these in `website/`.
 
 The copied files are generated and ignored by Git. Change a value in `design/tokens/` or a file in `assets/brand/`, never in `website/`.
 
-The font files are served unmodified, as the packages ship them. The SIL Open Font License does not let a modified version use the Reserved Font Name "Plex", so do not subset or convert them.
+The font files are served unmodified, as the packages ship them. The [SIL Open Font License](https://openfontlicense.org/open-font-license-official-text/) does not let a modified version use the Reserved Font Name "Plex", so do not subset or convert them.
 
 ## Files for AI agents
 
@@ -41,7 +41,9 @@ Decision DD-033 makes AI agents part of the audience. The build publishes:
 
 ## Install scripts
 
-`@ibm/plex-mono` declares a `postinstall` script, `ibmtelemetry --config=telemetry.yml`, in its `package.json`. No other dependency has an install script (`npm install-scripts ls` lists only this one), so `package.json` denies it in `allowScripts`, which npm 11.7.0 honours, and [`vercel.json`](vercel.json) installs with `npm ci --ignore-scripts`.
+`@ibm/plex-mono` declares a `postinstall` script, `ibmtelemetry --config=telemetry.yml`, in its `package.json`. No other dependency has an install script: with `allowScripts` removed from `package.json`, `npm install-scripts ls` lists only this package (checked on 4 Nov 2026 with npm 11.19.1). So `package.json` denies it in `allowScripts`, and [`vercel.json`](vercel.json) installs with `npm ci --ignore-scripts`.
+
+As of 4 Nov 2026, npm honours `allowScripts` from 11.16.0, whose [release notes](https://github.com/npm/cli/releases/tag/v11.16.0) list "Phase 1 of `allowScripts` opt-in install-script policy". The [`npm install-scripts`](https://docs.npmjs.com/cli/v11/commands/npm-install-scripts/) command, with its `ls` subcommand, is in 11.18.0 or later, whose [release notes](https://github.com/npm/cli/releases/tag/v11.18.0) list "namespace install-script approval commands under npm install-scripts"; its [pull request](https://github.com/npm/cli/pull/9635) adds the `approve`, `deny` and `ls` subcommands. An older npm does not honour `allowScripts`.
 
 ## Landing page and playground
 

@@ -8,7 +8,7 @@ import type { ErrorObject, FiscalCalendar, Location, Period } from "fiscalclock"
 import type { Example } from "../lib/examples";
 import { formatJson } from "../lib/json-format";
 import { LOAD_FAILED, LOAD_FAILED_HINT } from "../lib/lookup";
-import { decodeState, encodeState, type PlaygroundState } from "../lib/playground-state";
+import { decodeState, encodeState, hasState, type PlaygroundState } from "../lib/playground-state";
 import { renderYearStrip } from "../lib/year-strip";
 import { rangeForPath, type Range } from "./json-path";
 import { addScrollHint } from "./strip-hint";
@@ -141,6 +141,16 @@ function loadFromUrl(): void {
   flush();
 }
 
+/** `replaceState` throws a SecurityError when called too frequently (https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState#exceptions); the address then keeps its last value. */
+function writeUrl(state: PlaygroundState): void {
+  const url = encodeState(state);
+  try {
+    history.replaceState(null, "", url);
+  } catch (e) {
+    if (!(e instanceof DOMException && e.name === "SecurityError")) throw e;
+  }
+}
+
 let timer: number | undefined;
 let pendingFollowDate = false;
 /**
@@ -148,7 +158,7 @@ let pendingFollowDate = false;
  * The address updates at once, so a reload or a copied link never loses what was typed.
  */
 function schedule({ followDate }: { followDate: boolean }): void {
-  history.replaceState(null, "", encodeState(readState()));
+  writeUrl(readState());
   pendingFollowDate ||= followDate;
   clearTimeout(timer);
   timer = window.setTimeout(flush, 200);
@@ -192,7 +202,7 @@ function render({ followDate }: { followDate: boolean }): void {
     yearInput.value = String(here.year.year);
     state.year = here.year.year;
   }
-  history.replaceState(null, "", encodeState(state));
+  writeUrl(state);
 
   showLocation(cal, here, state);
   showStrip(cal, here, state, errors);
@@ -375,5 +385,8 @@ $("pg-copy").addEventListener("click", async () => {
   }
 });
 
-window.addEventListener("hashchange", loadFromUrl);
+window.addEventListener("hashchange", () => {
+  // A link to another part of the page, such as the skip link, must not replace what was typed.
+  if (hasState(location.hash)) loadFromUrl();
+});
 loadFromUrl();
