@@ -19,7 +19,7 @@ Status: 0.1.0 is the first release. The definition format and API are version 1 
 pip install fiscalclock
 ```
 
-Wheels are published for CPython 3.10 and later (one stable-ABI wheel per platform) and for free-threaded CPython 3.14.
+As of 4 Nov 2026, the [0.1.0 files on PyPI](https://pypi.org/project/fiscalclock/0.1.0/#files) include wheels for CPython 3.10 and later (one stable-ABI `cp310-abi3` wheel per platform) and for free-threaded CPython 3.14 (`cp314t`).
 
 ## Example
 
@@ -128,9 +128,9 @@ Date arguments accept only an object whose type is exactly `datetime.date`, or a
 ## How the results are checked
 
 - Shared conformance vectors are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
-- Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
-- Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
-- On every push, CI runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.
+- Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399 ([`oracle_vectors.py`](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/generators/oracle_vectors.py)), and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 ([`differential.rs`](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/tests/differential.rs)).
+- [Property tests](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/tests/properties.rs) check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
+- On every push, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.
 
 ## Supply chain
 

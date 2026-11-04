@@ -126,9 +126,9 @@ Date arguments accept an ISO `YYYY-MM-DD` string or a `Temporal.PlainDate`. A Ja
 ## How the results are checked
 
 - Shared conformance vectors are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
-- Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
-- Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
-- On every push, CI runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.
+- Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399 ([`oracle_vectors.py`](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/generators/oracle_vectors.py)), and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 ([`differential.rs`](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/tests/differential.rs)).
+- [Property tests](https://github.com/Karthik-beta/fiscalclock/blob/main/crates/core/tests/properties.rs) check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
+- On every push, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows and requires the outputs to match byte for byte.
 
 ## Supply chain
 
