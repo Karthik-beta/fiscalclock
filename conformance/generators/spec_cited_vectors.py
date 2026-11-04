@@ -324,7 +324,7 @@ def abb_india_vector() -> dict:
     return vector(
         "abb-india-integrated-annual-report-2025",
         "ABB India Limited Integrated Annual Report 2025 (financial year ended 31 December 2025). "
-        "The week block, the calendar-month subdivision and the quarter structure are illustrative; only fields the document states are asserted.",
+        "The week block, the calendar-month subdivision, the quarter structure and the `fy` naming scheme are illustrative; only fields the document states are asserted.",
         source("cited", citation, PDF_QUOTES_CHECKED, ABB_URL), defn, cases,
     )
 

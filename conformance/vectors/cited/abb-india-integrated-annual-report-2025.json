@@ -1,6 +1,6 @@
 {
   "name": "abb-india-integrated-annual-report-2025",
-  "description": "ABB India Limited Integrated Annual Report 2025 (financial year ended 31 December 2025). The week block, the calendar-month subdivision and the quarter structure are illustrative; only fields the document states are asserted.",
+  "description": "ABB India Limited Integrated Annual Report 2025 (financial year ended 31 December 2025). The week block, the calendar-month subdivision, the quarter structure and the `fy` naming scheme are illustrative; only fields the document states are asserted.",
   "source": {
     "kind": "cited",
     "citation": "\"This Report covers the financial and operational performance of ABB India Limited for the period January 01, 2025 to December 31, 2025, unless otherwise stated.\" (PDF page 7, which prints no page number) \"During CY 2025, ABB India delivered another solid year, surpassing its already strong CY 2024 performance.\" and \"Q4 CY2025 alone saw a 52% surge in orders\" (Directors' Report, p. 96) \"Ratification of remuneration to Cost Auditor of the Company for financial year ending December 31, 2026\" (p. 86). Establishes the calendar-year financial year, the bounds of 2025, the end of 2026, and the labels CY 2025 and Q4 CY2025 as printed (with a space after CY in the year label and none in the quarter label).",

@@ -4,8 +4,8 @@
   "source": {
     "kind": "errors",
     "citation": "spec/api-v1.md error catalogue and conventions; expected values computed by conformance/generators/fiscal_oracle.py",
-    "url": null,
-    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue",
+    "checked_by": "Manual reading of spec/api-v1.md, 2026-10-31; conformance/generators/fiscal_oracle.py computes each case and the generator asserts that its error code equals the one read from the spec"
   },
   "definition": {
     "spec_version": 1,

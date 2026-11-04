@@ -10,7 +10,15 @@ from oracle_vectors import iso_definition, nrf_definition
 from vectorlib import case, coords, fixed_date, naming, scheme, source, validate_case, vector, week_based, year_args
 
 SPEC = "spec/definition-v1.md"
+SPEC_BASE = "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/"
+DEFINITION_URL = SPEC_BASE + "definition-v1.md"
+CATALOGUE_URL = SPEC_BASE + "api-v1.md#error-catalogue"
+YEAR_NUMBERS_URL = SPEC_BASE + "definition-v1.md#year-numbers-must-be-unique"
 CHECKED = "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+RUNTIME_CHECKED = (
+    "Manual reading of spec/api-v1.md, 2026-10-31; conformance/generators/fiscal_oracle.py computes each case "
+    "and the generator asserts that its error code equals the one read from the spec"
+)
 
 
 def fixed_base() -> dict:
@@ -53,7 +61,7 @@ fixed = fixed_base()
 calendar_months_in_week_based = {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]}
 week_pattern_in_fixed = {"type": "week_pattern", "periods": [4, 5, 4] * 4, "quarters": [3, 3, 3, 3], "extra_week": {"period": 12}}
 
-# (name, definition, expected error(s), rule the expectation comes from)
+# (name, definition, expected error(s), paraphrase of the spec rule the expectation comes from)
 INVALID = [
     ("invalid-json-not-object", [1, 2], {"code": "INVALID_JSON", "path": ""}, "api-v1 catalogue: INVALID_JSON when the definition is not valid JSON or not an object; path '' means the whole input"),
     ("unknown-field", edit(nrf, setp("week.color", "blue")), {"code": "UNKNOWN_FIELD", "path": "week.color"}, "Unknown fields at any level are rejected with UNKNOWN_FIELD"),
@@ -95,11 +103,18 @@ INVALID = [
 ]
 
 
+# Rules that only the API catalogue states; the definition spec does not mention them.
+CATALOGUE_ONLY = {"invalid-json-not-object"}
+
+
 def invalid_definition_vectors() -> list[dict]:
     out = []
     for name, defn, expected, rule in INVALID:
-        desc = f"Invalid definition. Rule: {rule}. Only code and path are asserted."
-        src = source("errors", f"{SPEC} / spec/api-v1.md error catalogue", CHECKED)
+        desc = f"Invalid definition. Spec rule, paraphrased: {rule}. Only code and path are asserted."
+        if name in CATALOGUE_ONLY:
+            src = source("errors", "spec/api-v1.md error catalogue", CHECKED, CATALOGUE_URL)
+        else:
+            src = source("errors", f"{SPEC} / spec/api-v1.md error catalogue", CHECKED, DEFINITION_URL)
         out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
     return out
 
@@ -123,7 +138,8 @@ def naming_error_vectors() -> list[dict]:
          "182 days in each calendar year."),
     ]
     src = source("errors", "spec/definition-v1.md, Year numbers must be unique; path from spec/api-v1.md, Paths for common errors",
-                 "conformance/generators/fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range; code and path asserted by the generator")
+                 "conformance/generators/fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range; code and path asserted by the generator",
+                 YEAR_NUMBERS_URL)
     out = []
     for name, defn, code, path, why in rows:
         c = case(Calendar(defn), "validate", {})
@@ -140,7 +156,7 @@ def runtime(cal: Calendar, op: str, args: dict, code: str) -> dict:
 
 
 def runtime_vectors() -> list[dict]:
-    src = source("errors", "spec/api-v1.md error catalogue and conventions; expected values computed by conformance/generators/fiscal_oracle.py", CHECKED)
+    src = source("errors", "spec/api-v1.md error catalogue and conventions; expected values computed by conformance/generators/fiscal_oracle.py", RUNTIME_CHECKED, CATALOGUE_URL)
     out = []
 
     cal = Calendar(nrf)
