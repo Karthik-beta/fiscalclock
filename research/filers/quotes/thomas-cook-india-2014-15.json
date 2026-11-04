@@ -1,0 +1,79 @@
+{
+  "company": "Thomas Cook (India) Limited",
+  "slug": "thomas-cook-india",
+  "document": "Thomas Cook (India) Limited Annual Report 2014-2015 (Thirty-Eighth Annual Report, fifteen months period ended 31st March, 2015)",
+  "url": "https://resources.thomascook.in/downloads/Thomas%20Cook%20(India)%20Limited%20-%20Annual_Report_2014.pdf",
+  "host_evidence": "Listed under '2014-15' on the company's own Annual Report page https://www.thomascook.in/annual-report (fetched 2026-11-03); the link is on resources.thomascook.in, the company's own download host, which also serves the company's results and investor documents linked from https://www.thomascook.in/investor-relations.",
+  "pdf": "Thomas-Cook-Annual-Report-2014-15.pdf",
+  "sha256": "85584b46b2e646f9e2f02ec167bc1e9b8de5fd917d08d1939d46666c279dc96e",
+  "pages": 156,
+  "retrieved": "2026-11-03",
+  "quotes": [
+    {
+      "text": "Your Directors have pleasure in presenting the Thirty – Eighth Annual Report, together with audited ﬁnancial statements for the ﬁfteen months period ended 31st March, 2015 (from 1st January, 2014 to 31st March, 2015).",
+      "pdf_page": 5,
+      "printed_page": "1",
+      "section": "Directors' Report"
+    },
+    {
+      "text": "# The Company extended its ﬁnancial year to bring it in line with the requirements of the provisions of sub-section (41) of Section 2 of the Companies Act, 2013. The current ﬁnancial period is for the period of ﬁfteen months from 1st January, 2014 to 31st March, 2015 and therefore not comparable with the previous year.",
+      "pdf_page": 5,
+      "printed_page": "1",
+      "section": "Directors' Report"
+    },
+    {
+      "text": "The subsequent ﬁnancial years of the Company will commence from 1st day of April every year and end on 31st March of the following year.",
+      "pdf_page": 5,
+      "printed_page": "1",
+      "section": "Directors' Report"
+    },
+    {
+      "text": "the consolidated ﬁnancial statements for the year ended 31st December, 2013",
+      "pdf_page": 5,
+      "printed_page": "1",
+      "section": "Directors' Report"
+    },
+    {
+      "text": "Note: All the above figures are compared for the period of 15 Months i.e. January 2014 to March 2015 versus previous year of 12 months i.e. January 2013 to December 2013.",
+      "pdf_page": 23,
+      "printed_page": "19",
+      "section": "Management Discussion and Analysis Report"
+    },
+    {
+      "text": "We have reviewed the financial statements and the cash flow statement for the fifteen months period ended 31st March, 2015 (01.01.2014 to 31.03.2015)",
+      "pdf_page": 53,
+      "printed_page": "49",
+      "section": "CEO/CFO Certification"
+    },
+    {
+      "text": "Statement of Proﬁt and Loss for the ﬁfteen months period ended March 31, 2015",
+      "pdf_page": 57,
+      "printed_page": "53",
+      "section": "Statement of Profit and Loss"
+    },
+    {
+      "text": "** 2014-15 is for ﬁfteen months.",
+      "pdf_page": 128,
+      "printed_page": "124",
+      "section": "Consolidated Performance Summary"
+    },
+    {
+      "text": "Annual Report 2014-2015",
+      "pdf_page": 2,
+      "printed_page": null,
+      "section": "Inside front cover (Contents)"
+    },
+    {
+      "text": "Financial Years 2014-15 and 2015-2016",
+      "pdf_page": 10,
+      "printed_page": "6",
+      "section": "Directors' Report"
+    },
+    {
+      "text": "for the quarter ended 31st December, 2014",
+      "pdf_page": 10,
+      "printed_page": "6",
+      "section": "Directors' Report"
+    }
+  ]
+}

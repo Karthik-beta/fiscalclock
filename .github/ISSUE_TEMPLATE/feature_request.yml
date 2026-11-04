@@ -1,0 +1,68 @@
+name: Feature request
+description: A new operation, option or capability.
+title: "Feature: "
+labels: ["type: feature", "status: needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The question you need answered or the task you cannot do today. Describe the problem before any solution.
+    validations:
+      required: true
+  - type: textarea
+    id: api
+    attributes:
+      label: Proposed API
+      description: How you would call it and what it would return.
+    validations:
+      required: true
+  - type: dropdown
+    id: capability
+    attributes:
+      label: Capability
+      options:
+        - Locate
+        - Period objects
+        - Navigation
+        - Labels
+        - Year inspection
+        - Date dimension
+        - Explain
+        - Range operations
+        - Proration
+        - Comparable periods
+        - Equivalent day
+        - Cross-calendar mapping
+        - Agent tooling (CLI, MCP, describe, infer)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Roadmap phase
+      description: See the Roadmap page on the wiki.
+      options:
+        - Not sure
+        - "Phase 1: v0.1"
+        - "Phase 2: v0.2"
+        - "Phase 3: v0.3"
+        - "Phase 4: v0.4"
+        - "Phase 5: v1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches, including doing it outside fiscalclock.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This is not about holidays, business days, pay periods or sprints, which are out of scope.
+          required: true
