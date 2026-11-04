@@ -141,7 +141,7 @@ Final values come from the design system and must meet 1.4.11 against `surface` 
 - **Answers.** How a week-based year end moves around its anchor date, and which years have 53 weeks.
 - **Layout.** A dot plot. Rows are fiscal years in order and the horizontal axis is the year end's offset in days from the anchor date. The axis runs from −3 to +3 for `nearest` and from −6 to 0 for `last` or 0 to +6 for `first`. A vertical line marks the anchor at 0, and thin lines join consecutive years to show the sawtooth. A 53-week year is a ring with a "53" label, a 52-week year a filled dot. Each row is also labelled with the full `last_day` date.
 - **Scale.** One day per tick, the same for every row. The offset axis never omits days, even where no year lands.
-- **Example (computed).** For "Saturday nearest 31 January" in fiscal years 2015-2030, the offsets are −1, −3, +3, +2, +1, −1, −2, −3, +3, +1, 0, −1, −2, +3, +2, +1 days. The 53-week years are 2017, 2023 and 2028, each one where the offset jumps forward by 5 or 6 days (from −3 to +3 in 2017 and 2023, from −2 to +3 in 2028, which has a leap day). This matches the NRF years in the evidence register (checks C03 and C19 in [`Evidence.md`](../../research/evidence/Evidence.md)), and Kroger's 10-K above gives the same fiscal 2017 and 2018 year-end dates. Recomputed on 4 Nov 2026 with the standard-library script after this list, which does not use fiscalclock.
+- **Example (computed).** For "Saturday nearest 31 January" in fiscal years 2015-2030, the offsets are −1, −3, +3, +2, +1, −1, −2, −3, +3, +1, 0, −1, −2, +3, +2, +1 days. The 53-week years are 2017, 2023 and 2028, each one where the offset jumps forward by 5 or 6 days (from −3 to +3 in 2017 and 2023, from −2 to +3 in 2028, which has a leap day). The rule's 2017 and 2023 match the 53-week years NRF publishes (check C19 in [`Evidence.md`](../../research/evidence/Evidence.md)). 2028 is the rule's prediction only, because NRF lists no 53-week year after fiscal 2023 (C19, as of 1 Nov 2026), so treat the 2028 ring as illustrative and unverified against NRF; check C03 records the rule's result. Kroger's 10-K above gives the same fiscal 2017 and 2018 year-end dates. Recomputed on 4 Nov 2026 with the standard-library script after this list, which does not use fiscalclock.
 - **Alt text.** "Year-end dates of <calendar>, <first>–<last>, as days from <anchor>: <year> <offset> …; 53-week years: <list>."
 - **Colour roles.** `ink`, `extra-week` for the 53-week rings and labels, `rule`.
 
@@ -160,7 +160,7 @@ start, end = year_end(2022) + timedelta(days=1), year_end(2023) + timedelta(days
 print("fiscal 2023:", start, end, (end - start).days, "days")
 ```
 
-Run it with `python -I drift.py`. It prints the offsets above, the 53-week years 2017, 2023 and 2028, and fiscal 2023 as `2023-01-29 2024-02-04 371 days`.
+Save the Python block above as `drift.py` in an empty folder, then run it with `python -I drift.py`. It prints the offsets above, the 53-week years 2017, 2023 and 2028, and fiscal 2023 as `2023-01-29 2024-02-04 371 days`.
 
 ## How to produce them
 

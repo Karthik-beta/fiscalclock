@@ -249,7 +249,11 @@ def css_value(ttype: str, value: object) -> str:
     if ttype == "fontFamily":
         names = [value] if isinstance(value, str) else value
         generic = {"serif", "sans-serif", "monospace", "system-ui", "ui-monospace", "-apple-system"}
-        return ", ".join(n if n in generic or re.fullmatch(r"[A-Za-z-]+", n) and n[0].islower() else f'"{n}"' for n in names)
+        reserved = {"initial", "inherit", "unset", "revert", "revert-layer", "default"}
+        return ", ".join(
+            n if n in generic or (re.fullmatch(r"[A-Za-z-]+", n) and n[0].islower() and n not in reserved) else f'"{n}"'
+            for n in names
+        )
     if ttype in ("fontWeight", "number"):
         return f"{value:g}"
     if ttype == "cubicBezier":
@@ -372,6 +376,11 @@ def self_test() -> int:
     want = '"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif'
     got = css_value("fontFamily", mixed)
     print(f"{'ok  ' if got == want else 'FAIL'} fontFamily quotes names and leaves generic keywords bare: {got}")
+    failed += got != want
+    keywords = ["initial", "inherit", "unset", "revert", "revert-layer", "default"]
+    got = css_value("fontFamily", keywords)
+    want = ", ".join(f'"{k}"' for k in keywords)
+    print(f"{'ok  ' if got == want else 'FAIL'} fontFamily quotes CSS-wide keywords and default: {got}")
     failed += got != want
     return 1 if failed else 0
 
