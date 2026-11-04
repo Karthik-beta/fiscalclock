@@ -494,6 +494,23 @@ fn labels_not_recognised() {
 }
 
 #[test]
+fn parse_handles_a_template_with_many_placeholders() {
+    let repeats = 200_000;
+    let mut d = fixed_date(4, 1, None, "monday", &[3, 3, 3, 3], "start");
+    d["naming"]["schemes"]["fy"]["templates"]["year"] = json!("{yyyy}-".repeat(repeats));
+    let label = "2024-".repeat(repeats);
+    let out: Value = serde_json::from_str(&call(&d, "parse", json!({"label": label}))).unwrap();
+    assert_eq!(out["year"], 2024, "{out}");
+    assert_err(
+        &d,
+        "parse",
+        json!({"label": format!("{label}2024-")}),
+        "LABEL_NOT_RECOGNISED",
+        "label",
+    );
+}
+
+#[test]
 fn ambiguous_label_lists_candidates_in_order() {
     let mut d = fixed_date(4, 1, None, "monday", &[3, 3, 3, 3], "start");
     d["naming"]["schemes"] = json!({

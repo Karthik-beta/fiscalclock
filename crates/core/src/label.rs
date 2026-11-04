@@ -136,15 +136,47 @@ impl Template {
         Some(out)
     }
 
-    /// Every way the whole label matches this template.
+    /// Every way the whole label matches this template, narrower widths first.
     pub fn captures(&self, label: &str) -> Vec<Captures> {
+        let label = label.as_bytes();
         let mut found = Vec::new();
-        match_parts(
-            &self.parts,
-            label.as_bytes(),
-            Captures::default(),
-            &mut found,
-        );
+        let mut pending = alloc::vec![(0, 0, Captures::default())];
+        while let Some((part, at, caps)) = pending.pop() {
+            let s = &label[at..];
+            let Some(first) = self.parts.get(part) else {
+                if s.is_empty() {
+                    found.push(caps);
+                }
+                continue;
+            };
+            let widths: &[usize] = match first {
+                Part::Lit(lit) => {
+                    if s.starts_with(lit.as_bytes()) {
+                        pending.push((part + 1, at + lit.len(), caps));
+                    }
+                    continue;
+                }
+                Part::Yyyy => &[4],
+                Part::Q => &[1, 2],
+                _ => &[2],
+            };
+            for &n in widths.iter().rev() {
+                let Some(value) = digits(s, n) else { continue };
+                if matches!(first, Part::Q) && s[0] == b'0' {
+                    continue;
+                }
+                let mut next = caps;
+                let ok = match first {
+                    Part::Yyyy => set(&mut next.yyyy, value),
+                    Part::Yy => set(&mut next.yy, value),
+                    Part::YyNext => set(&mut next.yy_next, value),
+                    _ => set(&mut next.index, value),
+                };
+                if ok {
+                    pending.push((part + 1, at + n, next));
+                }
+            }
+        }
         found
     }
 }
@@ -175,40 +207,4 @@ fn digits(s: &[u8], n: usize) -> Option<u32> {
     s[..n].iter().try_fold(0u32, |acc, &c| {
         c.is_ascii_digit().then(|| acc * 10 + u32::from(c - b'0'))
     })
-}
-
-fn match_parts(parts: &[Part], s: &[u8], caps: Captures, found: &mut Vec<Captures>) {
-    let Some((first, rest)) = parts.split_first() else {
-        if s.is_empty() {
-            found.push(caps);
-        }
-        return;
-    };
-    let widths: &[usize] = match first {
-        Part::Lit(lit) => {
-            if s.starts_with(lit.as_bytes()) {
-                match_parts(rest, &s[lit.len()..], caps, found);
-            }
-            return;
-        }
-        Part::Yyyy => &[4],
-        Part::Q => &[1, 2],
-        _ => &[2],
-    };
-    for &n in widths {
-        let Some(value) = digits(s, n) else { continue };
-        if matches!(first, Part::Q) && s[0] == b'0' {
-            continue;
-        }
-        let mut next = caps;
-        let ok = match first {
-            Part::Yyyy => set(&mut next.yyyy, value),
-            Part::Yy => set(&mut next.yy, value),
-            Part::YyNext => set(&mut next.yy_next, value),
-            _ => set(&mut next.index, value),
-        };
-        if ok {
-            match_parts(rest, &s[n..], next, found);
-        }
-    }
 }
