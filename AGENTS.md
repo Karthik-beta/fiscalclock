@@ -103,7 +103,8 @@ cargo test -p fiscalclock --locked --test json_api
 RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p fiscalclock
 cargo build -p fiscalclock --target wasm32-unknown-unknown --release
 cargo package -p fiscalclock --locked
-cargo +1.85 check -p fiscalclock
+cargo +1.85 check -p fiscalclock --locked
+cargo +1.85 test --release -p fiscalclock --locked --test conformance
 ```
 
 Python package (needs maturin 1.15.0):

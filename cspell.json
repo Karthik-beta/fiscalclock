@@ -45,7 +45,7 @@
     "Email",
     "HexValues",
     "/`[^`]*`/g",
-    "/\b[0-9a-f]{40}\b/g"
+    "/\\b[0-9a-f]{40}\\b/g"
   ],
   "enableGlobDot": true
 }
