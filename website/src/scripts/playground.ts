@@ -378,7 +378,7 @@ $("pg-copy").addEventListener("click", async () => {
   const status = $("pg-copy-status");
   flush();
   try {
-    await navigator.clipboard.writeText(location.href);
+    await navigator.clipboard.writeText(new URL(encodeState(readState()), location.href).href);
     status.textContent = "Link copied.";
   } catch {
     status.textContent = "Copying failed. Copy the address from the address bar instead.";
