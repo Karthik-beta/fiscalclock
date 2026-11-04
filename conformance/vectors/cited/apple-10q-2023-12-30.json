@@ -1,0 +1,123 @@
+{
+  "name": "apple-10q-2023-12-30",
+  "description": "Apple Inc. Form 10-Q for the quarter ended 30 December 2023. The definition's period pattern is illustrative; only fields the filing states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"The Company’s fiscal year is the 52- or 53-week period that ends on the last Saturday of September.\" \"The Company’s fiscal years 2024 and 2023 span 52 and 53 weeks, respectively.\" \"The Company’s first quarter of 2024 included 13 weeks, compared to 14 weeks during the first quarter of 2023.\" \"For the quarterly period ended December 30, 2023\" (cover page). \"...included in its Annual Report on Form 10-K for the fiscal year ended September 30, 2023\". Establishes the year-end rule, 53 weeks in fiscal 2023 and 52 in fiscal 2024, a 14-week first quarter in 2023 and a 13-week first quarter of 2024 ending 30 December 2023, and fiscal 2023 ending 30 September 2023.",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000006/aapl-20231230.htm",
+    "checked_by": "Quotes compared character for character with the fetched page text (HTML tags removed, entities decoded, whitespace collapsed) on 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 9,
+        "day": "last",
+        "rule": "last"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 1
+      }
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "end",
+          "century_pivot": 2069,
+          "templates": {
+            "year": "FY{yy}",
+            "quarter": "Q{q} FY{yy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "e974659ba858e428",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":2069,\"offset\":0,\"templates\":{\"quarter\":\"Q{q} FY{yy}\",\"year\":\"FY{yy}\"},\"year_number\":\"end\"}}},\"spec_version\":1,\"subdivision\":{\"extra_week\":{\"period\":1},\"periods\":[4,4,5,4,4,5,4,4,5,4,4,5],\"quarters\":[3,3,3,3],\"type\":\"week_pattern\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"sunday\"},\"year\":{\"anchor\":{\"day\":\"last\",\"edge\":\"end\",\"month\":9,\"rule\":\"last\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "weeks": 53,
+        "has_extra_week": true,
+        "last_day": "2023-09-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect_subset": {
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 1
+      },
+      "expect_subset": {
+        "weeks": 13,
+        "last_day": "2023-12-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2023,
+        "index": 1
+      },
+      "expect_subset": {
+        "weeks": 14,
+        "has_extra_week": true
+      }
+    }
+  ]
+}

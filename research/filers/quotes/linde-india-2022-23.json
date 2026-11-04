@@ -1,0 +1,85 @@
+{
+  "company": "Linde India Limited",
+  "slug": "linde-india",
+  "document": "Linde India Limited Annual Report 2022-23 (for 15 months period from 1 January 2022 to 31 March 2023)",
+  "url": "https://assets.linde.com/-/media/global/apac/linde-india-limited/cp/linde-india_annual-report-2022-23_tcm526-678037.pdf",
+  "host_evidence": "Listed as 'Annual Report 2022-23 (15 months period)' on the company's own Annual Reports page https://www.lindeindia.in/investors/financials/annual-reports (fetched 2026-11-03); the link is on assets.linde.com, the CDN that page links to for all of its annual reports.",
+  "pdf": "linde-india_annual-report-2022-23.pdf",
+  "sha256": "9de475a15d2b826f084a68e6fd4602ed3aa975ec4b18f288e7b53b00f03ecb5e",
+  "pages": 220,
+  "retrieved": "2026-11-03",
+  "quotes": [
+    {
+      "text": "During the year under review, Regional Director - Eastern Region, MCA, approved our application to change our Financial Year from a calendar year to a uniform FY. The current FY will be for 15 months, from 1 January 2022 to 31 March 2023. Going forward, our FY will be from 1 April to 31 March.",
+      "pdf_page": 3,
+      "printed_page": "1",
+      "section": "Chairman's Message"
+    },
+    {
+      "text": "The Board of Directors had at its meeting held on 14 November 2022, approved the change in Financial Year of the Company from existing “1 January to 31 December” to “1 April to 31 March” in order to avoid preparation of two sets of Audited Financial Statements - one as per the Calendar Year (Accounting Year) and the other as per the Financial Year (April - March) for Income Tax purposes, which was requiring a lot of management time and substantial efforts, at various levels every year. The Regional Director – Eastern Region, Ministry of Corporate Affairs had vide its Order dated 29 March 2023, approved the Company’s application for change in its Financial Year from Calendar Year (January – December) to uniform Financial Year (April – March). Consequently, the current Financial Year of the Company comprised of 15 months period from 1 January 2022 to 31 March 2023 and thereafter from 1 April every year to 31 March of the subsequent year.",
+      "pdf_page": 16,
+      "printed_page": "14",
+      "section": "Directors' Report, Change in Financial Year"
+    },
+    {
+      "text": "Accordingly, the Directors’ Report together with all its Annexures, Audited Financial Statements both Standalone and Consolidated and Auditors’ Report have been prepared for the 15 months period from 1 January 2022 to 31 March 2023.",
+      "pdf_page": 16,
+      "printed_page": "14",
+      "section": "Directors' Report, Change in Financial Year"
+    },
+    {
+      "text": "We further report that during the period under review, the Board of Directors of the Company has approved the change in the financial year of the Company from January-December to April-March, subject to approval of the Hon’ble Regional Director, Eastern Region, Ministry of Corporate Affairs, which has been obtained vide Order dated 29 March 2023 and consequently, the financial year under review consists of a period of 15 months from 1 January 2022 to 31 March 2023.",
+      "pdf_page": 39,
+      "printed_page": "37",
+      "section": "Secretarial Audit Report"
+    },
+    {
+      "text": "The Directors have pleasure in submitting their Report together with the Audited Financial Statements of your Company for the 15 months period ended 31 March 2023 (1 January 2022 to 31 March 2023):",
+      "pdf_page": 15,
+      "printed_page": "13",
+      "section": "Directors' Report and Management Discussion and Analysis"
+    },
+    {
+      "text": "the previous financial year ended 31 December 2021 (FY 2021)",
+      "pdf_page": 15,
+      "printed_page": "13",
+      "section": "Directors' Report and Management Discussion and Analysis"
+    },
+    {
+      "text": "for the fifteen months period ended 31 March 2023",
+      "pdf_page": 85,
+      "printed_page": "83",
+      "section": "Statement of Standalone Profit and Loss"
+    },
+    {
+      "text": "For 15 months period from 1 January 2022 to 31 March 2023",
+      "pdf_page": 1,
+      "printed_page": null,
+      "section": "Cover"
+    },
+    {
+      "text": "Annual Report 2022-23",
+      "pdf_page": 3,
+      "printed_page": "1",
+      "section": "Chairman's Message"
+    },
+    {
+      "text": "Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021",
+      "pdf_page": 86,
+      "printed_page": "84",
+      "section": "Statement of Standalone Changes in equity"
+    },
+    {
+      "text": "Financial Calendar 2023-24 (tentative and subject to change)",
+      "pdf_page": 75,
+      "printed_page": "73",
+      "section": "Report on Corporate Governance, General Shareholder Information"
+    },
+    {
+      "text": "i. Financial Year April 2023 to March 2024",
+      "pdf_page": 75,
+      "printed_page": "73",
+      "section": "Report on Corporate Governance, General Shareholder Information"
+    }
+  ]
+}

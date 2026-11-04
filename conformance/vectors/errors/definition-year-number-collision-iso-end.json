@@ -1,0 +1,75 @@
+{
+  "name": "definition-year-number-collision-iso-end",
+  "description": "Invalid definition. ISO 8601 week years numbered by 'end'. ISO 2016 ends 2017-01-01 and ISO 2017 ends 2017-12-31, so both get the number 2017. Only code and path are asserted; details.years is not, because the spec only says it lists the first affected years.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, Year numbers must be unique; path from spec/api-v1.md, Paths for common errors",
+    "url": null,
+    "checked_by": "conformance/generators/fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range; code and path asserted by the generator"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "start",
+        "month": 1,
+        "day": 1,
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        4
+      ],
+      "extra_week": {
+        "period": 13
+      }
+    },
+    "naming": {
+      "default": "iso",
+      "schemes": {
+        "iso": {
+          "year_number": "end",
+          "templates": {
+            "year": "{yyyy}",
+            "week": "{yyyy}-W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "YEAR_NUMBER_COLLISION",
+        "path": "naming.schemes.iso.year_number"
+      }
+    }
+  ]
+}

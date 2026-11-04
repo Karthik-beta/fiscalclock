@@ -1,0 +1,143 @@
+name: docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
+
+  spelling:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: streetsidesoftware/cspell-action@ce1816e4ce36532956ac6e983737392774b6e169 # v9.2.0
+        with:
+          incremental_files_only: false
+          config: cspell.json
+          # Prose and configuration only; code identifiers are not English words.
+          files: |
+            **/*.md
+            **/*.mdx
+            **/*.yml
+            **/*.yaml
+            **/*.toml
+
+  links:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      # Third-party sites go down and release links 404 until the release
+      # exists, so only the weekly and manual runs check every external link.
+      # Pull requests check the external links in the files they change.
+      - name: Links to files in the repository
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config lychee.toml --no-progress --offline "./**/*.md"
+          fail: true
+      - name: List the Markdown files this pull request changes
+        id: changed
+        if: github.event_name == 'pull_request'
+        run: |
+          git -c core.quotePath=off diff --name-only --diff-filter=d HEAD^1 HEAD -- '*.md' '*.mdx' > "$RUNNER_TEMP/changed.txt"
+          cat "$RUNNER_TEMP/changed.txt"
+          if [ -s "$RUNNER_TEMP/changed.txt" ]; then echo "any=true" >> "$GITHUB_OUTPUT"; fi
+      - name: External links in the changed files
+        if: steps.changed.outputs.any == 'true'
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          # Root-relative links such as /guides/labels/ in MDX pages resolve to
+          # the site, which lychee.toml excludes; the website workflow checks
+          # them offline in the built site.
+          args: --config lychee.toml --no-progress --base-url https://fiscalclock.karthik.nz/ --files-from ${{ runner.temp }}/changed.txt
+          fail: true
+          failIfEmpty: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Every external link in Markdown files
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config lychee.toml --no-progress "./**/*.md"
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Every external link in the website's MDX pages
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config lychee.toml --no-progress --base-url https://fiscalclock.karthik.nz/ "./**/*.mdx"
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  yaml:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: yamllint
+        run: uvx yamllint==1.38.0 --strict .
+      - name: Issue forms match GitHub's schema
+        run: >-
+          uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-forms
+          $(find .github/ISSUE_TEMPLATE -name '*.yml' ! -name config.yml)
+      - name: Issue template chooser matches GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-issue-config .github/ISSUE_TEMPLATE/config.yml
+      - name: Workflows match GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-workflows .github/workflows/*.yml
+      - name: Discussion forms match GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.github-discussion .github/DISCUSSION_TEMPLATE/*.yml
+      - name: Dependabot config matches GitHub's schema
+        run: uvx check-jsonschema==0.39.0 --builtin-schema vendor.dependabot .github/dependabot.yml
+      - name: Workflows pass the zizmor security audits
+        run: uvx zizmor==1.32.0 --offline .github/workflows
+
+  verification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Verification output matches the committed output
+        run: python -I research/verification/verify_claims.py | diff -u research/verification/expected_output.txt -
+      - name: Conformance vectors match their generators
+        run: python -I conformance/generators/check.py
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: pandas FY5253 vectors match their generator
+        run: uv run --no-project --with pandas==3.0.6 python -I conformance/generators/pandas_vectors.py --check
+      - name: Evidence register is well formed
+        run: python -I research/evidence/check_quotes.py --offline
+      - name: Evidence page matches the register
+        run: python -I research/evidence/render_evidence.py --check
+      - name: Every quoted source still contains its quote
+        # Third-party pages change, so this runs weekly rather than on every pull request.
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python -I research/evidence/check_quotes.py

@@ -1,0 +1,23 @@
+name: Documentation issue
+description: Something in the README, wiki, spec or API documentation is wrong, unclear or missing.
+title: "Docs: "
+labels: ["type: docs", "area: docs", "status: needs-triage"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Page or file
+      description: A link to the page, or the file path.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+      description: If a fact is wrong, link the source that shows the correct value.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording

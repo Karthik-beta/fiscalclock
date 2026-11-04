@@ -1,0 +1,29 @@
+# Link checking for every Markdown file in the repository.
+max_retries = 3
+timeout = 30
+accept = ["200..=299", "429"]
+user_agent = "Mozilla/5.0 (compatible; fiscalclock-linkcheck; +https://github.com/Karthik-beta/fiscalclock)"
+exclude_path = ["target", "node_modules", "website/dist", ".venv", ".claude/worktrees"]
+
+exclude = [
+  # Placeholders in templates, not real links.
+  '^https://github\.com/Karthik-beta/fiscalclock/issues/new\?template=',
+  '^https://github\.com/Karthik-beta/fiscalclock/security/advisories/new$',
+  # npmjs.com answers automated requests with 403 even for packages that exist.
+  '^https://www\.npmjs\.com/',
+  # sec.gov refuses requests without a contact email in the User-Agent, and
+  # packages.ecosyste.ms answers link checkers with 402; both pages exist.
+  '^https://(www\.)?sec\.gov/',
+  '^https://packages\.ecosyste\.ms/',
+  # credibility.stanford.edu sends its certificate without the InCommon
+  # intermediate (checked with openssl s_client on 3 Nov 2026), so lychee
+  # cannot verify it; browsers fetch the intermediate and open the pages.
+  '^https://credibility\.stanford\.edu/',
+  # The changelog links a release's tag and compare view in the release pull
+  # request, before the tag exists; they resolve once the release is made.
+  '^https://github\.com/Karthik-beta/fiscalclock/(releases/tag|compare)/v',
+  # Root-relative links in the MDX pages resolve to the site. Checking them
+  # online would test the deployed pages, not the ones in the change, so the
+  # website workflow checks them offline in the built site instead.
+  '^https://fiscalclock\.karthik\.nz(/|$)',
+]
