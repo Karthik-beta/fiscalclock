@@ -1,0 +1,44 @@
+---
+/**
+ * Shows program output exactly as printed. Long JSON lines may wrap after a
+ * comma; the break points are <wbr> elements, so copied text stays byte-identical.
+ */
+interface Props {
+  text: string;
+  label: string;
+}
+
+const { text, label } = Astro.props;
+const escaped = text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
+const html = escaped.replaceAll(",", ",<wbr>");
+---
+
+<figure class="raw-output not-content">
+  <figcaption>{label}</figcaption>
+  <pre><code set:html={html} /></pre>
+</figure>
+
+<style>
+  .raw-output {
+    margin: 0;
+    border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    border-radius: var(--fc-radius-lg);
+    background: var(--fc-color-code-bg);
+  }
+  figcaption {
+    padding: var(--fc-space-2) var(--fc-space-4);
+    border-bottom: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+  }
+  pre {
+    margin: 0;
+    padding: var(--fc-space-3) var(--fc-space-4);
+    white-space: pre-wrap;
+    overflow-wrap: normal;
+    color: var(--fc-color-code-text);
+    font-family: var(--fc-type-code-font-family);
+    font-size: var(--fc-type-code-font-size);
+    line-height: var(--fc-type-code-line-height);
+  }
+</style>

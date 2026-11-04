@@ -1,0 +1,5 @@
+# Link checking for the built site in website/dist. The repository's lychee.toml
+# excludes website/dist, so the website workflow uses this file instead.
+offline = true
+include_fragments = "anchor-only"
+index_files = ["index.html"]

@@ -1,0 +1,61 @@
+---
+title: Write a definition
+description: The five blocks of a calendar definition, what each decides, which fields are required, and why organisation-specific choices have no default.
+---
+
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
+import missingChoicesJson from "../../../../../docs/examples/missing-choices.json?raw";
+import definitionErrorsPy from "../../../../examples/python/definition_errors.py?raw";
+import definitionErrorsPyOut from "../../../../examples/python/definition_errors.out?raw";
+import definitionErrorsJs from "../../../../examples/js/definition_errors.mjs?raw";
+import definitionErrorsJsOut from "../../../../examples/js/definition_errors.out?raw";
+import definitionErrorsRs from "../../../../examples/rust/src/bin/definition_errors.rs?raw";
+import definitionErrorsRsOut from "../../../../examples/rust/src/bin/definition_errors.out?raw";
+
+A definition is one JSON object. Besides `spec_version`, which must be `1`, it has five blocks, and each block decides one thing about the calendar. The [definition format spec](/reference/spec/definition-v1/) is the full reference; this page is a map of it.
+
+## The five blocks
+
+| Block | Required | What it decides | Spec |
+| --- | --- | --- | --- |
+| `year` | yes | Where each fiscal year starts and ends: on a fixed date (`fixed_date`), or after whole weeks by a weekday rule (`week_based`). | [`year`](/reference/spec/definition-v1/#year) |
+| `week` | yes | The weekday each week starts on, and how week 1 is chosen. | [`week`](/reference/spec/definition-v1/#week) |
+| `subdivision` | yes | How the year splits into periods and quarters: calendar months (`calendar_months`) or a pattern of weeks such as 4-5-4 (`week_pattern`). | [`subdivision`](/reference/spec/definition-v1/#subdivision) |
+| `naming` | yes | How fiscal years are numbered, and the label templates, such as `FY{yyyy} Q{q}`. | [`naming`](/reference/spec/definition-v1/#naming) |
+| `exceptions` | no | Reserved. Any value is rejected with `UNSUPPORTED_FEATURE` in 0.1.0. | [Reserved for later releases](/reference/spec/definition-v1/#reserved-for-later-releases) |
+
+The blocks are parsed and validated separately, and no field in one block changes the meaning of a field in another, except where the spec says so. For example, a week-based year always ends on the weekday before `week.starts_on`, a `calendar_months` subdivision is only valid in a `fixed_date` year and a `week_pattern` subdivision only in a `week_based` year, and `month_start_day` must equal `year.start.day`.
+
+[The quick start](/start-here/quick-start/) has a complete example definition.
+
+## No defaults for your organisation's choices
+
+Some fields record a choice that organisations make differently, so the format gives them no default and a definition that leaves one out is rejected. Two of them are:
+
+- **`year_number`**, which numbers a fiscal year by the calendar year of its first day (`start`), of its last day (`end`), or of most of its days (`majority`). Kroger calls the fiscal year that ended on 2 Feb 2019 "2018", which is numbering by the start year ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/kroger-annual-report-2018.json)). Costco calls the fiscal year that ended on 3 Sep 2017 "2017", which is numbering by the end year ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/costco-annual-report-2017.json)).
+- **`extra_week`**, which says which period gains the 53rd week of a long year. Costco puts it in the thirteenth period ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/costco-annual-report-2017.json)), and Apple's first quarter of fiscal 2023 had 14 weeks ([cited vector](https://github.com/Karthik-beta/fiscalclock/blob/main/conformance/vectors/cited/apple-10q-2023-12-30.json)).
+
+A default would give a wrong answer, without any warning, to every organisation that made the other choice. A missing choice is an error instead, and the error names the field. This illustrative definition leaves out both:
+
+<Code code={missingChoicesJson} lang="json" title="missing-choices.json" />
+
+<Tabs syncKey="lang">
+  <TabItem label="Python">
+    <Code code={definitionErrorsPy} lang="python" title="definition_errors.py" />
+    <Code code={definitionErrorsPyOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="JavaScript">
+    <Code code={definitionErrorsJs} lang="js" title="definition_errors.mjs" />
+    <Code code={definitionErrorsJsOut} lang="txt" title="Output" />
+  </TabItem>
+  <TabItem label="Rust">
+    <Code code={definitionErrorsRs} lang="rust" title="definition_errors.rs" />
+    <Code code={definitionErrorsRsOut} lang="txt" title="Output" />
+  </TabItem>
+</Tabs>
+
+Validation reports every error it finds, sorted by path and then by code. Each error has a stable `code` from the [error catalogue](/reference/spec/api-v1/#error-catalogue), the JSON `path` of the field, a `message` and, where one helps, a `hint`. Match on the code and the path, not on the message, whose wording may change.
+
+## Two definitions, one calendar
+
+A valid definition has a `calendar_id`: the first 16 hexadecimal digits of the SHA-256 digest of its canonical form. Two definitions that differ only in key order, whitespace or written-out defaults have the same `calendar_id` ([spec](/reference/spec/definition-v1/#canonical-form-and-calendar_id)). The [`validate` operation](/reference/api/#validate) returns it, and each row of the [date dimension](/guides/date-dimension/) carries it, so you can tell which definition produced a stored result.

@@ -1,0 +1,23 @@
+[package]
+name = "fiscalclock-python"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Karthik-beta/fiscalclock"
+description = "Python extension module for fiscalclock"
+publish = false
+
+[lib]
+name = "_fiscalclock"
+crate-type = ["cdylib"]
+
+[dependencies]
+fiscalclock = { path = "../../crates/core", version = "=0.1.0" }
+pyo3 = "0.30"
+
+[features]
+default = ["abi3"]
+# One wheel for CPython 3.10 and later. Free-threaded wheels are built with
+# `--no-default-features`, because the stable ABI does not cover them before 3.15.
+abi3 = ["pyo3/abi3-py310"]
