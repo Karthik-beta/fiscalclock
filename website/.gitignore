@@ -1,0 +1,23 @@
+# Build output
+dist/
+.astro/
+
+# Copied by scripts/sync.mjs; the sources live in design/ and assets/brand/
+src/styles/generated/
+src/assets/brand/
+public/favicon.svg
+public/favicon.ico
+public/apple-touch-icon.png
+public/og-image.png
+public/fonts/
+
+# Written by scripts/import-docs.mjs from spec/ and CHANGELOG.md
+src/content/docs/reference/spec/
+src/content/docs/project/changelog.md
+
+# Build output of the Rust examples
+examples/rust/target/
+
+# Playwright
+test-results/
+playwright-report/
