@@ -7,7 +7,6 @@ mod common;
 mod reference;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 
 use common::*;
 use fiscalclock::{Date, ErrorCode, FiscalCalendar, Period};
@@ -273,7 +272,6 @@ fn check(walk: &Walk, case: &Case, tally: &Tally) {
 
 #[test]
 fn locate_matches_the_day_walking_reference_1900_to_2200() {
-    let started = Instant::now();
     let walk = Walk::new();
     let all = cases();
     assert!(all.len() >= 600, "{} definitions", all.len());
@@ -295,14 +293,13 @@ fn locate_matches_the_day_walking_reference_1900_to_2200() {
         "differential: {} definitions x 3 rules; {} compared day by day over 109,938 days, \
          {} compared by year bounds and numbers, {} refused by both, \
          {} refused by the crate beyond the reference window, \
-         {} definitions with no usable rule; {:.1?}",
+         {} definitions with no usable rule",
         selected.len(),
         compared,
         tally.numbering_only.load(Ordering::Relaxed),
         tally.refused_alike.load(Ordering::Relaxed),
         tally.refused_beyond_window.load(Ordering::Relaxed),
         tally.unnumberable.load(Ordering::Relaxed),
-        started.elapsed()
     );
     assert_eq!(
         compared + tally.unnumberable.load(Ordering::Relaxed),

@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- `parse` overflowed the stack and aborted the process when a template had many placeholders (200,000 in the test) and the label matched far enough into it. It now matches without recursion and returns the period or `LABEL_NOT_RECOGNISED`.
 - `shift` of a week in a `fixed_date` calendar by `-9223372036854775808` panicked in debug builds of the Rust crate, and in release builds stepped through every earlier fiscal year before failing. It now returns `OUT_OF_RANGE` at `n` at once.
 - Python and JavaScript raised a bare `TypeError`, `ValueError` or `UnicodeEncodeError`, instead of `FiscalclockError`, for an argument or definition with no JSON form: for example a numpy integer, `Decimal`, `bytes` or `BigInt`, a period given as a tuple or `null`, a period mapping that also holds dates, a cyclic definition, or a lone surrogate in a mapping or argument. They now raise `FiscalclockError` with the core's code and path, the same in both languages. A period mapping that also holds other values, such as `dataclasses.asdict(period)`, now works.
 - Python: a `FiscalclockError` can be pickled and copied, so it can cross a process pool.
