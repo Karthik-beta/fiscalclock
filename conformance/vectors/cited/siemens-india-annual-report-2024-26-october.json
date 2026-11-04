@@ -1,0 +1,81 @@
+{
+  "name": "siemens-india-annual-report-2024-26-october",
+  "description": "Siemens Limited Annual Report 2026: the October to September calendar the company followed until 30 September 2024. The week block and the calendar-month subdivision are illustrative; only fields the document states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"Consequently, as a transitional measure, the last financial year of the Company i.e. FY 2024-26 was for a period of eighteen months from October 1, 2024 to March 31, 2026, while the previous financial year i.e. FY 2023-24 was for a period of twelve months from October 1, 2023 to September 30, 2024.\" (Directors' Report, p. 35) Establishes the bounds and the label of FY 2023-24, the last year of the October to September calendar.",
+    "url": "https://assets.new.siemens.com/siemens/assets/api/uuid:6d32b927-bec4-43f3-bbee-d617b2888331/Annual-Report-Siemens-Limited-2024-26.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY {yyyy}-{yy_next}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "864425079886b87b",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"FY {yyyy}-{yy_next}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":10},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "start": "2023-10-01",
+        "last_day": "2024-09-30"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2023-24",
+        "scheme": "fy"
+      }
+    }
+  ]
+}

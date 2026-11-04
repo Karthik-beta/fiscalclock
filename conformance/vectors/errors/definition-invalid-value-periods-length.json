@@ -1,0 +1,75 @@
+{
+  "name": "definition-invalid-value-periods-length",
+  "description": "Invalid definition. Rule: periods: Any other length (than 12 or 13) is INVALID_VALUE. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        9
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        2
+      ],
+      "extra_week": {
+        "period": 11
+      }
+    },
+    "naming": {
+      "default": "nrf",
+      "schemes": {
+        "nrf": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "INVALID_VALUE",
+        "path": "subdivision.periods"
+      }
+    }
+  ]
+}

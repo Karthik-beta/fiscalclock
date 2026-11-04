@@ -1,0 +1,296 @@
+{
+  "name": "labels-ambiguous-india",
+  "description": "Two schemes with the same year template: 'fy' (start year) and 'ay' (assessment year, offset 1). '2025-26' names fiscal 2025 under fy and fiscal 2024 under ay, so parse returns AMBIGUOUS_LABEL with both candidates ordered by start date then scheme name. A {yy_next} that disagrees with {yyyy}, an out-of-range quarter, and trailing text are LABEL_NOT_RECOGNISED. expect_error carries 'details' here; it is compared exactly.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py parse"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 4,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_next}",
+            "quarter": "Q{q} {yyyy}-{yy_next}"
+          }
+        },
+        "ay": {
+          "year_number": "start",
+          "offset": 1,
+          "templates": {
+            "year": "{yyyy}-{yy_next}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "37c0d920a2a2d5eb",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"ay\":{\"century_pivot\":null,\"offset\":1,\"templates\":{\"year\":\"{yyyy}-{yy_next}\"},\"year_number\":\"start\"},\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"Q{q} {yyyy}-{yy_next}\",\"year\":\"{yyyy}-{yy_next}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-26"
+      },
+      "expect_error": {
+        "code": "AMBIGUOUS_LABEL",
+        "path": "label",
+        "details": {
+          "candidates": [
+            {
+              "period": {
+                "level": "year",
+                "year": 2024,
+                "index": null,
+                "start": "2024-04-01",
+                "end_exclusive": "2025-04-01",
+                "last_day": "2025-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "ay",
+              "level": "year"
+            },
+            {
+              "period": {
+                "level": "year",
+                "year": 2025,
+                "index": null,
+                "start": "2025-04-01",
+                "end_exclusive": "2026-04-01",
+                "last_day": "2026-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "fy",
+              "level": "year"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        },
+        "scheme": "ay"
+      },
+      "expect": {
+        "label": "2026-27",
+        "scheme": "ay"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2026-27"
+      },
+      "expect_error": {
+        "code": "AMBIGUOUS_LABEL",
+        "path": "label",
+        "details": {
+          "candidates": [
+            {
+              "period": {
+                "level": "year",
+                "year": 2025,
+                "index": null,
+                "start": "2025-04-01",
+                "end_exclusive": "2026-04-01",
+                "last_day": "2026-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "ay",
+              "level": "year"
+            },
+            {
+              "period": {
+                "level": "year",
+                "year": 2026,
+                "index": null,
+                "start": "2026-04-01",
+                "end_exclusive": "2027-04-01",
+                "last_day": "2027-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "fy",
+              "level": "year"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2025,
+          "index": 1
+        }
+      },
+      "expect": {
+        "label": "Q1 2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q1 2025-26"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 1,
+        "start": "2025-04-01",
+        "end_exclusive": "2025-07-01",
+        "last_day": "2025-06-30",
+        "days": 91,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-27"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q5 2025-26"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY2025"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-26 "
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2099-00"
+      },
+      "expect_error": {
+        "code": "AMBIGUOUS_LABEL",
+        "path": "label",
+        "details": {
+          "candidates": [
+            {
+              "period": {
+                "level": "year",
+                "year": 2098,
+                "index": null,
+                "start": "2098-04-01",
+                "end_exclusive": "2099-04-01",
+                "last_day": "2099-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "ay",
+              "level": "year"
+            },
+            {
+              "period": {
+                "level": "year",
+                "year": 2099,
+                "index": null,
+                "start": "2099-04-01",
+                "end_exclusive": "2100-04-01",
+                "last_day": "2100-03-31",
+                "days": 365,
+                "weeks": null,
+                "has_extra_week": false
+              },
+              "scheme": "fy",
+              "level": "year"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

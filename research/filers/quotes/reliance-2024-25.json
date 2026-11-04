@@ -1,0 +1,91 @@
+{
+  "company": "Reliance Industries Limited",
+  "slug": "reliance",
+  "document": "Integrated Annual Report 2024-25",
+  "url": "https://www.ril.com/ar2024-25/pdf/RIL-IAR-2025.pdf",
+  "host_evidence": "The company's own domain, www.ril.com. The Integrated Annual Report 2024-25 landing page https://www.ril.com/ar2024-25/index.html links to pdf/RIL-IAR-2025.pdf (an anchor with class ar-cover), which resolves to this URL (HTTP 200, observed 3 Nov 2026).",
+  "pdf": "RIL-IAR-2025.pdf",
+  "sha256": "bc18c9a8579a5baf35b11fc089baec489c962e08a6d812824f8a88859b4747a2",
+  "pages": 147,
+  "retrieved": "2026-11-03",
+  "quotes": [
+    {
+      "text": "Financial Year April 1 to March 31",
+      "pdf_page": 31,
+      "printed_page": "58",
+      "section": "Corporate Governance Report, General Shareholder Information"
+    },
+    {
+      "text": "Financial Calendar (Tentative) Results for the quarter ending June 30, 2025 - Third week of July, 2025; September 30, 2025 - Third week of October, 2025; December 31, 2025 - Third week of January, 2026; and March 31, 2026 - Fourth week of April, 2026.",
+      "pdf_page": 31,
+      "printed_page": "58",
+      "section": "Corporate Governance Report, General Shareholder Information"
+    },
+    {
+      "text": "The Board of Directors present the Company’s Forty-eighth Annual Report (Post-IPO) and the Company’s audited financial statements for the financial year ended March 31, 2025.",
+      "pdf_page": 40,
+      "printed_page": "76",
+      "section": "Board’s Report"
+    },
+    {
+      "text": "The Company’s financial performance (standalone and consolidated) for the year ended March 31, 2025 is summarised below: Standalone Consolidated 2024-25 2023-24 2024-25 2023-24",
+      "pdf_page": 40,
+      "printed_page": "76",
+      "section": "Board’s Report, Financial Results"
+    },
+    {
+      "text": "For the year ended 31st March, 2025 A. Equity Share Capital Balance as at 1st April, 2023 6,766 Change during the year 2023-24 -* Balance as at 31st March, 2024 6,766 Change during the year 2024-25** 6,766",
+      "pdf_page": 59,
+      "printed_page": "114",
+      "section": "Standalone Financial Statements, Statement of Changes in Equity"
+    },
+    {
+      "text": "B. Other Equity Balance as at 1st April, 2024 Total Comprehensive Income for the Year",
+      "pdf_page": 59,
+      "printed_page": "114",
+      "section": "Standalone Financial Statements, Statement of Changes in Equity"
+    },
+    {
+      "text": "Consolidated Statement of Profit and Loss For the year ended 31st March, 2025 Income Notes 2024-25",
+      "pdf_page": 100,
+      "printed_page": "196",
+      "section": "Consolidated Financial Statements, Statement of Profit and Loss"
+    },
+    {
+      "text": "Note: All Revenue and EBITDA figures are for the year ended March 31, 2025",
+      "pdf_page": 3,
+      "printed_page": "2",
+      "section": "Reliance at a Glance"
+    },
+    {
+      "text": "There has been no revision in credit ratings during the FY 2024-25.",
+      "pdf_page": 31,
+      "printed_page": "58",
+      "section": "Corporate Governance Report, Credit Rating"
+    },
+    {
+      "text": "Annual listing fees for the FY 2025-26 has been paid by the Company to BSE Limited and National Stock Exchange of India Limited.",
+      "pdf_page": 31,
+      "printed_page": "58",
+      "section": "Corporate Governance Report, Payment of Listing Fees"
+    },
+    {
+      "text": "Revenue of Oil to Chemicals for FY25 increased by 11 % Y-o-Y",
+      "pdf_page": 40,
+      "printed_page": "77",
+      "section": "Board’s Report, Results of operations"
+    },
+    {
+      "text": "Global economic growth remained healthy at 3.3% in CY24 consistent with the prior year.",
+      "pdf_page": 5,
+      "printed_page": "7",
+      "section": "Management Discussion and Analysis, Operating Environment"
+    },
+    {
+      "text": "Reliance Industries Limited (“the Company”) is a listed entity incorporated in India.",
+      "pdf_page": 61,
+      "printed_page": "118",
+      "section": "Standalone Financial Statements, Note A Corporate Information"
+    }
+  ]
+}
