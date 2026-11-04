@@ -65,6 +65,13 @@ test("callJson returns the core's JSON unchanged", () => {
   assert.equal(callJson(JSON.stringify(NRF), "period", args), expected);
 });
 
+test("callJson format returns the output the README shows", () => {
+  const args = '{"period":{"level":"quarter","year":2023,"index":4}}';
+  const expected = '{"label":"Q4 FY2023","scheme":"fy"}';
+  assert.equal(cal.callJson("format", args), expected);
+  assert.equal(callJson(JSON.stringify(NRF), "format", args), expected);
+});
+
 test("dimension and explain", () => {
   const rows = cal.dimension("2024-02-03", "2024-02-05");
   assert.deepEqual(rows.map((r) => r.fiscal_year), [2023, 2024]);

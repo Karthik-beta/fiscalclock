@@ -13,6 +13,7 @@
   "bugs": "https://github.com/Karthik-beta/fiscalclock/issues",
   "keywords": ["fiscal", "calendar", "4-5-4", "retail", "accounting", "webassembly"],
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

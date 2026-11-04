@@ -133,18 +133,27 @@ def _json_text(value: Any, separators: Optional[tuple[str, str]] = None) -> str:
     # A value JSON cannot carry becomes {"unsupported_type": ...}, which the
     # core reports at its path. Input JSON cannot represent at all (a cycle, a
     # key that is not a string) becomes empty text, which the core rejects at
-    # path "". A lone surrogate cannot cross into Rust as UTF-8, so it is
-    # escaped as JSON.stringify escapes it, and the core reports it.
+    # path "". A lone surrogate cannot cross into Rust as UTF-8, so
+    # _core_text changes it and the core reports it.
     try:
         text = _json.dumps(value, ensure_ascii=False, separators=separators, default=_unsupported)
     except (TypeError, ValueError, RecursionError):
         return ""
-    return _LONE_SURROGATE.sub(lambda m: f"\\u{ord(m.group()):04x}", text)
+    return _core_text(text)
+
+
+def _core_text(text: str) -> str:
+    # PyO3 raises UnicodeEncodeError for a lone surrogate, so every string
+    # that goes to the core as text is changed first. A \uXXXX escape would
+    # merge with a neighbouring backslash or escape into valid JSON. U+0000
+    # is invalid JSON wherever it stands, so the core reports invalid JSON,
+    # or an unknown operation name.
+    return _LONE_SURROGATE.sub("\x00", text)
 
 
 def _definition_text(definition: Union[str, Mapping[str, Any]]) -> str:
     if isinstance(definition, str):
-        return definition
+        return _core_text(definition)
     # Bytes, sets and other objects have no JSON form. JSON null makes the core
     # report that the definition is not an object, as it does for a list.
     if not isinstance(definition, (Mapping, list, tuple, int, float)):
@@ -194,12 +203,12 @@ def validate(definition: Union[str, Mapping[str, Any]]) -> dict[str, Any]:
 
 def validate_json(definition: str) -> str:
     """Validates definition text and returns the core's JSON unchanged."""
-    return _core.validate(definition)
+    return _core.validate(_core_text(definition))
 
 
 def call_json(definition: str, op: str, args: str) -> str:
     """Runs one operation on JSON text and returns the core's JSON unchanged."""
-    return _core.call(definition, op, args)
+    return _core.call(_core_text(definition), _core_text(op), _core_text(args))
 
 
 class FiscalCalendar:
@@ -229,7 +238,7 @@ class FiscalCalendar:
 
     def call_json(self, op: str, args: str) -> str:
         """Runs operation ``op`` with JSON arguments; returns the core's JSON unchanged."""
-        return self._cal.call_json(op, args)
+        return self._cal.call_json(_core_text(op), _core_text(args))
 
     def _call(self, op: str, args: dict[str, Any]) -> Any:
         out = _json.loads(self._cal.call_json(op, _json_text(args)))
