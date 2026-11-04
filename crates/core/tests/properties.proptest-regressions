@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1c17fa688793d4152a222feae561cd3febcecddb37da64f60a71cc81d6c7dccd # shrinks to definition = Object {"naming": Object {"default": String("fy"), "schemes": Object {"fy": Object {"templates": Object {"period": String("P{pp} FY{yyyy}"), "quarter": String("Q{q} FY{yyyy}"), "week": String("W{ww} FY{yyyy}"), "year": String("FY{yyyy}")}, "year_number": String("start")}}}, "spec_version": Number(1), "subdivision": Object {"extra_week": Object {"period": Number(1)}, "periods": Array [Number(4), Number(5), Number(4), Number(4), Number(5), Number(4), Number(4), Number(5), Number(4), Number(4), Number(5), Number(4)], "quarters": Array [Number(3), Number(3), Number(3), Number(3)], "type": String("week_pattern")}, "week": Object {"numbering": String("contains_start"), "starts_on": String("monday")}, "year": Object {"anchor": Object {"day": String("last"), "edge": String("start"), "month": Number(1), "rule": String("last")}, "type": String("week_based")}}, date = Date(-4329)

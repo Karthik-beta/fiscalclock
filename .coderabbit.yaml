@@ -1,0 +1,236 @@
+# CodeRabbit review configuration. Reference and schema:
+# https://docs.coderabbit.ai/reference/configuration
+# https://coderabbit.ai/integrations/schema.v2.json
+#
+# fiscalclock is reviewed on CodeRabbit's open-source plan. As of 4 Nov 2026,
+# https://docs.coderabbit.ai/management/plans lists that plan at 1 to 10 pull
+# request reviews per hour (more for repositories with more stars), 100 to 300
+# files per review and 25 chat messages per hour, and says repositories with
+# fewer than 10 stars must trigger reviews by hand with `@coderabbitai review`.
+# Each push to an open pull request counts as one review
+# (https://docs.coderabbit.ai/management/rate-limits), so the settings below
+# review only the opening push and skip generated files.
+
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-GB
+tone_instructions: >-
+  Be direct and specific. Cite the AGENTS.md rule a finding breaks. Use plain
+  British English, no marketing words, no emoji. Say when a finding is a
+  suggestion rather than a defect.
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  # AGENTS.md forbids AI attribution in pull requests, so the summary goes in
+  # CodeRabbit's own walkthrough comment instead of the pull request body.
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  abort_on_close: true
+
+  merge_risk_instructions: >-
+    High risk: calendar arithmetic, parsing or validation in crates/core/src;
+    the JSON API in crates/core/src/json.rs; the definition format or error
+    catalogue in spec/; expected results in conformance/vectors/; new core
+    dependencies; release and publishing workflows. Medium risk: bindings,
+    conformance generators, CI workflows. Low risk: documentation, the
+    website, design files and tests that only add cases.
+
+  # Generated files; their sources are reviewed instead. The brand assets and
+  # tokens come from design/scripts/. CI fails if the vectors or Evidence.md
+  # drift from their generators (conformance/generators/check.py,
+  # pandas_vectors.py --check, render_evidence.py --check). The excluded
+  # vector sets are large enough to exceed the per-review file limit when a
+  # generator changes.
+  path_filters:
+    - "!assets/brand/**"
+    - "!design/tokens/generated/**"
+    - "!conformance/vectors/pandas/**"
+    - "!conformance/vectors/oracle/**"
+    - "!research/evidence/Evidence.md"
+    - "!**/*.png"
+    - "!**/*.wasm"
+
+  path_instructions:
+    - path: "crates/core/src/**"
+      instructions: |
+        This is the only place calendar logic may live. Check the design rules in AGENTS.md:
+        - No public item is named after an organisation, country, standard or calendar family.
+        - The year, week, subdivision, naming and exceptions blocks are parsed and validated separately; a field in one block changes another only where spec/definition-v1.md says so.
+        - No global state (static mut, thread_local!, lazy caches, environment reads), no clock and no randomness.
+        - Periods expose start and end_exclusive; no API returns only an inclusive end.
+        - Every error carries a code from the catalogue in spec/api-v1.md, a JSON path, a message and a hint where one helps. Flag any panic path reachable from input, including unwrap, expect, unchecked indexing and integer overflow.
+        - Ambiguous input returns an ambiguity error listing every candidate; it never picks one.
+        - Naming, extra-week placement, equivalent-day mode and proration basis have no default.
+        Flag any new dependency beyond serde, serde_json and sha2: the maintainer must agree to it first.
+    - path: "crates/core/tests/**"
+      instructions: |
+        The reference implementation here is deliberately slow and obvious (day-by-day iteration). Do not suggest optimising it or sharing code with the core's boundary arithmetic.
+        Property tests for the 364/371-day and 71-in-400 properties apply only to rule-only week-based definitions, never to definitions with exceptions or table years.
+    - path: "bindings/**"
+      instructions: |
+        Bindings only convert between language types and the core's JSON API (fiscalclock::json). Flag any calendar arithmetic or validation here, and any change that reorders keys or reformats values in JSON returned by *_json methods.
+        Public functions accept civil dates only. Python datetime.datetime, pandas Timestamp, JS Date and Temporal types that carry a time must be rejected with TIMESTAMP_REJECTED, and each binding needs a test proving it.
+    - path: "conformance/**"
+      instructions: |
+        Expected results must come from a cited source or an independent generator, never from running fiscalclock. Flag any generator that imports or calls fiscalclock.
+        Changing an expected result in an existing vector needs a linked issue that explains why.
+        Citations are verbatim quotes with a link to the primary document.
+    - path: "spec/**"
+      instructions: |
+        The spec is normative. Changing the definition format, an operation's result for a valid input, the public API or the error codes needs an accepted ADR on the wiki; check that the pull request links one.
+        A new error code must be added to the catalogue in spec/api-v1.md in the same pull request.
+    - path: "**/*.{md,mdx}"
+      instructions: |
+        Apply the evidence rules in AGENTS.md: every factual claim (number, date, version, library capability, company calendar rule, standard) has a source link or a reproducible check; time-sensitive facts say "as of <date>"; quotations are verbatim; illustrative or unverified material is marked as such; no marketing language. Spelling is British English.
+        Do not report spelling, line length or Markdown style; cspell and markdownlint already run in CI.
+    - path: "research/**"
+      instructions: |
+        Scripts here use only the Python standard library and reproduce a claim made in prose. Their committed output must match what the script prints.
+    - path: ".github/workflows/**"
+      instructions: |
+        Actions are pinned to a full commit SHA with the version in a comment. Jobs have least-privilege permissions, checkout uses persist-credentials: false, and untrusted input (pull request titles, branch names) never reaches a shell unquoted. zizmor runs in CI and its accepted findings are in .github/zizmor.yml.
+    - path: "website/**"
+      instructions: |
+        The website holds no calendar logic and no example definitions (those live in docs/examples/). Files that its scripts copy or generate are not edited by hand.
+    - path: "design/**"
+      instructions: |
+        design/tokens/ is the single source of truth for design values; files under design/tokens/generated/ and assets/brand/ are generated by the scripts in design/scripts/. Design decisions are recorded in design/DECISIONS.md.
+
+  auto_review:
+    # Repositories under 10 stars are reviewed only on request; these settings
+    # apply once automatic reviews start.
+    enabled: true
+    drafts: false
+    # Re-reviewing every push would spend the hourly allowance. Ask for a
+    # fresh review with `@coderabbitai review` when one is wanted.
+    auto_incremental_review: false
+    ignore_title_keywords:
+      - "WIP"
+    # Dependency bumps are checked by CI and reviewed by the maintainer.
+    ignore_usernames:
+      - "dependabot[bot]"
+
+  # These features commit to the branch or open pull requests as CodeRabbit,
+  # which AGENTS.md forbids (no AI attribution in commits or files). Generated
+  # tests could also derive expected values from fiscalclock's own output.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: warning
+      requirements: >-
+        The title is a Conventional Commit, because pull requests are
+        squash-merged and the title becomes the commit message: a type from
+        feat, fix, docs, test, ci, chore, refactor or perf, an optional scope
+        in parentheses, an optional "!" for a breaking change, then ": " and a
+        lower-case summary with no trailing full stop.
+    description:
+      mode: warning
+    issue_assessment:
+      mode: warning
+    custom_checks:
+      - name: No AI attribution
+        mode: warning
+        instructions: >-
+          Fail if any commit message, the pull request title or body, or any
+          changed file adds AI or model attribution: a Co-Authored-By line
+          naming a tool or bot, a "Generated with" line, or the name of an AI
+          model or assistant credited as an author. Pass otherwise.
+      - name: Conformance evidence
+        mode: warning
+        instructions: >-
+          If the pull request changes behaviour in crates/core/src (any change
+          to a result, error or validation outcome), fail unless it also adds
+          or changes vectors under conformance/vectors/ or a generator under
+          conformance/generators/. Fail if a generator imports or runs
+          fiscalclock. Fail if an expected result in an existing vector changes
+          and the pull request does not link an issue explaining why. Pass if
+          crates/core/src and conformance/ are unchanged.
+      - name: ADR for contract changes
+        mode: warning
+        instructions: >-
+          Fail if the pull request changes the definition format or error
+          catalogue in spec/, adds or removes a public function, type or error
+          code, adds a dependency to crates/core/Cargo.toml, or changes a
+          supported language or toolchain version, and its description does
+          not link an ADR on the project wiki
+          (https://github.com/Karthik-beta/fiscalclock/wiki). Pass otherwise.
+      - name: Changelog entry
+        mode: warning
+        instructions: >-
+          Fail if the pull request changes user-visible behaviour of a
+          published package (crates/core, bindings/python or bindings/js) and
+          CHANGELOG.md gains no entry under "Unreleased". Changes limited to
+          tests, CI, documentation, the website or design files pass.
+      - name: Scope
+        mode: warning
+        instructions: >-
+          Fail if the pull request adds support for holidays, business days,
+          working hours, pay periods or sprints, or adds a public function,
+          constant or enum variant named after an organisation, country,
+          standard or calendar family. Both are out of scope in AGENTS.md.
+          Pass otherwise.
+
+  tools:
+    # cspell and markdownlint already check prose in CI; LanguageTool's style
+    # suggestions would duplicate or contradict them.
+    languagetool:
+      enabled: false
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  # AGENTS.md and CLAUDE.md are read by default.
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CONTRIBUTING.md"
+  learnings:
+    scope: local
+  issues:
+    scope: local
+  pull_requests:
+    scope: local
+
+# Issue comments would carry AI-generated text on the public tracker.
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: false
+    auto_planning:
+      enabled: false

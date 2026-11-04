@@ -1,0 +1,40 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pdb
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+dist/
+build/
+/wheels/
+*.whl
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+bindings/js/dist/
+*.tgz
+/npm-dist/
+.npm/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Annual-report PDFs that research/filers/check_quotes.py downloads
+research/filers/pdfs/

@@ -1,0 +1,362 @@
+{
+  "name": "range-edges-apple",
+  "description": "First and last fiscal years that lie wholly in 0001-01-02..9999-12-30, with locate on their first and last days.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py with ordinal arithmetic beyond the datetime range"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 9,
+        "day": "last",
+        "rule": "last"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 1
+      }
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "end",
+          "century_pivot": 2069,
+          "templates": {
+            "year": "FY{yy}",
+            "quarter": "Q{q} FY{yy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "e974659ba858e428",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":2069,\"offset\":0,\"templates\":{\"quarter\":\"Q{q} FY{yy}\",\"year\":\"FY{yy}\"},\"year_number\":\"end\"}}},\"spec_version\":1,\"subdivision\":{\"extra_week\":{\"period\":1},\"periods\":[4,4,5,4,4,5,4,4,5,4,4,5],\"quarters\":[3,3,3,3],\"type\":\"week_pattern\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"sunday\"},\"year\":{\"anchor\":{\"day\":\"last\",\"edge\":\"end\",\"month\":9,\"rule\":\"last\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2
+      },
+      "expect": {
+        "level": "year",
+        "year": 2,
+        "index": null,
+        "start": "0001-09-30",
+        "end_exclusive": "0002-09-29",
+        "last_day": "0002-09-28",
+        "days": 364,
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0001-09-30"
+      },
+      "expect": {
+        "date": "0001-09-30",
+        "year": {
+          "level": "year",
+          "year": 2,
+          "index": null,
+          "start": "0001-09-30",
+          "end_exclusive": "0002-09-29",
+          "last_day": "0002-09-28",
+          "days": 364,
+          "weeks": 52,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1,
+          "start": "0001-09-30",
+          "end_exclusive": "0001-12-30",
+          "last_day": "0001-12-29",
+          "days": 91,
+          "weeks": 13,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2,
+          "index": 1,
+          "start": "0001-09-30",
+          "end_exclusive": "0001-10-28",
+          "last_day": "0001-10-27",
+          "days": 28,
+          "weeks": 4,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2,
+          "index": 1,
+          "start": "0001-09-30",
+          "end_exclusive": "0001-10-07",
+          "last_day": "0001-10-06",
+          "days": 7,
+          "weeks": 1,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0002-09-28"
+      },
+      "expect": {
+        "date": "0002-09-28",
+        "year": {
+          "level": "year",
+          "year": 2,
+          "index": null,
+          "start": "0001-09-30",
+          "end_exclusive": "0002-09-29",
+          "last_day": "0002-09-28",
+          "days": 364,
+          "weeks": 52,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2,
+          "index": 4,
+          "start": "0002-06-30",
+          "end_exclusive": "0002-09-29",
+          "last_day": "0002-09-28",
+          "days": 91,
+          "weeks": 13,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2,
+          "index": 12,
+          "start": "0002-08-25",
+          "end_exclusive": "0002-09-29",
+          "last_day": "0002-09-28",
+          "days": 35,
+          "weeks": 5,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2,
+          "index": 52,
+          "start": "0002-09-22",
+          "end_exclusive": "0002-09-29",
+          "last_day": "0002-09-28",
+          "days": 7,
+          "weeks": 1,
+          "has_extra_week": false
+        },
+        "day_of_year": 364,
+        "day_of_quarter": 91,
+        "day_of_period": 35,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 9999
+      },
+      "expect": {
+        "level": "year",
+        "year": 9999,
+        "index": null,
+        "start": "9998-09-27",
+        "end_exclusive": "9999-09-26",
+        "last_day": "9999-09-25",
+        "days": 364,
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "9998-09-27"
+      },
+      "expect": {
+        "date": "9998-09-27",
+        "year": {
+          "level": "year",
+          "year": 9999,
+          "index": null,
+          "start": "9998-09-27",
+          "end_exclusive": "9999-09-26",
+          "last_day": "9999-09-25",
+          "days": 364,
+          "weeks": 52,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 9999,
+          "index": 1,
+          "start": "9998-09-27",
+          "end_exclusive": "9998-12-27",
+          "last_day": "9998-12-26",
+          "days": 91,
+          "weeks": 13,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 9999,
+          "index": 1,
+          "start": "9998-09-27",
+          "end_exclusive": "9998-10-25",
+          "last_day": "9998-10-24",
+          "days": 28,
+          "weeks": 4,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 9999,
+          "index": 1,
+          "start": "9998-09-27",
+          "end_exclusive": "9998-10-04",
+          "last_day": "9998-10-03",
+          "days": 7,
+          "weeks": 1,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "9999-09-25"
+      },
+      "expect": {
+        "date": "9999-09-25",
+        "year": {
+          "level": "year",
+          "year": 9999,
+          "index": null,
+          "start": "9998-09-27",
+          "end_exclusive": "9999-09-26",
+          "last_day": "9999-09-25",
+          "days": 364,
+          "weeks": 52,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 9999,
+          "index": 4,
+          "start": "9999-06-27",
+          "end_exclusive": "9999-09-26",
+          "last_day": "9999-09-25",
+          "days": 91,
+          "weeks": 13,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 9999,
+          "index": 12,
+          "start": "9999-08-22",
+          "end_exclusive": "9999-09-26",
+          "last_day": "9999-09-25",
+          "days": 35,
+          "weeks": 5,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 9999,
+          "index": 52,
+          "start": "9999-09-19",
+          "end_exclusive": "9999-09-26",
+          "last_day": "9999-09-25",
+          "days": 7,
+          "weeks": 1,
+          "has_extra_week": false
+        },
+        "day_of_year": 364,
+        "day_of_quarter": 91,
+        "day_of_period": 35,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2,
+          "index": null
+        },
+        "n": 9997
+      },
+      "expect": {
+        "level": "year",
+        "year": 9999,
+        "index": null,
+        "start": "9998-09-27",
+        "end_exclusive": "9999-09-26",
+        "last_day": "9999-09-25",
+        "days": 364,
+        "weeks": 52,
+        "has_extra_week": false
+      }
+    }
+  ]
+}

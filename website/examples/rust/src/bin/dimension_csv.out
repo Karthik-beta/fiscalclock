@@ -1,0 +1,3 @@
+date,calendar_id,fiscal_year,quarter,period,week,day_of_year,day_of_quarter,day_of_period,day_of_week,year_start,year_last_day,quarter_start,quarter_last_day,period_start,period_last_day,week_start,week_last_day,year_has_extra_week,period_has_extra_week,week_is_extra_week,label_nrf_year,label_nrf_quarter,label_nrf_period,label_nrf_week
+2024-02-03,efc8868a4b19eaab,2023,4,12,53,371,98,35,7,2023-01-29,2024-02-03,2023-10-29,2024-02-03,2023-12-31,2024-02-03,2024-01-28,2024-02-03,true,true,true,FY2023,FY2023 Q4,FY2023 P12,FY2023 W53
+2024-02-04,efc8868a4b19eaab,2024,1,1,1,1,1,1,1,2024-02-04,2025-02-01,2024-02-04,2024-05-04,2024-02-04,2024-03-02,2024-02-04,2024-02-10,false,false,false,FY2024,FY2024 Q1,FY2024 P01,FY2024 W01

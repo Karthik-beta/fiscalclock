@@ -1,0 +1,102 @@
+---
+import Default from "@astrojs/starlight/components/PageTitle.astro";
+import { markdownCopyOf } from "../agents/markdown-copy.ts";
+
+const { id, data } = Astro.locals.starlightRoute.entry;
+// The landing page's hero (src/components/Hero.astro) holds its headline, so
+// that page alone skips the default title. Splash pages show no Markdown
+// controls, but keep their Markdown copy and the head link to it.
+const landing = id === "";
+const href = await markdownCopyOf(id);
+const showControls = href !== undefined && data.template !== "splash";
+---
+
+{!landing && <Default />}
+{
+  showControls && (
+    <div class="page-markdown" data-page-markdown={href}>
+      <button type="button">Copy page as Markdown</button>
+      <a href={href}>View as Markdown</a>
+      <span role="status" aria-live="polite"></span>
+    </div>
+  )
+}
+
+<script>
+  const COPIED = "Copied the page as Markdown.";
+  const FAILED = "Could not copy. Use View as Markdown instead.";
+
+  async function copy(href: string): Promise<void> {
+    const text = fetch(href).then((response) => {
+      if (!response.ok) throw new Error(`${href}: HTTP ${response.status}`);
+      return response.text();
+    });
+    // Safari allows a clipboard write after a fetch only when the write starts
+    // inside the click and is handed the pending text.
+    if (typeof ClipboardItem === "function" && navigator.clipboard.write) {
+      const blob = text.then((value) => new Blob([value], { type: "text/plain" }));
+      await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
+    } else {
+      await navigator.clipboard.writeText(await text);
+    }
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-page-markdown]")) {
+    const href = root.dataset.pageMarkdown!;
+    const status = root.querySelector<HTMLElement>("[role=status]")!;
+    root.querySelector("button")!.addEventListener("click", async () => {
+      if (!navigator.clipboard) {
+        location.assign(href);
+        return;
+      }
+      status.textContent = "";
+      try {
+        await copy(href);
+        status.textContent = COPIED;
+      } catch {
+        status.textContent = FAILED;
+      }
+    });
+  }
+</script>
+
+<style>
+  .page-markdown {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--fc-space-2) var(--fc-space-4);
+    margin-top: var(--fc-space-3);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
+  }
+
+  button {
+    padding: var(--fc-space-1) var(--fc-space-3);
+    border: var(--fc-border-width-thin) solid var(--fc-color-border-strong);
+    border-radius: var(--fc-radius-sm);
+    background: transparent;
+    color: var(--fc-color-text-default);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--fc-color-bg-subtle);
+  }
+
+  a {
+    color: var(--fc-color-accent-default);
+    text-decoration-line: underline;
+    text-decoration-thickness: var(--fc-border-width-thin);
+    text-underline-offset: 0.2em;
+  }
+
+  a:hover {
+    text-decoration-thickness: var(--fc-border-width-thick);
+  }
+
+  [role="status"] {
+    color: var(--fc-color-text-muted);
+  }
+</style>

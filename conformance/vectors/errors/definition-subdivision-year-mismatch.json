@@ -1,0 +1,55 @@
+{
+  "name": "definition-subdivision-year-mismatch",
+  "description": "Invalid definition. Rule: month_start_day must equal year.start.day, otherwise SUBDIVISION_YEAR_MISMATCH. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
+    "url": null,
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 6,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "SUBDIVISION_YEAR_MISMATCH",
+        "path": "subdivision.month_start_day"
+      }
+    }
+  ]
+}

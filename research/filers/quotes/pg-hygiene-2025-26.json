@@ -1,0 +1,67 @@
+{
+  "company": "Procter & Gamble Hygiene and Health Care Limited",
+  "slug": "pg-hygiene",
+  "document": "Annual Report 2025-26",
+  "url": "https://assets.ctfassets.net/oe48y40ukei6/3NtnlryjO6oVyBMEES6pLT/d4aee2a14d8cab5a4d777d8e5f8eba8a/ANNUAL_REPORT_2026__1_.pdf",
+  "host_evidence": "Linked as \"ANNUAL REPORT 2026\" under Annual Report & Returns on https://in.pg.com/india-investors/pghh/shareholder-info/info/ (the company's own site; the file is on its Contentful CDN assets.ctfassets.net).",
+  "pdf": "ANNUAL_REPORT_2026.pdf",
+  "retrieved": "2026-11-03",
+  "sha256": "d5d8b8475cec3a2e852433074f2e21d067e9a938c88e789456b814178f87a0b3",
+  "pages": 156,
+  "quotes": [
+    {
+      "text": "The Board of Directors of the Company, on January 23, 2025, had approved the change in Financial Year of the Company from “July 1 – June 30” period to “April 1 – March 31” period. The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on March 31, 2026.",
+      "pdf_page": 11,
+      "printed_page": "9",
+      "section": "Directors' Report, Financial Year"
+    },
+    {
+      "text": "*Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025, and hence not comparable with current Financial Year 2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).",
+      "pdf_page": 11,
+      "printed_page": "9",
+      "section": "Directors' Report, Financial Results"
+    },
+    {
+      "text": "The Financial Year of the Company has been changed from \"July 1st – June 30th” period to “April 1st – March 31st” period, effective Financial Year 2024-25. Accordingly, the Financial Year of the Company for purpose of this report viz., 2025-26 was April 1, 2025 to March 31, 2026.",
+      "pdf_page": 70,
+      "printed_page": "68",
+      "section": "Corporate Governance Report, Financial Results"
+    },
+    {
+      "text": "STATEMENT OF PROFIT AND LOSS FOR THE YEAR ENDED MARCH 31, 2026",
+      "pdf_page": 93,
+      "printed_page": "91",
+      "section": "Statement of Profit and Loss"
+    },
+    {
+      "text": "The Company had opted to change its financial year end from June 30 to March 31 of each year for the purpose of preparation of its annual financial statements.",
+      "pdf_page": 98,
+      "printed_page": "96",
+      "section": "Notes to Financial Statements, note 2.2"
+    },
+    {
+      "text": "The Company’s financial performance for the Financial Year ended March 31, 2026 is summarized below:",
+      "pdf_page": 11,
+      "printed_page": "9",
+      "section": "Directors' Report, Financial Results"
+    },
+    {
+      "text": "#The figures for financial year 2024-25 are for 9 months period.",
+      "pdf_page": 8,
+      "printed_page": "6",
+      "section": "Financial Highlights"
+    },
+    {
+      "text": "re-appointed M/s. Ashwin Solanki & Associates, as the Cost Auditors of the Company for the financial year 2026-27.",
+      "pdf_page": 20,
+      "printed_page": "18",
+      "section": "Directors' Report, Cost Auditors"
+    },
+    {
+      "text": "to audit the cost records of the Company for the financial year ending March 31, 2027, is being placed for the approval of the shareholders of the Company",
+      "pdf_page": 20,
+      "printed_page": "18",
+      "section": "Directors' Report, Cost Auditors"
+    }
+  ]
+}

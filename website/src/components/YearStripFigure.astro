@@ -1,0 +1,108 @@
+---
+import type { Period } from "fiscalclock";
+import { renderYearStrip } from "../lib/year-strip";
+
+interface Props {
+  id: string;
+  title: string;
+  periods: Period[];
+  quarters: Period[];
+}
+
+const { id, title, periods, quarters } = Astro.props;
+const svg = renderYearStrip(periods, { id, title, quarters });
+---
+
+<figure class="strip-figure not-content">
+  <div class="strip-scroll" tabindex="0" role="group" aria-label={`${title}, drawn to scale; scrolls sideways`}>
+    <Fragment set:html={svg} />
+  </div>
+  <figcaption><slot /></figcaption>
+  <details>
+    <summary>Every period's dates</summary>
+    <table>
+      <thead>
+        <tr><th scope="col">Period</th><th scope="col">Start</th><th scope="col">End (excluded)</th><th scope="col">Last day</th><th scope="col">Weeks</th></tr>
+      </thead>
+      <tbody>
+        {
+          periods.map((p) => (
+            <tr>
+              <th scope="row">P{p.index}{p.has_extra_week && ", with the extra week"}</th>
+              <td><time datetime={p.start}>{p.start}</time></td>
+              <td><time datetime={p.end_exclusive}>{p.end_exclusive}</time></td>
+              <td><time datetime={p.last_day}>{p.last_day}</time></td>
+              <td>{p.weeks}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </details>
+</figure>
+
+<script>
+  import { addScrollHint } from "../scripts/strip-hint";
+  for (const scroller of document.querySelectorAll<HTMLElement>(".strip-figure .strip-scroll")) addScrollHint(scroller);
+</script>
+
+<style>
+  .strip-figure {
+    margin: 0;
+  }
+  .strip-figure :global(.strip-hint) {
+    margin-top: var(--fc-space-2);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
+  }
+  .strip-scroll {
+    overflow-x: auto;
+    width: fit-content;
+    max-width: 100%;
+    border: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    border-radius: var(--fc-radius-md);
+    background: var(--fc-color-diagram-surface);
+    padding-block: var(--fc-space-3);
+  }
+  .strip-scroll :global(svg) {
+    display: block;
+  }
+  figcaption {
+    margin-top: var(--fc-space-3);
+    max-width: var(--fc-layout-prose);
+    color: var(--fc-color-text-muted);
+    font-size: var(--fc-type-small-font-size);
+    line-height: var(--fc-type-small-line-height);
+  }
+  figcaption :global(a) {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--fc-color-accent-default);
+    text-underline-offset: 0.2em;
+  }
+  details {
+    margin-top: var(--fc-space-3);
+    font-size: var(--fc-type-small-font-size);
+  }
+  summary {
+    cursor: pointer;
+    color: var(--fc-color-text-default);
+    width: fit-content;
+  }
+  table {
+    margin-top: var(--fc-space-3);
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    text-align: start;
+    padding: var(--fc-space-1) var(--fc-space-4) var(--fc-space-1) 0;
+    border-bottom: var(--fc-border-width-thin) solid var(--fc-color-border-default);
+    font-weight: var(--fc-font-weight-regular);
+  }
+  thead th {
+    color: var(--fc-color-text-muted);
+    border-bottom-color: var(--fc-color-border-strong);
+  }
+</style>
