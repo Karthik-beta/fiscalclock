@@ -67,9 +67,9 @@ Every such year has 364 or 371 days. A 371-day year has a 53rd week, called the 
 
 Examples:
 
-- The NRF 4-5-4 calendar ends on the Saturday nearest 31 January: `{"edge": "end", "month": 1, "day": "last", "rule": "nearest"}` with `week.starts_on: "sunday"`.
-- Apple's fiscal year ends on the last Saturday of September: `{"edge": "end", "month": 9, "day": "last", "rule": "last"}` with `week.starts_on: "sunday"`.
-- The ISO 8601 week-numbering year starts on the Monday nearest 1 January: `{"edge": "start", "month": 1, "day": 1, "rule": "nearest"}` with `week.starts_on: "monday"`. Its years must be numbered with `year_number: "majority"` (see [Year numbers must be unique](#year-numbers-must-be-unique)).
+- The NRF 4-5-4 calendar ends on the Saturday nearest 31 January: `{"edge": "end", "month": 1, "day": "last", "rule": "nearest"}` with `week.starts_on: "sunday"`. The [NRF 4-5-4 calendar page](https://nrf.com/resources/4-5-4-calendar) does not state the rule in these words. This anchor gives exactly the 53-week years the page lists for 2006–2023 (check C19 in [`research/verification/`](../research/verification/README.md) and the vector [`nrf-53-week-years.json`](../conformance/vectors/cited/nrf-53-week-years.json)).
+- Apple's fiscal year ends on the last Saturday of September: `{"edge": "end", "month": 9, "day": "last", "rule": "last"}` with `week.starts_on: "sunday"`. Apple states the rule in its [Form 10-Q for the quarter ended 30 December 2023](https://www.sec.gov/Archives/edgar/data/320193/000032019324000006/aapl-20231230.htm).
+- The ISO 8601 week-numbering year starts on the Monday nearest 1 January: `{"edge": "start", "month": 1, "day": 1, "rule": "nearest"}` with `week.starts_on: "monday"`. This anchor matches Python's `date.isocalendar()` for every year from 1600 to 2399 (check C15 in [`research/verification/`](../research/verification/README.md)). Its years must be numbered with `year_number: "majority"` (see [Year numbers must be unique](#year-numbers-must-be-unique)).
 
 ## `week`
 
