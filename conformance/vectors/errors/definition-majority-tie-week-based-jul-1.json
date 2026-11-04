@@ -4,7 +4,7 @@
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md, Year numbers must be unique; path from spec/api-v1.md, Paths for common errors",
-    "url": null,
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#year-numbers-must-be-unique",
     "checked_by": "conformance/generators/fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range; code and path asserted by the generator"
   },
   "definition": {

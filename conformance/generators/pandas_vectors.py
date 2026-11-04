@@ -150,7 +150,7 @@ def write(folder: Path, vectors: list[dict]) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     names = {v["name"] for v in vectors}
     assert len(names) == len(vectors), "duplicate vector name"
-    for stale in folder.glob("*.json"):
+    for stale in folder.glob("fy5253-*.json"):
         if stale.stem not in names:
             stale.unlink()
     for v in vectors:

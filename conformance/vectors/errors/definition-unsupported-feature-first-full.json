@@ -1,10 +1,10 @@
 {
   "name": "definition-unsupported-feature-first-full",
-  "description": "Invalid definition. Rule: first_full is reserved and rejected with UNSUPPORTED_FEATURE. Only code and path are asserted.",
+  "description": "Invalid definition. Spec rule, paraphrased: first_full is reserved and rejected with UNSUPPORTED_FEATURE. Only code and path are asserted.",
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
-    "url": null,
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md",
     "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
   },
   "definition": {
