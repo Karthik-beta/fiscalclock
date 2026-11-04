@@ -103,11 +103,18 @@ INVALID = [
 ]
 
 
+# Rules that only the API catalogue states; the definition spec does not mention them.
+CATALOGUE_ONLY = {"invalid-json-not-object"}
+
+
 def invalid_definition_vectors() -> list[dict]:
     out = []
     for name, defn, expected, rule in INVALID:
         desc = f"Invalid definition. Spec rule, paraphrased: {rule}. Only code and path are asserted."
-        src = source("errors", f"{SPEC} / spec/api-v1.md error catalogue", CHECKED, DEFINITION_URL)
+        if name in CATALOGUE_ONLY:
+            src = source("errors", "spec/api-v1.md error catalogue", CHECKED, CATALOGUE_URL)
+        else:
+            src = source("errors", f"{SPEC} / spec/api-v1.md error catalogue", CHECKED, DEFINITION_URL)
         out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
     return out
 

@@ -3,8 +3,8 @@
   "description": "Invalid definition. Spec rule, paraphrased: api-v1 catalogue: INVALID_JSON when the definition is not valid JSON or not an object; path '' means the whole input. Only code and path are asserted.",
   "source": {
     "kind": "errors",
-    "citation": "spec/definition-v1.md / spec/api-v1.md error catalogue",
-    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md",
+    "citation": "spec/api-v1.md error catalogue",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue",
     "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md, 2026-10-31"
   },
   "definition": [
