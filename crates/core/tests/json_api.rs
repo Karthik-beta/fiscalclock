@@ -401,13 +401,15 @@ fn period_not_found() {
         "PERIOD_NOT_FOUND",
         "index",
     );
-    assert_err(
-        &n,
-        "shift",
-        json!({"period": {"level": "week", "year": 2024, "index": 53}, "n": 1}),
-        "PERIOD_NOT_FOUND",
-        "period",
-    );
+    let missing = json!({"level": "week", "year": 2024, "index": 53});
+    for (op, args) in [
+        ("shift", json!({"period": missing, "n": 1})),
+        ("parent", json!({"period": missing})),
+        ("children", json!({"period": missing, "level": "week"})),
+        ("format", json!({"period": missing})),
+    ] {
+        assert_err(&n, op, args, "PERIOD_NOT_FOUND", "period");
+    }
 }
 
 #[test]

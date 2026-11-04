@@ -163,7 +163,7 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 | `TIMESTAMP_REJECTED` | bindings | A timestamp type (`datetime.datetime`, pandas `Timestamp`, JS `Date`, `Temporal.PlainDateTime`, `Temporal.ZonedDateTime` or `Temporal.Instant`) was passed. The hint says to convert it to a date in the intended time zone first. |
 | `INVALID_ARGUMENT` | any | An argument is missing, of the wrong type or out of its allowed range. |
 | `OUT_OF_RANGE` | any | The fiscal year involved is outside the supported range. |
-| `PERIOD_NOT_FOUND` | period, shift | No period has those coordinates. |
+| `PERIOD_NOT_FOUND` | period, shift, parent, children, format | No period has those coordinates. |
 | `LEVEL_NOT_NESTED` | children | The requested level does not nest inside the period. |
 | `SCHEME_NOT_FOUND` | format | No scheme has that name. |
 | `TEMPLATE_MISSING` | format | The scheme has no template for the period's level. |
