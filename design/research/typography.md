@@ -233,12 +233,14 @@ CommitMono                   default : I/l 0.59  l/1 0.67  I/1 0.36  l/| 0.68  0
                              cv07    : I/l 0.59  l/1 0.67  I/1 0.36  l/| 0.68  0/O 0.33  5/S 0.40  rn/m 0.94  1/7 0.75
 ```
 
+The `Source Sans 3` row was measured with `cv01` and `cv04` together (the `EXTRA` mapping in the script), but this note recommends `cv01` alone because `cv04` removes the tail from `l` (see the `Source Sans 3` section). The row therefore does not measure the recommended setting, and its `I`/`l` score in particular is likely to differ. It has not been re-measured with `cv01` alone, because the font files were not kept. `Source Sans 3` was not chosen (DD-013 sets the identity in `IBM Plex Sans`), so the row is a record of what was measured.
+
 ## Numbers in UI and tables
 
 These are proposed rules. They should be checked in a browser once the stack is chosen ([DD-009](../DECISIONS.md)).
 
 1. **Data.** Use `font-variant-numeric: tabular-nums lining-nums slashed-zero;` wherever numbers are compared or scanned: tables, period bounds, dates, week and period numbers, fiscal-year labels and conformance output. MDN maps these keywords to the OpenType `tnum`, `lnum` and `zero` features ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/font-variant-numeric)). The features themselves are defined in the OpenType registry ([`tnum`](https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt), [`zero`](https://learn.microsoft.com/en-us/typography/opentype/spec/features_uz)).
-2. **Prose.** In `Inter`, `Geist` and `Source Serif 4`, leave figures proportional in running text. `Source Sans 3` is tabular by default, so prose needs `proportional-nums`. `IBM Plex Sans` has no `pnum`, so its figures are tabular in prose too. That trade-off is acceptable for a date-heavy product.
+2. **Prose.** In `Inter` and `Geist`, proportional is the default, so leave running text alone. `Source Sans 3` and `Source Serif 4` are tabular by default and both have `pnum`, so their prose needs `proportional-nums`. `IBM Plex Sans` has no `pnum`, so its figures are tabular in prose too. That trade-off is acceptable for a date-heavy product.
 3. **Do not trust `slashed-zero` blindly.**
    - It does nothing in `Geist`, `Geist Mono`, `Commit Mono`, `Newsreader` and `Public Sans`, which have no `zero` feature.
    - It turns `Atkinson Hyperlegible Mono`'s slashed zero into a dotted one.

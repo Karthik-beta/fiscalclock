@@ -35,9 +35,9 @@ The script uses only the Python standard library. It rejects any part of the for
 | [`generated/tokens.light.json`](generated/tokens.light.json), [`generated/tokens.dark.json`](generated/tokens.dark.json) | Every token resolved to a plain CSS value, for tools that take values in configuration rather than CSS. |
 | [`generated/contrast.md`](generated/contrast.md) | The contrast report, with every checked pair's ratio in both themes. |
 
-## How the website will consume them
+## How the website consumes them
 
-No website stack has been chosen yet (decision DD-009 in [`DECISIONS.md`](../DECISIONS.md)), so the tokens assume none.
+As of 2 Nov 2026, the website uses Astro Starlight, pinned to an exact version (decision DD-030 in [`DECISIONS.md`](../DECISIONS.md), which supersedes DD-009; the version is in [`website/package.json`](../../website/package.json)). The tokens still assume no framework, so the steps below apply to any docs stack.
 
 1. **Load `tokens.css` first**, before any framework stylesheet. It defines `--fc-*` variables only and styles nothing.
 2. **Map the framework's own variables onto the tokens** in one small stylesheet, for example `--vp-c-bg: var(--fc-color-bg-default);` for VitePress, or `--sl-color-accent: var(--fc-color-accent-default);` for Starlight. Most docs frameworks can be themed this way; the [token research](../research/design-tokens.md#5-how-docs-frameworks-consume-tokens) lists each framework's variables and dark-mode selector.

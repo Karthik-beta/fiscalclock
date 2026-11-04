@@ -15,6 +15,9 @@ exclude = [
   # packages.ecosyste.ms answers link checkers with 402; both pages exist.
   '^https://(www\.)?sec\.gov/',
   '^https://packages\.ecosyste\.ms/',
+  # Canva answers GitHub Actions runners with 403 (the links job on pull
+  # request 71, 4 Nov 2026), though the same page opens from a desktop.
+  '^https://www\.canva\.com/',
   # credibility.stanford.edu sends its certificate without the InCommon
   # intermediate (checked with openssl s_client on 3 Nov 2026), so lychee
   # cannot verify it; browsers fetch the intermediate and open the pages.

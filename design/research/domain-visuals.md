@@ -141,9 +141,26 @@ Final values come from the design system and must meet 1.4.11 against `surface` 
 - **Answers.** How a week-based year end moves around its anchor date, and which years have 53 weeks.
 - **Layout.** A dot plot. Rows are fiscal years in order and the horizontal axis is the year end's offset in days from the anchor date. The axis runs from −3 to +3 for `nearest` and from −6 to 0 for `last` or 0 to +6 for `first`. A vertical line marks the anchor at 0, and thin lines join consecutive years to show the sawtooth. A 53-week year is a ring with a "53" label, a 52-week year a filled dot. Each row is also labelled with the full `last_day` date.
 - **Scale.** One day per tick, the same for every row. The offset axis never omits days, even where no year lands.
-- **Example (computed).** For "Saturday nearest 31 January" in fiscal years 2015-2030, the offsets are −1, −3, +3, +2, +1, −1, −2, −3, +3, +1, 0, −1, −2, +3, +2, +1 days. The 53-week years are 2017, 2023 and 2028, each one where the offset jumps from −3 to +3. This matches the NRF years in the evidence register (checks C03 and C19 in [`Evidence.md`](../../research/evidence/Evidence.md)), and Kroger's 10-K above gives the same fiscal 2017 and 2018 year-end dates. Reproduced by `drift_check.py` in the scratch folder (see [Sample](#sample-nrf-fiscal-2023-year-strip)).
+- **Example (computed).** For "Saturday nearest 31 January" in fiscal years 2015-2030, the offsets are −1, −3, +3, +2, +1, −1, −2, −3, +3, +1, 0, −1, −2, +3, +2, +1 days. The 53-week years are 2017, 2023 and 2028, each one where the offset jumps forward by 5 or 6 days (from −3 to +3 in 2017 and 2023, from −2 to +3 in 2028, which has a leap day). The rule's 2017 and 2023 match the 53-week years NRF publishes (check C19 in [`Evidence.md`](../../research/evidence/Evidence.md)). 2028 is the rule's prediction only, because NRF lists no 53-week year after fiscal 2023 (C19, as of 1 Nov 2026), so treat the 2028 ring as illustrative and unverified against NRF; check C03 records the rule's result. Kroger's 10-K above gives the same fiscal 2017 and 2018 year-end dates. Recomputed on 4 Nov 2026 with the standard-library script after this list, which does not use fiscalclock.
 - **Alt text.** "Year-end dates of <calendar>, <first>–<last>, as days from <anchor>: <year> <offset> …; 53-week years: <list>."
 - **Colour roles.** `ink`, `extra-week` for the 53-week rings and labels, `rule`.
+
+```python
+from datetime import date, timedelta
+
+
+def year_end(fy):
+    anchor = date(fy + 1, 1, 31)
+    return next(anchor + timedelta(days=d) for d in range(-3, 4) if (anchor + timedelta(days=d)).weekday() == 5)
+
+
+print("offsets:", [(year_end(fy) - date(fy + 1, 1, 31)).days for fy in range(2015, 2031)])
+print("53-week years:", [fy for fy in range(2015, 2031) if (year_end(fy) - year_end(fy - 1)).days == 371])
+start, end = year_end(2022) + timedelta(days=1), year_end(2023) + timedelta(days=1)
+print("fiscal 2023:", start, end, (end - start).days, "days")
+```
+
+Save the Python block above as `drift.py` in an empty folder, then run it with `python -I drift.py`. It prints the offsets above, the 53-week years 2017, 2023 and 2028, and fiscal 2023 as `2023-01-29 2024-02-04 371 days`.
 
 ## How to produce them
 
@@ -161,13 +178,13 @@ Final values come from the design system and must meet 1.4.11 against `surface` 
 
 ## Sample: NRF fiscal 2023 year strip
 
-A rough D1 year strip for NRF 4-5-4 fiscal 2023 (a 53-week year), built to test the grammar. It is illustrative, not a docs asset. The files are in the session scratch folder, not in the repository:
+A rough D1 year strip for NRF 4-5-4 fiscal 2023 (a 53-week year), built to test the grammar. It is illustrative, not a docs asset. Its files were in a session scratch folder that was not kept, so the sample cannot be rerun and its comparison with NRF's PDF is an observation that cannot be repeated (as of 4 Nov 2026). The year bounds in the result below were recomputed with the script in D6 and agree with checks C04 and C05 in the evidence register. The files were:
 
 - `year_strip_nrf_2023.py`: standard library only, no fiscalclock import. It applies NRF's rule as stated in the README example definition: the year ends on the Saturday nearest 31 January, weeks start on Sunday, periods follow 4-5-4 and the extra week goes in period 12. It then compares the result with dates transcribed from NRF's 2023-2025 (not restated) PDF.
 - `year-strip-nrf-2023.svg`: the output, 790 × 168 px at 2 px per day, with `role="img"`, `title`, `desc`, a hatch pattern for week 53 and a `prefers-color-scheme` override.
-- `drift_check.py`: the year-end offsets used in [D6](#d6-multi-year-drift).
+- `drift_check.py`: the year-end offsets used in [D6](#d6-multi-year-drift), replaced there by a script that is in this note.
 
-Run as `python -I year_strip_nrf_2023.py year-strip-nrf-2023.svg nrf-2023-2025.txt`, where the text file is `pdftotext -layout` output of the NRF PDF. The script exits non-zero on any mismatch.
+It was run as `python -I year_strip_nrf_2023.py year-strip-nrf-2023.svg nrf-2023-2025.txt`, where the text file was `pdftotext -layout` output of the NRF PDF, and exited non-zero on any mismatch.
 
 **Result.** Fiscal 2023 is `[2023-01-29, 2024-02-04)`, `last_day` 2024-02-03, 371 days. Quarters are 13, 13, 13 and 14 weeks (Q4 is `[2023-10-29, 2024-02-04)`, 98 days). Period 12 is `[2023-12-31, 2024-02-04)` with week 53 `[2024-01-28, 2024-02-04)`.
 

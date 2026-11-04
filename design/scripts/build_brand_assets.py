@@ -433,6 +433,8 @@ def main() -> int:
     parser.add_argument("--wiki-images", type=Path, help="also write the wiki's PNG illustrations into this folder")
     parser.add_argument("--inkscape", default=shutil.which("inkscape") or r"C:\Program Files\Inkscape\bin\inkscape.com")
     args = parser.parse_args()
+    if shutil.which(args.inkscape) is None:
+        parser.error(f"Inkscape not found at {args.inkscape!r}; install it or pass its path with --inkscape")
     t = Type(args.font)
 
     files = {**build_logos(t), **build_icons()}

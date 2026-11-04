@@ -294,7 +294,7 @@ A script such as `design/scripts/build_tokens.py`, run as `python -I design/scri
    - `color` with alpha 1: `hex`; otherwise an `rgb()` or 8-digit hex form
    - `dimension` and `duration`: `value` followed by `unit`
    - `cubicBezier`: `cubic-bezier(...)`
-   - `fontFamily`: a quoted, comma-separated list
+   - `fontFamily`: a comma-separated list in which family names are quoted and CSS generic family keywords such as `sans-serif` and `system-ui` stay unquoted, because a quoted keyword is read as the name of a family ([CSS Fonts Level 4, `font-family`](https://www.w3.org/TR/css-fonts-4/#font-family-prop)). The generator also leaves any single all-lowercase word unquoted, except the CSS-wide keywords (`initial`, `inherit`, `unset`, `revert`, `revert-layer`) and `default`, which it quotes because the same section disallows them unquoted and lists `"default"`, `"initial"` and `"inherit"` as valid quoted names. `build_tokens.py --self-test` checks a mixed list and these keywords.
    - `shadow`: a `box-shadow` list
    - `border`: shorthand
    - `typography`: one variable per sub-value
