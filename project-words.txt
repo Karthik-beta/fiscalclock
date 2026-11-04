@@ -8,9 +8,11 @@ aarch
 adhoc
 cdylib
 cooldown
+docstrings
 ecosyste
 fiscalclock
 fiscalyear
+languagetool
 linkcheck
 llms
 lycheeverse
@@ -19,6 +21,7 @@ msvc
 musl
 musllinux
 npmjs
+perf
 proptest
 pypa
 pypistats
@@ -26,5 +29,6 @@ ruleset
 streetsidesoftware
 textarea
 truthy
+walkthrough
 worktrees
 zizmor

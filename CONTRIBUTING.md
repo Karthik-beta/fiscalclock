@@ -43,6 +43,14 @@ Add the vector as a function in `conformance/generators/spec_cited_vectors.py` (
 
 [AGENTS.md](AGENTS.md#build-test-and-lint) lists the tools to install and the checks CI runs. `python -I scripts/check.py` runs every check and prints one PASS or FAIL line per command; `python -I scripts/check.py rust python` runs only the named groups, and AGENTS.md has a table of which groups cover which paths. The pull request template asks which ones you ran.
 
+## Automated review
+
+[CodeRabbit](https://www.coderabbit.ai/) also reviews pull requests, on its free plan for open-source projects. Its settings are in [`.coderabbit.yaml`](.coderabbit.yaml). Its comments are suggestions: the maintainer's review and CI decide whether a pull request merges.
+
+- While the repository has fewer than 10 stars, CodeRabbit reviews only when asked. Comment `@coderabbitai review` on the pull request when it is ready.
+- It reviews the first push automatically once that limit no longer applies, but not later pushes. Comment `@coderabbitai review` again when you want a fresh review.
+- The free plan allows only a few reviews per hour, and each push it reviews counts as one. Push finished work in one go, and comment `@coderabbitai rate limit` to see when the next review is available.
+
 ## Evidence rules
 
 These apply to code, documentation, tests and issue text.
