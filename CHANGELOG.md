@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - npm: `package.json` has a top-level `types` field, so TypeScript projects that do not read `exports` can find the package's declarations ([`package.json`](bindings/js/package.json)).
 - Python: a definition given as any `Mapping`, such as a `MappingProxyType`, is accepted like a `dict`. Before, a non-`dict` mapping failed with `MISSING_FIELD` and `UNKNOWN_FIELD` errors.
 - Website: when fiscalclock cannot load in the browser, the date lookup and the playground say so, instead of keeping an old answer or showing "Loading fiscalclock…" forever.
+- Website: the playground keeps the definition you typed when you follow a link to another part of the page, such as the skip link, and keeps working when the browser refuses to update the address.
 
 ## [0.1.0] - 2026-10-31
 

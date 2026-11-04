@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { decodeState, encodeState, type PlaygroundState } from "../../src/lib/playground-state.ts";
+import { decodeState, encodeState, hasState, type PlaygroundState } from "../../src/lib/playground-state.ts";
 
 test("state round-trips through the fragment, including text that is not ASCII", () => {
   const state: PlaygroundState = {
@@ -30,4 +30,9 @@ test("a fragment with the wrong shape throws", () => {
   assert.throws(() => decodeState(encode(["{}", "2024-02-03"])), /unexpected shape/);
   assert.throws(() => decodeState(encode(["{}", "2024-02-03", 2023.5])), /unexpected shape/);
   assert.throws(() => decodeState(encode({ definition: "{}" })), /unexpected shape/);
+});
+
+test("only a fragment that starts with #s= counts as playground state", () => {
+  assert.equal(hasState(encodeState({ definition: "{}", date: "2024-02-03", year: 2023 })), true);
+  for (const hash of ["", "#", "#main", "#_top", "#S=abc"]) assert.equal(hasState(hash), false, hash);
 });

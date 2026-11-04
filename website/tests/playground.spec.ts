@@ -175,6 +175,67 @@ test("the state survives a reload through the URL fragment", async ({ page }) =>
   expect(await currentDefinition(page)).toEqual(definition);
 });
 
+test("a link to another part of the page keeps what was typed", async ({ page }) => {
+  await openPlayground(page);
+  const definition = await currentDefinition(page);
+  definition.week.starts_on = "monday";
+  await replaceDefinition(page, JSON.stringify(definition, null, 2));
+  await expect(page.getByLabel("Example")).toHaveValue("");
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2022-06-01");
+
+  await page.evaluate(() => (location.hash = "main"));
+  await page.waitForTimeout(300);
+  expect(await currentDefinition(page)).toEqual(definition);
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveValue("2022-06-01");
+  await expect(page.getByLabel("Example")).toHaveValue("");
+});
+
+test("changing the fragment to another playground state loads that state", async ({ page }) => {
+  await openPlayground(page);
+  await page.getByLabel("Example").selectOption("apple-10q-2023-12-30");
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2023-12-30");
+  const saved = await page.evaluate(() => location.hash);
+  await page.getByLabel("Example").selectOption("nrf-53-week-years");
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2022-06-01");
+
+  await page.evaluate((hash) => (location.hash = hash), saved);
+  await expect(page.getByLabel("Example")).toHaveValue("apple-10q-2023-12-30");
+  await expect(page.getByLabel("Date (YYYY-MM-DD)")).toHaveValue("2023-12-30");
+});
+
+test("the playground keeps working when the browser refuses to update the address", async ({ page }) => {
+  await page.addInitScript(() => {
+    history.replaceState = () => {
+      throw new DOMException("Attempt to use history.replaceState() more than 100 times per 30 seconds", "SecurityError");
+    };
+  });
+  await openPlayground(page);
+  const date = page.getByLabel("Date (YYYY-MM-DD)");
+  await date.fill("2022-06-01");
+  await expect(status(page)).toHaveText("2022-06-01 is in FY2022, FY2022 Q2, FY2022 P05, FY2022 W18.");
+  await date.fill("2024-02-30");
+  await expect(errors(page).getByText("INVALID_DATE", { exact: true })).toBeVisible();
+});
+
+test("the copied link carries the current state when the browser refuses to update the address", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(() => {
+    history.replaceState = () => {
+      throw new DOMException("Attempt to use history.replaceState() more than 100 times per 30 seconds", "SecurityError");
+    };
+  });
+  await openPlayground(page);
+  await page.getByLabel("Date (YYYY-MM-DD)").fill("2022-06-01");
+  await expect(status(page)).toHaveText("2022-06-01 is in FY2022, FY2022 Q2, FY2022 P05, FY2022 W18.");
+  await page.getByRole("button", { name: /copy link/i }).click();
+  await expect(page.locator("#pg-copy-status")).toHaveText("Link copied.");
+
+  const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+  expect(link.pathname).toBe("/playground/");
+  const [, date] = JSON.parse(Buffer.from(link.hash.slice("#s=".length), "base64url").toString("utf8"));
+  expect(date).toBe("2022-06-01");
+});
+
 test("examples have short labels, with the full description and its source under the select", async ({ page }) => {
   await openPlayground(page);
   const example = page.getByLabel("Example");
