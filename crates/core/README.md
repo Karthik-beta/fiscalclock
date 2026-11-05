@@ -131,7 +131,7 @@ assert_eq!(found, [("by_end", "2023-01-29".to_string()), ("by_start", "2024-02-0
 - Shared conformance vectors are run by the Rust, Python and npm test suites. Expected results come from cited sources or from independent generators, never from fiscalclock itself. See [`conformance/`](https://github.com/Karthik-beta/fiscalclock/tree/main/conformance).
 - Week-based years are checked against Python's `date.isocalendar()` for every year from 1600 to 2399, and a slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200.
 - Property tests check that periods tile and nest, and that `shift` and `format`/`parse` round-trip.
-- On every push to `main`, and on every pull request that changes the packages or the vectors, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust on Linux and through the Python and npm packages on Linux, macOS and Windows, and requires the 14 raw outputs to match the Rust output byte for byte.
+- On every push to `main`, and on every pull request that changes a file the package jobs read, [CI](https://github.com/Karthik-beta/fiscalclock/blob/main/.github/workflows/ci.yml) runs all vectors through Rust on Linux and through the Python and npm packages on Linux, macOS and Windows, and requires the 14 raw outputs to match the Rust output byte for byte.
 
 ## Supply chain
 
