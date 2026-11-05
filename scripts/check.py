@@ -266,6 +266,9 @@ def run_command(step, log):
 
 
 def main():
+    # A failing log can hold characters the console code page cannot encode,
+    # and -I ignores PYTHONIOENCODING.
+    sys.stdout.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("groups", nargs="*", metavar="group", help="one or more of: " + ", ".join(GROUPS))
     parser.add_argument("--list", action="store_true", help="print each group and its commands without running them")
