@@ -66,7 +66,7 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 - **External oracles.** Week-based years are checked against Python's ISO 8601 week dates (`date.isocalendar()`) for every year from 1600 to 2399, and the NRF 4-5-4 definition against the 53-week years NRF publishes (2006, 2012, 2017 and 2023).
 - **A second implementation.** A deliberately slow day-by-day reference implementation is compared with the core for every date from 1900 to 2200 across 960 generated definitions.
 - **Property tests.** Periods tile their year without gaps or overlaps, nest correctly, and round-trip through `shift` and through `format` and `parse`; week-based years have 364 or 371 days and 71 long years in every 400.
-- **Identical output in every language.** On every push to `main`, and on every pull request that changes the packages or the vectors, [CI](.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows, and requires the 14 raw outputs to match the Rust output byte for byte.
+- **Identical output in every language.** On every push to `main`, and on every pull request that changes a file the package jobs read, [CI](.github/workflows/ci.yml) runs all vectors through Rust and through the Python and npm packages on Linux, macOS and Windows, and requires the 14 raw outputs to match the Rust output byte for byte.
 - **Reproducible verification.** Every date-arithmetic claim in the design documents is reproduced by a standard-library script in [`research/verification/`](research/verification/README.md), which CI reruns on every pull request.
 
 ## Supply chain
