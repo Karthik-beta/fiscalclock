@@ -505,8 +505,7 @@ def range_edge_vectors() -> list[dict]:
     defs = [("nrf", nrf_definition()), ("jan-1", fixed_date(1, 1, "monday", naming({"cal": scheme("start", {"year": "{yyyy}"})}))), ("apple", apple_definition())]
     for label, defn in defs:
         cal = Calendar(defn)
-        first = next(k for k in range(1, 10) if cal.in_range(k))
-        last = next(k for k in range(10000, 9990, -1) if cal.in_range(k))
+        first, last = 0, cal.last_key()
         cases = [validate_case(defn)]
         for k in (first, last):
             s, e = cal.key_bounds(k)

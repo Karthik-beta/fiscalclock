@@ -1,0 +1,97 @@
+{
+  "name": "definition-transition-week-pattern-wrong-weekday",
+  "description": "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the definition has no block-level error. A week_pattern transition from Monday 2024-07-01 (weeks start on Sunday) to 2025-03-24 lasts 266 days, 38 whole weeks, but does not start on a week start. Because the length is whole weeks, periods are still compared with it, and they sum to 37. Sorted by path, periods comes before type. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#cross-block-checks",
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-03-24",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "week_pattern",
+              "periods": [
+                37
+              ],
+              "quarters": [
+                1
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 3,
+              "day": 24
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 24,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "WEEKS_SUM_MISMATCH",
+          "path": "exceptions.history[0].transition.subdivision.periods"
+        },
+        {
+          "code": "SUBDIVISION_YEAR_MISMATCH",
+          "path": "exceptions.history[0].transition.subdivision.type"
+        }
+      ]
+    }
+  ]
+}
