@@ -2,9 +2,9 @@
 
 <!-- cspell:words vide -->
 
-Linde India Limited changed its financial year end from 31 December to 31 March, and its Annual Report 2022-23 states a 15-month period from 1 January 2022 to 31 March 2023, so spec version 1 can express the years on either side of it but not the period itself.
+Linde India Limited changed its financial year end from 31 December to 31 March, and its Annual Report 2022-23 states a 15-month period from 1 January 2022 to 31 March 2023. From fiscalclock 0.2.0, one definition with `exceptions.history` expresses the years on either side and the period itself.
 
-Last reviewed: 3 Nov 2026
+Last reviewed: 15 Nov 2026
 
 ## Document
 
@@ -83,11 +83,55 @@ Same page. This is the only place in the report where an April to March year is 
 
 The 455-day length of the transition period is arithmetic on those dates (365 days in 2022, plus 31, 28 and 31 days for January to March 2023). It is not a figure printed in the report.
 
-## Spec version 1
+## Definition with the change (fiscalclock 0.2.0)
 
-Spec version 1 cannot express the transition period. A `fixed_date` year starts on the same month and day every year ([spec/definition-v1.md](../../spec/definition-v1.md), "`type: "fixed_date"`"), so no single definition has both a year that runs from 1 January 2022 to 31 March 2023 and regular years from 1 April. A transition year needs a later spec version (planned for 0.2). Below are one definition for the years before the transition and one for the years after it. Neither covers 1 January 2022 to 31 March 2023.
+fiscalclock 0.2.0 adds `exceptions.history` to spec version 1 ([spec/definition-v1.md](../../spec/definition-v1.md#exceptions)): a history entry starts a new year rule on its `from` date, after an optional transition year. The `{yy_end}` placeholder writes the last two digits of the calendar year in which the fiscal year ends, so `{yyyy}-{yy_end}` gives "2022-23" for the 15-month period, numbered by its start year, and "2023-24" for the April to March year after it. This settles the naming problem recorded below for spec version 1. The report writes the calendar year before in another form, "FY 2021", so the definition has a second scheme for it.
 
-A naming problem remains. The report calls the 15-month period "2022-23" and the following April to March year "2023-24". Under the April definition below, numbered by start year, "2022-23" would mean 1 April 2022 to 31 March 2023, which overlaps 12 of the 15 months of the transition period. A spec version that adds transition years must say which label the long period gets.
+```json
+{
+  "spec_version": 1,
+  "year": {"type": "fixed_date", "start": {"month": 1, "day": 1}},
+  "week": {"starts_on": "monday", "numbering": "contains_start"},
+  "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]},
+  "naming": {"default": "fy", "schemes": {
+    "fy": {"year_number": "start", "templates": {"year": "{yyyy}-{yy_end}"}},
+    "cy": {"year_number": "start", "templates": {"year": "FY {yyyy}"}}
+  }},
+  "exceptions": {
+    "history": [
+      {
+        "from": "2023-04-01",
+        "transition": {
+          "start": "2022-01-01",
+          "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3, 3]}
+        },
+        "year": {"type": "fixed_date", "start": {"month": 4, "day": 1}},
+        "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]}
+      }
+    ]
+  }
+}
+```
+
+| Field | Value | Basis |
+| --- | --- | --- |
+| `year.start` (top level) | 1 January | Stated by the filing ("from existing “1 January to 31 December”") |
+| `exceptions.history[0].transition.start` | 2022-01-01 | Stated by the filing ("15 months period from 1 January 2022 to 31 March 2023") |
+| `exceptions.history[0].from`, `year.start` | 2023-04-01; 1 April | Stated by the filing ("and thereafter from 1 April every year to 31 March of the subsequent year") |
+| `transition.subdivision` | calendar months, quarters 3, 3, 3, 3, 3 | Illustrative. The report states no quarter structure for the period. |
+| `subdivision` (both regimes) | calendar months, quarters 3, 3, 3, 3 | Illustrative |
+| `week` | `monday`, `contains_start` | Illustrative. The report does not describe weeks. |
+| `year_number` (both schemes) | `start` | Stated by the filing for the 15-month period ("Annual Report 2022-23") and, from a tentative calendar, for April 2023 to March 2024 ("Financial Calendar 2023-24"). For the calendar year 2021, `start` and `end` give the same number. |
+| `fy` year template | `{yyyy}-{yy_end}` | Stated by the filing for "2022-23" and "2023-24". The label it gives calendar years ("2021-21") is illustrative and not used. |
+| `cy` year template | `FY {yyyy}` | Stated by the filing ("(FY 2021)") |
+
+The 15-month period has 455 days by calendar arithmetic on the stated dates (see "Reported dates").
+
+## Spec version 1 definitions of each regime (before 0.2.0)
+
+Before fiscalclock 0.2.0, `exceptions` was reserved. A `fixed_date` year starts on the same month and day every year ([spec/definition-v1.md](../../spec/definition-v1.md), "`type: "fixed_date"`"), so no single definition had both a year that runs from 1 January 2022 to 31 March 2023 and regular years from 1 April. Below are one definition for the years before the transition and one for the years after it. Neither covers 1 January 2022 to 31 March 2023.
+
+A naming problem arose. The report calls the 15-month period "2022-23" and the following April to March year "2023-24". Under the April definition below, numbered by start year, "2022-23" would mean 1 April 2022 to 31 March 2023, which overlaps 12 of the 15 months of the transition period. The 0.2.0 definition above resolves it with a transition year and `{yy_end}`.
 
 Before (calendar years, last regular one is 2021):
 
@@ -117,7 +161,7 @@ After (years from 1 April 2023):
 | --- | --- | --- |
 | Before: `year.start` | 1 January | Stated by the filing ("from existing “1 January to 31 December”") |
 | After: `year.start` | 1 April | Stated by the filing ("from 1 April every year to 31 March of the subsequent year") |
-| Transition period | 1 January 2022 to 31 March 2023 | Stated by the filing; not expressible in spec version 1 |
+| Transition period | 1 January 2022 to 31 March 2023 | Stated by the filing; not expressible before fiscalclock 0.2.0 (see the definition above) |
 | Before: `year_number` | `start` | Illustrative. For a calendar year, `start` and `end` give the same number. |
 | After: `year_number` | `start` | Stated by the filing in one case: "Financial Year April 2023 to March 2024" is labelled "2023-24", the start year. Tentative calendar, one year only. |
 | Before: year template | `FY {yyyy}` | Stated by the filing ("(FY 2021)"); the space is printed |
@@ -125,6 +169,14 @@ After (years from 1 April 2023):
 | Quarter templates | `Q{q} …` | Illustrative. The report gives no quarter label. |
 | `subdivision` | calendar months, quarters 3, 3, 3, 3 | Illustrative. The report states no quarter structure for the regular years. |
 | `week` | `monday`, `contains_start` | Illustrative. The report does not describe weeks. The block is required by the spec. |
+
+## Conformance vectors
+
+One vector from `conformance/generators/spec_cited_vectors.py`, on the 0.2.0 definition above. The two spec version 1 definitions have no vector.
+
+- `conformance/vectors/cited/linde-india-annual-report-2022-23-transition.json` has 8 cases: validation; the start, last day and 455 days of the 15-month period; its label `2022-23` and parsing it; the bounds of the calendar year 2021 and its label `FY 2021` under scheme `cy`; and the bounds of the year from 1 April 2023 to 31 March 2024 and its label `2023-24`, both from a tentative calendar.
+
+The oracle vector `conformance/vectors/oracle/history-jan-to-apr-15-month-transition.json` uses the same dates with illustrative quarters, weeks and schemes.
 
 ## Still to check
 
