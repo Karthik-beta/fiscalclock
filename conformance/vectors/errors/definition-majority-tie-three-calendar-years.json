@@ -1,6 +1,6 @@
 {
   "name": "definition-majority-tie-three-calendar-years",
-  "description": "Invalid definition (fiscalclock 0.2.0). A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half. The complete error list is asserted (code and path); details.years is not.",
+  "description": "Invalid definition (fiscalclock 0.2.0). A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half. Every 1 July year has 184 days in its first calendar year, so details.years lists only the calendar year in which the transition starts, 2024. The complete error list is asserted (code, path and details).",
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",
@@ -89,7 +89,12 @@
       "expect_error": [
         {
           "code": "MAJORITY_TIE",
-          "path": "naming.schemes.fy.year_number"
+          "path": "naming.schemes.fy.year_number",
+          "details": {
+            "years": [
+              2024
+            ]
+          }
         }
       ]
     }
