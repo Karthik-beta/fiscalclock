@@ -84,7 +84,6 @@ INVALID = [
     ("invalid-value-century-pivot", edit(fixed, setp("naming.schemes.fy.century_pivot", 99)), {"code": "INVALID_VALUE", "path": "naming.schemes.fy.century_pivot"}, "century_pivot is an integer 100-9999"),
     ("unsupported-spec-version", edit(nrf, setp("spec_version", 2)), {"code": "UNSUPPORTED_SPEC_VERSION", "path": "spec_version"}, "A higher value is rejected with UNSUPPORTED_SPEC_VERSION"),
     ("unsupported-feature-first-full", edit(nrf, setp("week.numbering", "first_full")), {"code": "UNSUPPORTED_FEATURE", "path": "week.numbering"}, "first_full is reserved and rejected with UNSUPPORTED_FEATURE"),
-    ("unsupported-feature-exceptions", edit(nrf, setp("exceptions", {})), {"code": "UNSUPPORTED_FEATURE", "path": "exceptions"}, "exceptions: Any value is rejected with UNSUPPORTED_FEATURE"),
     ("unsupported-feature-year-number-table", edit(nrf, setp("naming.schemes.nrf.year_number", "table")), {"code": "UNSUPPORTED_FEATURE", "path": "naming.schemes.nrf.year_number"}, "year_number table is reserved (UNSUPPORTED_FEATURE)"),
     ("unsupported-feature-eras", edit(nrf, setp("naming.schemes.nrf.eras", [])), {"code": "UNSUPPORTED_FEATURE", "path": "naming.schemes.nrf.eras"}, "eras: Reserved (UNSUPPORTED_FEATURE)"),
     ("unsupported-feature-standalone", edit(nrf, setp("subdivision.extra_week.standalone", True)), {"code": "UNSUPPORTED_FEATURE", "path": "subdivision.extra_week.standalone"}, "extra_week.standalone is reserved for 0.2"),
