@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### Added
 
 - A documentation site at <https://fiscalclock.karthik.nz>, with guides, a date lookup on the first screen, a playground, and code examples in Rust, Python and JavaScript that CI runs against their expected output ([#40](https://github.com/Karthik-beta/fiscalclock/pull/40), [#41](https://github.com/Karthik-beta/fiscalclock/pull/41)).
@@ -53,5 +55,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Python package `fiscalclock` (CPython 3.10 and later, and free-threaded CPython 3.14) and npm package `fiscalclock` (Node.js 22 and later, and browsers), both returning the Rust core's JSON byte for byte.
 - Conformance vectors from independent generators and cited sources, shared by all three packages.
 
-[Unreleased]: https://github.com/Karthik-beta/fiscalclock/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Karthik-beta/fiscalclock/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Karthik-beta/fiscalclock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.1.0

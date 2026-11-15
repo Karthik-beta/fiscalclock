@@ -97,7 +97,7 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "fiscalclock"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proptest",
  "serde",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "fiscalclock-python"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fiscalclock",
  "pyo3",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "fiscalclock-wasm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fiscalclock",
  "wasm-bindgen",
