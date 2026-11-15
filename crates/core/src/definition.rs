@@ -1186,24 +1186,8 @@ impl Validator {
         let transition_path = join(path, "transition");
         let transition = match m.get("transition") {
             None | Some(Value::Null) => Some(None),
-            Some(v) => self.transition(v, &transition_path).map(Some),
+            Some(v) => self.transition(v, &transition_path, from).map(Some),
         };
-        if let (Some(from), Some(Some(t))) = (from, &transition) {
-            if t.start >= from {
-                self.push(
-                    Error::new(
-                        ErrorCode::InvalidValue,
-                        join(&transition_path, "start"),
-                        format!(
-                            "transition.start is {}, which is not before from ({from})",
-                            t.start
-                        ),
-                    )
-                    .hint("a transition ends the day before from, so it must start before from"),
-                );
-                return None;
-            }
-        }
         Some(Change {
             from: from?,
             transition: transition?,
@@ -1211,12 +1195,33 @@ impl Validator {
         })
     }
 
-    fn transition(&mut self, v: &Value, path: &str) -> Option<Transition> {
+    /// Parses a transition. Its start is compared with `from` here, apart from
+    /// the subdivision, so that an invalid subdivision cannot hide the error.
+    fn transition(&mut self, v: &Value, path: &str, from: Option<Date>) -> Option<Transition> {
         let m = self.object(v, path)?;
         self.fields(m, path, &["start", "subdivision"], &[]);
+        let start_path = join(path, "start");
         let start = self
             .required(m, path, "start")
-            .and_then(|v| self.date(v, &join(path, "start")));
+            .and_then(|v| self.date(v, &start_path))
+            .filter(|&start| match from {
+                Some(from) if start >= from => {
+                    self.push(
+                        Error::new(
+                            ErrorCode::InvalidValue,
+                            start_path.as_str(),
+                            format!(
+                                "transition.start is {start}, which is not before from ({from})"
+                            ),
+                        )
+                        .hint(
+                            "a transition ends the day before from, so it must start before from",
+                        ),
+                    );
+                    false
+                }
+                _ => true,
+            });
         let subdivision = self
             .required(m, path, "subdivision")
             .and_then(|v| self.transition_subdivision(v, &join(path, "subdivision")));
