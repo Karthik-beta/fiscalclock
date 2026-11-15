@@ -43,7 +43,7 @@ impl Rng {
 }
 
 /// The kinds of rule on either side of a change.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Family {
     FixedToFixed,
     WeekToWeek,
@@ -53,7 +53,7 @@ pub enum Family {
 
 /// The kind of change: none (straight from one rule to the next), or a
 /// transition subdivided by calendar months or by whole weeks.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Mode {
     Direct,
     Months,
