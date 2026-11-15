@@ -462,6 +462,31 @@ struct Tally {
     categories: Mutex<HashSet<(Family, Mode)>>,
 }
 
+/// Every 8th case, plus further cases until each family and kind of change
+/// appears in at least two selected cases. The generator gives every case
+/// whose index is a multiple of 4 a fixed-to-fixed first change, so every 8th
+/// case alone would leave most categories untested.
+fn debug_subset(all: &[HistoryCase]) -> Vec<&HistoryCase> {
+    let mut seen: std::collections::HashMap<(Family, Mode), usize> = Default::default();
+    all.iter()
+        .enumerate()
+        .filter(|(i, case)| {
+            let needed = case
+                .changes
+                .iter()
+                .any(|c| seen.get(c).copied().unwrap_or(0) < 2);
+            let keep = i % 8 == 0 || needed;
+            if keep {
+                for &c in &case.changes {
+                    *seen.entry(c).or_default() += 1;
+                }
+            }
+            keep
+        })
+        .map(|(_, case)| case)
+        .collect()
+}
+
 fn compare_days(cal: &FiscalCalendar, expected: &[RefDay], definition: &Value) {
     let mut d = Date::from_ymd(1900, 1, 1).unwrap();
     for want in expected {
@@ -725,10 +750,13 @@ fn calendars_that_change_match_the_day_walking_reference_1900_to_2200() {
         .collect();
     assert!(month_lengths.len() >= 12, "{month_lengths:?}");
 
-    // Unoptimised builds check every 8th definition so `cargo test` stays
-    // quick; `cargo test --release` checks all of them.
-    let step = if cfg!(debug_assertions) { 8 } else { 1 };
-    let selected: Vec<&HistoryCase> = all.iter().step_by(step).collect();
+    // Unoptimised builds check a subset so `cargo test` stays quick;
+    // `cargo test --release` checks all of them.
+    let selected: Vec<&HistoryCase> = if cfg!(debug_assertions) {
+        debug_subset(&all)
+    } else {
+        all.iter().collect()
+    };
     let tally = Tally::default();
     in_parallel(&selected, |_, c| check(&walk, c, &tally));
     let compared = tally.compared.load(Ordering::Relaxed);
