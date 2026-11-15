@@ -1,0 +1,196 @@
+{
+  "name": "history-parse-out-of-range",
+  "description": "parse at the edges of the supported range, on the calendar of history-jul-to-apr-9-month-transition. The first supported fiscal year is 1 July 0001 to 30 June 0002 (number 1, '0001-02') and the last is 1 April 9998 to 31 March 9999 (number 9998, '9998-99'). A label whose only matching template names a number below the first or above the last is OUT_OF_RANGE at label ('0000-01', '0000-00', '9999-00', 'Q1 0000-01'), whether or not its other placeholders agree; a label whose number is in range but whose quarter index is not ('Q5 0001-02') is LABEL_NOT_RECOGNISED.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq built from the regimes and transitions; change_errors and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}",
+            "quarter": "Q{q} {yyyy}-{yy_end}",
+            "period": "P{pp} {yyyy}-{yy_end}",
+            "week": "W{ww} {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "de106360913d52ec",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2025-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-07-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"P{pp} {yyyy}-{yy_end}\",\"quarter\":\"Q{q} {yyyy}-{yy_end}\",\"week\":\"W{ww} {yyyy}-{yy_end}\",\"year\":\"{yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":7},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "0001-02"
+      },
+      "expect": {
+        "level": "year",
+        "year": 1,
+        "index": null,
+        "start": "0001-07-01",
+        "end_exclusive": "0002-07-01",
+        "last_day": "0002-06-30",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "0000-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "0000-00"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "9998-99"
+      },
+      "expect": {
+        "level": "year",
+        "year": 9998,
+        "index": null,
+        "start": "9998-04-01",
+        "end_exclusive": "9999-04-01",
+        "last_day": "9999-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "9999-00"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q1 0000-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q1 0001-02"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 1,
+        "index": 1,
+        "start": "0001-07-01",
+        "end_exclusive": "0001-10-01",
+        "last_day": "0001-09-30",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q5 0001-02"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "name": "history-parse-skipped-and-out-of-range",
+  "description": "parse with two schemes whose year templates are the same, 'FY {yyyy}-{yy_end}', on the calendar of history-oct-to-apr-18-month-transition-start: 'fy' (the default, offset 0, numbers 1 to 9998 with 2025 skipped at the change) and 'late' (offset 8000, numbers 8001 to 17998). 'FY 2025-26' matches both: under 'fy' it names the skipped number 2025, which is inside the supported range, and under 'late' the number 2025, which is below it. A match inside the range rules out OUT_OF_RANGE, so the label is LABEL_NOT_RECOGNISED. 'FY 2024-25' likewise matches 'fy' with an in-range number whose {yy_end} disagrees (the year 2024 ends in 2026) and 'late' out of range: LABEL_NOT_RECOGNISED. 'FY 0000-01' is out of range under both: OUT_OF_RANGE. 'FY 2024-26' is the transition under 'fy'.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq built from the regimes and transitions; change_errors and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY {yyyy}-{yy_end}",
+            "quarter": "Q{q} FY {yyyy}-{yy_end}",
+            "period": "P{pp} FY {yyyy}-{yy_end}"
+          }
+        },
+        "late": {
+          "year_number": "start",
+          "offset": 8000,
+          "templates": {
+            "year": "FY {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2026-04-01",
+          "transition": {
+            "start": "2024-10-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "5acf6ceb88c1e914",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2026-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-10-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"P{pp} FY {yyyy}-{yy_end}\",\"quarter\":\"Q{q} FY {yyyy}-{yy_end}\",\"year\":\"FY {yyyy}-{yy_end}\"},\"year_number\":\"start\"},\"late\":{\"century_pivot\":null,\"offset\":8000,\"templates\":{\"year\":\"FY {yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":10},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2025-26"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-25"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 0000-01"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-26"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2024-10-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 547,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    }
+  ]
+}

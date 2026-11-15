@@ -1,0 +1,699 @@
+{
+  "name": "history-range-transition-first",
+  "description": "A calendar-year definition that changes to 1 April years through a three-month transition 0002-01-01 to 0002-03-31. Regime 0 has no fiscal year in the supported range: its year 0001 starts on 0001-01-01, before 0001-01-02. So the transition is the first supported fiscal year (number 2 by 'end'; 'start' would give the transition and the year after it the same number 2), and year 1, years from 1 or 0, shift before the transition, locate on 0001-12-31 and a dimension that starts there are OUT_OF_RANGE. Illustrative.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq built from the regimes and transitions; change_errors and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "end",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "0002-04-01",
+          "transition": {
+            "start": "0002-01-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "e3522197de57fc46",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"0002-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"0002-01-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"FY{yyyy} Q{q}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"end\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 2,
+        "to": 4
+      },
+      "expect": [
+        {
+          "level": "year",
+          "year": 2,
+          "index": null,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 3,
+          "index": null,
+          "start": "0002-04-01",
+          "end_exclusive": "0003-04-01",
+          "last_day": "0003-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 4,
+          "index": null,
+          "start": "0003-04-01",
+          "end_exclusive": "0004-04-01",
+          "last_day": "0004-03-31",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "year"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2
+      },
+      "expect": {
+        "level": "year",
+        "year": 2,
+        "index": null,
+        "start": "0002-01-01",
+        "end_exclusive": "0002-04-01",
+        "last_day": "0002-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 3
+      },
+      "expect": {
+        "level": "year",
+        "year": 3,
+        "index": null,
+        "start": "0002-04-01",
+        "end_exclusive": "0003-04-01",
+        "last_day": "0003-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2,
+        "index": 1
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2,
+        "index": 1,
+        "start": "0002-01-01",
+        "end_exclusive": "0002-04-01",
+        "last_day": "0002-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2,
+        "index": 2
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 1,
+        "to": 3
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "from"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 0,
+        "to": 3
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "from"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 3,
+          "index": null
+        },
+        "n": -1
+      },
+      "expect": {
+        "level": "year",
+        "year": 2,
+        "index": null,
+        "start": "0002-01-01",
+        "end_exclusive": "0002-04-01",
+        "last_day": "0002-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2,
+          "index": null
+        },
+        "n": -1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "n"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "n"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "n"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0001-12-31"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0002-01-01"
+      },
+      "expect": {
+        "date": "0002-01-01",
+        "year": {
+          "level": "year",
+          "year": 2,
+          "index": null,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2,
+          "index": 1,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-02-01",
+          "last_day": "0002-01-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2,
+          "index": 1,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-01-07",
+          "last_day": "0002-01-06",
+          "days": 6,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 2
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0002-03-31"
+      },
+      "expect": {
+        "date": "0002-03-31",
+        "year": {
+          "level": "year",
+          "year": 2,
+          "index": null,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1,
+          "start": "0002-01-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2,
+          "index": 3,
+          "start": "0002-03-01",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2,
+          "index": 13,
+          "start": "0002-03-25",
+          "end_exclusive": "0002-04-01",
+          "last_day": "0002-03-31",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 90,
+        "day_of_quarter": 90,
+        "day_of_period": 31,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "0002-04-01"
+      },
+      "expect": {
+        "date": "0002-04-01",
+        "year": {
+          "level": "year",
+          "year": 3,
+          "index": null,
+          "start": "0002-04-01",
+          "end_exclusive": "0003-04-01",
+          "last_day": "0003-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 3,
+          "index": 1,
+          "start": "0002-04-01",
+          "end_exclusive": "0002-07-01",
+          "last_day": "0002-06-30",
+          "days": 91,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 3,
+          "index": 1,
+          "start": "0002-04-01",
+          "end_exclusive": "0002-05-01",
+          "last_day": "0002-04-30",
+          "days": 30,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 3,
+          "index": 1,
+          "start": "0002-04-01",
+          "end_exclusive": "0002-04-08",
+          "last_day": "0002-04-07",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY0002",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0002"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2,
+        "index": null,
+        "start": "0002-01-01",
+        "end_exclusive": "0002-04-01",
+        "last_day": "0002-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2,
+          "index": 1
+        }
+      },
+      "expect": {
+        "label": "FY0002 Q1",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0002 Q1"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2,
+        "index": 1,
+        "start": "0002-01-01",
+        "end_exclusive": "0002-04-01",
+        "last_day": "0002-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 3,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY0003",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0003"
+      },
+      "expect": {
+        "level": "year",
+        "year": 3,
+        "index": null,
+        "start": "0002-04-01",
+        "end_exclusive": "0003-04-01",
+        "last_day": "0003-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0001"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0001 Q1"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY0002 Q2"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "0001-12-31",
+        "end_exclusive": "0002-01-02"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "start"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "0002-03-30",
+        "end_exclusive": "0002-04-02"
+      },
+      "expect": [
+        {
+          "date": "0002-03-30",
+          "calendar_id": "e3522197de57fc46",
+          "fiscal_year": 2,
+          "quarter": 1,
+          "period": 3,
+          "week": 13,
+          "day_of_year": 89,
+          "day_of_quarter": 89,
+          "day_of_period": 30,
+          "day_of_week": 6,
+          "year_start": "0002-01-01",
+          "year_last_day": "0002-03-31",
+          "quarter_start": "0002-01-01",
+          "quarter_last_day": "0002-03-31",
+          "period_start": "0002-03-01",
+          "period_last_day": "0002-03-31",
+          "week_start": "0002-03-25",
+          "week_last_day": "0002-03-31",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "FY0002",
+          "label_fy_quarter": "FY0002 Q1"
+        },
+        {
+          "date": "0002-03-31",
+          "calendar_id": "e3522197de57fc46",
+          "fiscal_year": 2,
+          "quarter": 1,
+          "period": 3,
+          "week": 13,
+          "day_of_year": 90,
+          "day_of_quarter": 90,
+          "day_of_period": 31,
+          "day_of_week": 7,
+          "year_start": "0002-01-01",
+          "year_last_day": "0002-03-31",
+          "quarter_start": "0002-01-01",
+          "quarter_last_day": "0002-03-31",
+          "period_start": "0002-03-01",
+          "period_last_day": "0002-03-31",
+          "week_start": "0002-03-25",
+          "week_last_day": "0002-03-31",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "FY0002",
+          "label_fy_quarter": "FY0002 Q1"
+        },
+        {
+          "date": "0002-04-01",
+          "calendar_id": "e3522197de57fc46",
+          "fiscal_year": 3,
+          "quarter": 1,
+          "period": 1,
+          "week": 1,
+          "day_of_year": 1,
+          "day_of_quarter": 1,
+          "day_of_period": 1,
+          "day_of_week": 1,
+          "year_start": "0002-04-01",
+          "year_last_day": "0003-03-31",
+          "quarter_start": "0002-04-01",
+          "quarter_last_day": "0002-06-30",
+          "period_start": "0002-04-01",
+          "period_last_day": "0002-04-30",
+          "week_start": "0002-04-01",
+          "week_last_day": "0002-04-07",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "FY0003",
+          "label_fy_quarter": "FY0003 Q1"
+        }
+      ]
+    }
+  ]
+}

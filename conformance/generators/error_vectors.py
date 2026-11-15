@@ -247,7 +247,10 @@ def runtime_vectors() -> list[dict]:
 # 0.2.0: exceptions.history ---------------------------------------------------------------------------------
 
 HISTORY_SPEC = "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors"
-HISTORY_CHECKED = "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15"
+HISTORY_CHECKED = (
+    "Manual reading of the 0.2.0 text of " + SPEC_BASE + "definition-v1.md#exceptions and " + SPEC_BASE + "api-v1.md#error "
+    "(Paths for common errors), 2026-11-15"
+)
 CROSS_CHECKED = HISTORY_CHECKED + "; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
 H0, H1 = "exceptions.history[0]", "exceptions.history[1]"
 T0 = H0 + ".transition"
@@ -313,6 +316,8 @@ HISTORY_BLOCK = [
     ("history-unsupported-combination", edit(jul_to_apr(), hset("subdivision", copy.deepcopy(week_pattern_in_fixed))), {"code": "UNSUPPORTED_COMBINATION", "path": H0 + ".subdivision.type"}, "history-entries", "week_pattern inside an entry's fixed_date year is UNSUPPORTED_COMBINATION at the prefixed path"),
     ("history-subdivision-year-mismatch", edit(jul_to_apr(), hset("subdivision.month_start_day", 2)), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": H0 + ".subdivision.month_start_day"}, "history-entries", "An entry's month_start_day must equal the entry's own year.start.day"),
     ("history-short-month-policy-missing", edit(jul_to_apr(), both(hset("year.start.day", 30), hset("subdivision.month_start_day", 30))), {"code": "SHORT_MONTH_POLICY_MISSING", "path": H0 + ".year.short_month"}, "history-entries", "An entry's fixed_date year with start.day 29-31 needs short_month"),
+    ("history-extra-week-missing", edit(week_pattern_transition(), hdel("subdivision.extra_week")), {"code": "EXTRA_WEEK_MISSING", "path": H0 + ".subdivision.extra_week"}, "history-entries", "An entry's week_pattern needs extra_week, as at the top level; missing is EXTRA_WEEK_MISSING at the prefixed path"),
+    ("history-extra-week-out-of-range", edit(week_pattern_transition(), hset("subdivision.extra_week.period", 13)), {"code": "EXTRA_WEEK_OUT_OF_RANGE", "path": H0 + ".subdivision.extra_week.period"}, "history-entries", "An entry's extra_week.period outside 1 to the length of its periods (12) is EXTRA_WEEK_OUT_OF_RANGE at the prefixed path"),
     ("history-weeks-sum-mismatch", edit(week_pattern_transition(), hset("subdivision.periods", [4, 4, 5] * 3 + [4, 4, 4])), {"code": "WEEKS_SUM_MISMATCH", "path": H0 + ".subdivision.periods"}, "history-entries", "An entry's week_pattern periods must sum to 52"),
     ("transition-start-equals-from", edit(jul_to_apr(), hset("transition.start", "2025-04-01")), {"code": "INVALID_VALUE", "path": T0 + ".start"}, "transitions", "transition.start on or after from is INVALID_VALUE at transition.start, a block-level check"),
     ("transition-start-after-from", edit(jul_to_apr(), hset("transition.start", "2025-07-01")), {"code": "INVALID_VALUE", "path": T0 + ".start"}, "transitions", "transition.start on or after from is INVALID_VALUE at transition.start, a block-level check"),
@@ -362,6 +367,14 @@ HISTORY_CROSS = [
     ("transition-month-start-day-mismatch-skips-quarters", edit(jul_to_apr(), both(hset("transition.subdivision.month_start_day", 15), hset("transition.subdivision.quarters", [3, 3]))),
      {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".month_start_day"},
      "When a calendar_months transition's month_start_day check fails, its quarters are not compared with its number of months, so quarters summing to 6 are not also reported"),
+    ("transition-month-start-day-matches-start-only",
+     hv.with_history(fixed_date(1, 15, "monday", named("start")), hv.entry("2025-04-01", *hv.fixed_rule(4, 1), start="2024-01-15", transition_sub=hv.months(15, [3] * 5))),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".month_start_day"},
+     "15 January years change to 1 April years through a transition from 2024-01-15 to 2025-04-01. The transition's month_start_day 15 is the day of transition.start but not of from (1), which is enough for the error; its quarters are then not compared with its number of months"),
+    ("transition-month-start-day-matches-from-only",
+     hv.with_history(fixed_date(1, 15, "monday", named("start")), hv.entry("2025-04-01", *hv.fixed_rule(4, 1), start="2024-01-15", transition_sub=hv.months(1, [3] * 5))),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".month_start_day"},
+     "As above, but the transition's month_start_day 1 is the day of from and not of transition.start (15)"),
     ("transition-quarters-sum-mismatch", edit(jul_to_apr(), hset("transition.subdivision.quarters", [3, 3])),
      {"code": "QUARTERS_SUM_MISMATCH", "path": TS0 + ".quarters"},
      "The transition from 2024-07-01 to 2025-04-01 has (12 x 2025 + 4) - (12 x 2024 + 7) = 9 months, but its quarters sum to 6"),
@@ -400,25 +413,38 @@ HISTORY_NAMING = [
 ]
 
 
+def as_list(expected) -> list[dict]:
+    """The list form of expect_error, which the runners compare with the whole sorted error list (a single object is compared with the first error only)."""
+    return expected if isinstance(expected, list) else [expected]
+
+
 def history_error_vectors() -> list[dict]:
     out = []
     for name, defn, expected, anchor, rule in HISTORY_BLOCK:
         url = DEFINITION_URL if anchor == "top-level" else f"{DEFINITION_URL}#{anchor}"
-        desc = f"Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: {rule}. Only code and path are asserted."
-        out.append(vector(f"definition-{name}", desc, source("errors", HISTORY_SPEC, HISTORY_CHECKED, url), defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
+        desc = (
+            f"Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: {rule}. The definition has no other error, so the complete "
+            "error list is asserted (code and path of each error, sorted by path, then code)."
+        )
+        out.append(vector(f"definition-{name}", desc, source("errors", HISTORY_SPEC, HISTORY_CHECKED, url), defn, [{"op": "validate", "args": {}, "expect_error": as_list(expected)}]))
     for name, defn, expected, rule in HISTORY_CROSS:
         got = [e.expect_error() for e in Calendar(defn).change_errors()]
-        assert got == (expected if isinstance(expected, list) else [expected]), (name, got)
+        assert got == as_list(expected), (name, got)
         desc = (
             "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the "
-            f"definition has no block-level error. {rule}. Only code and path are asserted."
+            f"definition has no block-level error. {rule}. The complete error list is asserted (code and path of each error, sorted by path, then code)."
         )
         src = source("errors", HISTORY_SPEC, CROSS_CHECKED, DEFINITION_URL + "#cross-block-checks")
-        out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
+        out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": as_list(expected)}]))
     for name, defn, code, why in HISTORY_NAMING:
-        c = case(Calendar(defn), "validate", {})
-        assert c.get("expect_error") == {"code": code, "path": "naming.schemes.fy.year_number"}, (name, c)
-        desc = f"Invalid definition (fiscalclock 0.2.0). {why}. Only code and path are asserted; details.years is not."
+        cal = Calendar(defn)
+        assert not cal.change_errors(), name
+        got = [{"code": e.code, "path": e.path} for e in cal.naming_errors()]
+        assert got == [{"code": code, "path": "naming.schemes.fy.year_number"}], (name, got)
+        c = {"op": "validate", "args": {}, "expect_error": got}
+        desc = (
+            f"Invalid definition (fiscalclock 0.2.0). {why}. The complete error list is asserted (code and path); details.years is not."
+        )
         src = source(
             "errors",
             "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",

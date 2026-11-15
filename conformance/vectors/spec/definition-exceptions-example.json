@@ -5,7 +5,7 @@
     "kind": "spec",
     "citation": "spec/definition-v1.md, exceptions > Example: a change from July to June years to April to March years (fiscalclock 0.2.0)",
     "url": null,
-    "checked_by": "Transcribed from the spec text at commit ee978f1, 2026-11-15; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"
+    "checked_by": "Transcribed from https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#example-a-change-from-july-to-june-years-to-april-to-march-years (the 0.2.0 text), 2026-11-15; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"
   },
   "definition": {
     "spec_version": 1,
