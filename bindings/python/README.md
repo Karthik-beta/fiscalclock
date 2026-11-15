@@ -11,7 +11,7 @@ The package has no built-in calendars. Every calendar is a definition you supply
 
 All computation happens in the fiscalclock Rust core, compiled into this package. The Python layer only converts values, so results are identical to the Rust crate and the npm package.
 
-Status: 0.1.0 is the first release. The definition format and API are version 1 drafts and may change before 1.0.
+Status: 0.2.0 adds definitions whose year rule changes, with transition periods (see the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md)). The definition format and API are version 1 drafts and may change before 1.0.
 
 ## Install
 

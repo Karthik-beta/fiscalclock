@@ -1,6 +1,6 @@
 {
   "name": "fiscalclock",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fiscal calendar engine: compute any fiscal calendar from a JSON definition",
   "license": "MIT OR Apache-2.0",
   "author": "Karthik Parameshwara",

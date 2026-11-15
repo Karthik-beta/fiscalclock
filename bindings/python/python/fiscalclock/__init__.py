@@ -27,7 +27,7 @@ __all__ = [
     "validate_json",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 Level = Literal["year", "quarter", "period", "week"]
 DateLike = Union[_dt.date, str]

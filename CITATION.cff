@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: Parameshwara
     given-names: Karthik
-version: "0.1.0"
-date-released: "2026-10-31"
+version: "0.2.0"
+date-released: "2026-11-15"
 repository-code: "https://github.com/Karthik-beta/fiscalclock"
 url: "https://fiscalclock.karthik.nz"
 license:
