@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use crate::date::Date;
 use crate::definition::{Definition, Scheme, YearNumber};
 use crate::error::{Candidate, Details, Error, ErrorCode, Errors};
+use crate::label::Captures;
 use crate::timeline::{FiscalYear, Key, Source, Timeline};
 
 /// A level of the fiscal hierarchy.
@@ -796,55 +797,41 @@ impl FiscalCalendar {
     ///
     /// # Errors
     ///
-    /// `LABEL_NOT_RECOGNISED` at `label` when no template matches, or every
-    /// match names a year number that the numbering skips at a change of rule.
-    /// `AMBIGUOUS_LABEL` at `label` when more than one period matches, with
-    /// every candidate in [`Details::Candidates`]. `OUT_OF_RANGE` at `label` when
-    /// every match names a fiscal year outside the supported range.
+    /// `LABEL_NOT_RECOGNISED` at `label` when no template matches, or no match
+    /// is consistent with a fiscal year and at least one names a year number
+    /// from the first to the last supported number (a number skipped at a
+    /// change of rule is one of these). `AMBIGUOUS_LABEL` at `label` when more
+    /// than one period matches, with every candidate in
+    /// [`Details::Candidates`]. `OUT_OF_RANGE` at `label` when every match
+    /// names a year number below the first or above the last supported number.
     pub fn parse(&self, label: &str) -> Result<Period, Error> {
         let mut candidates: Vec<Candidate> = Vec::new();
-        let mut out_of_range_year = false;
+        // Whether some match names a number inside, or outside, the supported numbers.
+        let (mut in_range, mut out_of_range_match) = (false, false);
         for scheme in &self.def.schemes {
             for level in Level::ALL {
                 let Some(t) = &scheme.templates[level.index()] else {
                     continue;
                 };
                 for c in t.captures(label) {
-                    let number = if let Some(yyyy) = c.yyyy {
-                        let n = i64::from(yyyy);
-                        if c.yy.is_some_and(|yy| i64::from(yy) != n % 100)
-                            || c.yy_next.is_some_and(|yn| i64::from(yn) != (n + 1) % 100)
-                        {
-                            continue;
-                        }
-                        n
-                    } else {
-                        let Some(pivot) = scheme.century_pivot else {
-                            continue;
-                        };
-                        let pivot = i64::from(pivot);
-                        let Some(yy) = c.yy else {
-                            continue;
-                        };
-                        let n = pivot - (pivot - i64::from(yy)).rem_euclid(100);
-                        if c.yy_next
-                            .is_some_and(|yn| i64::from(yn) != (n + 1).rem_euclid(100))
-                        {
-                            continue;
-                        }
-                        n
+                    // Validation gives every template {yyyy} or {yy}, and a
+                    // century pivot to a scheme that has {yy} without {yyyy}.
+                    let Some(number) = label_number(&c, scheme) else {
+                        continue;
                     };
                     let fy = match self.find_number(number, scheme) {
                         Numbered::Year(fy) => fy,
-                        Numbered::Skipped { .. } => continue,
+                        Numbered::Skipped { .. } => {
+                            in_range = true;
+                            continue;
+                        }
                         Numbered::OutOfRange => {
-                            out_of_range_year = true;
+                            out_of_range_match = true;
                             continue;
                         }
                     };
-                    if c.yy_end
-                        .is_some_and(|ye| ye as i32 != fy.last_day_year().rem_euclid(100))
-                    {
+                    in_range = true;
+                    if !two_digit_years_agree(&c, number, &fy) {
                         continue;
                     }
                     let index = if level == Level::Year {
@@ -881,7 +868,7 @@ impl FiscalCalendar {
         }
         match merged.len() {
             1 => Ok(merged.remove(0).period),
-            0 if out_of_range_year => Err(out_of_range(
+            0 if out_of_range_match && !in_range => Err(out_of_range(
                 "label",
                 format!("the fiscal year of \"{label}\""),
             )),
@@ -954,6 +941,32 @@ impl FiscalCalendar {
         }
         Ok(days)
     }
+}
+
+/// The year number, including the scheme's offset, that a label's captures
+/// name: `{yyyy}`, or else `{yy}` resolved through the scheme's century pivot.
+/// `None` when the template has neither or the pivot is missing, which
+/// validation rules out.
+fn label_number(c: &Captures, scheme: &Scheme) -> Option<i64> {
+    match (c.yyyy, c.yy, scheme.century_pivot) {
+        (Some(yyyy), _, _) => Some(i64::from(yyyy)),
+        (None, Some(yy), Some(pivot)) => {
+            let pivot = i64::from(pivot);
+            Some(pivot - (pivot - i64::from(yy)).rem_euclid(100))
+        }
+        _ => None,
+    }
+}
+
+/// Whether `{yy}`, `{yy_next}` and `{yy_end}`, where the label has them, are
+/// the last two digits of `number`, of `number + 1` and of the calendar year
+/// of `fy`'s last day.
+fn two_digit_years_agree(c: &Captures, number: i64, fy: &FiscalYear<'_>) -> bool {
+    let agrees =
+        |two: Option<u32>, year: i64| two.is_none_or(|t| i64::from(t) == year.rem_euclid(100));
+    agrees(c.yy, number)
+        && agrees(c.yy_next, number + 1)
+        && agrees(c.yy_end, i64::from(fy.last_day_year()))
 }
 
 pub(crate) fn out_of_range(path: impl Into<String>, what: String) -> Error {

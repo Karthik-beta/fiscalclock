@@ -914,6 +914,73 @@ fn parse_checks_yy_end_and_skips_skipped_numbers() {
     );
 }
 
+/// Two schemes with the same year template: `a` without an offset and `b`
+/// with an offset of 8000, so that a label names an in-range number under
+/// `a` and an out-of-range one under `b`.
+fn schemes_a_and_b(mut def: Value, templates: Value) -> Value {
+    def["naming"] = json!({"default": "a", "schemes": {
+        "a": {"year_number": "start", "templates": templates},
+        "b": {"year_number": "start", "offset": 8000, "templates": templates}
+    }});
+    def
+}
+
+#[test]
+fn parse_is_out_of_range_only_when_no_match_is_in_range() {
+    // Siemens' dates (see `changes`) numbered by start year, so that no
+    // fiscal year has the number 2025 under `a`. Under `b`, "FY2025" names
+    // 2025 - 8000, below the first supported number.
+    let s = schemes_a_and_b(
+        changes::with_history(
+            changes::fixed(10, "start", "FY{yyyy}"),
+            vec![changes::entry(
+                "2026-04-01",
+                4,
+                Some(("2024-10-01", &[3, 3, 3, 3, 3, 3])),
+            )],
+        ),
+        json!({"year": "FY{yyyy}"}),
+    );
+    let parsed = |label: &str| coords(&ok(&s, "parse", json!({"label": label})));
+    assert_eq!(parsed("FY2024"), (2024, None, "2024-10-01".into()));
+    assert_eq!(parsed("FY2026"), (2026, None, "2026-04-01".into()));
+    // A skipped number is in range, so the out-of-range match under `b` does
+    // not make the label OUT_OF_RANGE.
+    assert_err(
+        &s,
+        "parse",
+        json!({"label": "FY2025"}),
+        "LABEL_NOT_RECOGNISED",
+        "label",
+    );
+    // Year 0 is below the first supported number under both schemes.
+    assert_err(
+        &s,
+        "parse",
+        json!({"label": "FY0000"}),
+        "OUT_OF_RANGE",
+        "label",
+    );
+
+    // An in-range match that fails its index check, next to an out-of-range
+    // match: fiscalclock 0.1.0 returned OUT_OF_RANGE here.
+    let plain = schemes_a_and_b(
+        fixed_date(4, 1, None, "monday", &[3, 3, 3, 3], "start"),
+        json!({"year": "FY{yyyy}", "quarter": "Q{q} FY{yyyy}"}),
+    );
+    assert_err(
+        &plain,
+        "parse",
+        json!({"label": "Q5 FY2025"}),
+        "LABEL_NOT_RECOGNISED",
+        "label",
+    );
+    assert_eq!(
+        coords(&ok(&plain, "parse", json!({"label": "Q4 FY2025"}))),
+        (2025, Some(4), "2026-01-01".into())
+    );
+}
+
 #[test]
 fn index_100_or_more_is_written_in_full_and_not_parsed() {
     // A 123-month transition from 1 January 2000 to 31 March 2010.
