@@ -842,6 +842,51 @@ fn calendar_months_transition_must_fit_its_dates() {
 }
 
 #[test]
+fn calendar_months_transition_needs_month_start_day_on_both_dates() {
+    // July years starting on the 15th, then April years starting on the 1st,
+    // through a transition from 15 July 2024 to 31 March 2025. Each of the
+    // transition's dates is a year start of its rule, but they fall on
+    // different days of the month, so no month_start_day fits both.
+    let mut d = changes::fixed(7, "start", "FY{yyyy}");
+    d["year"]["start"]["day"] = json!(15);
+    d["subdivision"]["month_start_day"] = json!(15);
+    let base = changes::with_history(
+        d,
+        vec![changes::entry(
+            "2025-04-01",
+            4,
+            Some(("2024-07-15", &[3, 3, 3])),
+        )],
+    );
+    let path = "exceptions.history[0].transition.subdivision.month_start_day";
+    for day in [15, 1] {
+        let mut d = base.clone();
+        d["exceptions"]["history"][0]["transition"]["subdivision"]["month_start_day"] = json!(day);
+        only(&d, ErrorCode::SubdivisionYearMismatch, path);
+    }
+}
+
+#[test]
+fn extra_week_errors_in_a_history_entry() {
+    let path = "exceptions.history[0].subdivision.extra_week";
+    let mut d = changes::retail_to_september();
+    d["exceptions"]["history"][0]["subdivision"]
+        .as_object_mut()
+        .unwrap()
+        .remove("extra_week");
+    only(&d, ErrorCode::ExtraWeekMissing, path);
+    for p in [0, 13] {
+        let mut d = changes::retail_to_september();
+        d["exceptions"]["history"][0]["subdivision"]["extra_week"]["period"] = json!(p);
+        only(
+            &d,
+            ErrorCode::ExtraWeekOutOfRange,
+            &format!("{path}.period"),
+        );
+    }
+}
+
+#[test]
 fn week_pattern_transition_must_fit_its_dates() {
     let base = changes::retail_to_september();
     let t = "exceptions.history[0].transition";
