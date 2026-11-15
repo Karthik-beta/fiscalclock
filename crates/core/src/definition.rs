@@ -556,8 +556,13 @@ fn join(path: &str, key: &str) -> String {
 
 const PLANNED: &str = "planned for fiscalclock 0.3";
 
-/// The first and last dates allowed in `exceptions`, so that the fiscal years
-/// on either side of every change lie inside the supported range.
+/// The first and last dates allowed in `exceptions`.
+///
+/// They do not make every regime reach the supported range. A change near
+/// the first date can leave regime 0 with no supported fiscal year, when each
+/// of its years before the change starts before 0001-01-02; a change near the
+/// last date can leave the last regime with none, when its first year ends
+/// after 9999-12-30. The timeline then has no segment for that regime.
 const CHANGE_DATES: (Date, Date) = (Date::civil(2, 1, 1), Date::civil(9998, 12, 31));
 
 enum YearKind {

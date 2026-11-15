@@ -7,7 +7,7 @@ use crate::calendar::{FiscalCalendar, Level, Period};
 use crate::date::{Date, month_name};
 use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure, YearNumber};
 use crate::error::Error;
-use crate::timeline::{Division, FiscalYear, Source, nth_size};
+use crate::timeline::{Division, Source, nth_size};
 
 /// The rule trace behind [`FiscalCalendar::locate`] for one date.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -72,24 +72,30 @@ impl FiscalCalendar {
             "; scheme \"{}\" numbers it by {numbering}{offset}",
             scheme.name
         );
-        let year_rule = match (fy.source, self.year_rule(&fy)) {
-            (Source::Transition(i), _) => format!(
+        let year_rule = match fy.source {
+            Source::Transition(i) => format!(
                 "exceptions.history[{i}].transition makes {} to {} one fiscal year, between two rules{naming}",
                 fy.start,
                 fy.end.add(-1)
             ),
-            (_, None) => String::new(),
-            (Source::TopLevel, Some(rule)) => match self.def.history.first() {
-                None => format!("{rule}{naming}"),
-                Some(change) => format!(
-                    "until {}, the top-level rule applies: {rule}{naming}",
-                    change.change_point().add(-1)
-                ),
-            },
-            (Source::History(i), Some(rule)) => format!(
-                "from {}, exceptions.history[{i}] applies: {rule}{naming}",
-                self.def.history[i].from
-            ),
+            Source::TopLevel => {
+                let rule = self.year_rule(&self.def.structure);
+                match self.def.history.first() {
+                    None => format!("{rule}{naming}"),
+                    Some(change) => format!(
+                        "until {}, the top-level rule applies: {rule}{naming}",
+                        change.change_point().add(-1)
+                    ),
+                }
+            }
+            Source::History(i) => {
+                let change = &self.def.history[i];
+                format!(
+                    "from {}, exceptions.history[{i}] applies: {}{naming}",
+                    change.from,
+                    self.year_rule(&change.structure)
+                )
+            }
         };
         let k = loc.period.index.unwrap_or(1);
         let (period_rule, week_rule) = match fy.division {
@@ -97,17 +103,8 @@ impl FiscalCalendar {
                 first,
                 day,
                 short_month,
-                ..
             } => {
-                let policy = match short_month {
-                    Some(ShortMonth::Clamp) => {
-                        ", or the month's last day when the month is shorter"
-                    }
-                    Some(ShortMonth::Next) => {
-                        ", or the first day of the next month when the month is shorter"
-                    }
-                    None => "",
-                };
+                let policy = short_month_policy(short_month);
                 let month = (first + k as i32 - 1).rem_euclid(12) as u32 + 1;
                 (
                     format!(
@@ -177,31 +174,16 @@ impl FiscalCalendar {
         Ok(Explanation { date, steps })
     }
 
-    /// How the rule of a regime's fiscal year bounds it; `None` for a transition.
-    fn year_rule(&self, fy: &FiscalYear<'_>) -> Option<String> {
-        let rule = match fy.source {
-            Source::TopLevel => &self.def.structure,
-            Source::History(i) => &self.def.history.get(i)?.structure,
-            Source::Transition(_) => return None,
-        };
+    /// How a regime's rule bounds its fiscal years.
+    fn year_rule(&self, rule: &Structure) -> String {
         let ws = self.def.week_start;
-        Some(match rule {
-            Structure::FixedDate(f) => {
-                let policy = match f.short_month {
-                    Some(ShortMonth::Clamp) => {
-                        ", or the month's last day when the month is shorter"
-                    }
-                    Some(ShortMonth::Next) => {
-                        ", or the first day of the next month when the month is shorter"
-                    }
-                    None => "",
-                };
-                format!(
-                    "the fiscal year starts on {} {}{policy}",
-                    f.day,
-                    month_name(f.month)
-                )
-            }
+        match rule {
+            Structure::FixedDate(f) => format!(
+                "the fiscal year starts on {} {}{}",
+                f.day,
+                month_name(f.month),
+                short_month_policy(f.short_month)
+            ),
             Structure::WeekBased(w) => {
                 let target = match w.day {
                     AnchorDay::Last => format!("the last day of {}", month_name(w.month)),
@@ -218,6 +200,15 @@ impl FiscalCalendar {
                 };
                 format!("the fiscal year {verb} on {choice}")
             }
-        })
+        }
+    }
+}
+
+/// How a `short_month` policy moves a start day that a month does not have.
+fn short_month_policy(short_month: Option<ShortMonth>) -> &'static str {
+    match short_month {
+        Some(ShortMonth::Clamp) => ", or the month's last day when the month is shorter",
+        Some(ShortMonth::Next) => ", or the first day of the next month when the month is shorter",
+        None => "",
     }
 }

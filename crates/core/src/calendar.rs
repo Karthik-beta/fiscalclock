@@ -112,9 +112,9 @@ pub struct FiscalCalendar {
 }
 
 /// What a year number names under a scheme.
-enum Numbered {
+enum Numbered<'a> {
     /// The fiscal year with that number.
-    Year(Key),
+    Year(FiscalYear<'a>),
     /// No fiscal year: the number is skipped at a change of rule. `next` is
     /// the first fiscal year numbered above it; `before` and `after` are the
     /// numbers either side of the gap.
@@ -341,8 +341,11 @@ impl FiscalCalendar {
 
     /// The number of `fy` under `scheme`, including its offset.
     pub(crate) fn number(&self, fy: &FiscalYear<'_>, scheme: &Scheme) -> i64 {
-        let first = scheme.numbers.get(fy.segment).copied().unwrap_or(0);
-        first + i64::from(fy.position) + i64::from(scheme.offset)
+        // `numbered` records each scheme's first number for every segment of
+        // the timeline, and every `Definition` has been through it, since
+        // `Definition::from_json` runs it too.
+        debug_assert_eq!(scheme.numbers.len(), self.timeline.segments().len());
+        scheme.numbers[fy.segment] + i64::from(fy.position) + i64::from(scheme.offset)
     }
 
     pub(crate) fn default_scheme(&self) -> &Scheme {
@@ -355,11 +358,11 @@ impl FiscalCalendar {
     }
 
     /// What `number` names under `scheme`.
-    fn find_number(&self, number: i64, scheme: &Scheme) -> Numbered {
+    fn find_number(&self, number: i64, scheme: &Scheme) -> Numbered<'_> {
         let n = number.saturating_sub(i64::from(scheme.offset));
-        let segments = self.timeline.segments();
         // Segment numbers increase, so the segment that could hold `n` is the
-        // last one whose first year is numbered `n` or less.
+        // last one whose first year is numbered `n` or less. `scheme.numbers`
+        // has one entry per segment (see `number`).
         let Some(i) = scheme
             .numbers
             .partition_point(|&first| first <= n)
@@ -367,21 +370,20 @@ impl FiscalCalendar {
         else {
             return Numbered::OutOfRange;
         };
-        let (Some(seg), Some(&first)) = (segments.get(i), scheme.numbers.get(i)) else {
-            return Numbered::OutOfRange;
-        };
+        let segments = self.timeline.segments();
+        let (seg, first) = (&segments[i], scheme.numbers[i]);
         let years = i64::from(seg.last.0 - seg.first.0);
         let position = n - first;
         if position <= years {
-            return Numbered::Year(Key(seg.first.0 + position as i32));
+            return Numbered::Year(self.timeline.year_in(i, Key(seg.first.0 + position as i32)));
         }
-        match (segments.get(i + 1), scheme.numbers.get(i + 1)) {
-            (Some(next), Some(&after)) => Numbered::Skipped {
+        match segments.get(i + 1) {
+            Some(next) => Numbered::Skipped {
                 next: next.first,
                 before: first + years + i64::from(scheme.offset),
-                after: after + i64::from(scheme.offset),
+                after: scheme.numbers[i + 1] + i64::from(scheme.offset),
             },
-            _ => Numbered::OutOfRange,
+            None => Numbered::OutOfRange,
         }
     }
 
@@ -423,7 +425,7 @@ impl FiscalCalendar {
     ) -> Result<(FiscalYear<'_>, Option<u32>), Error> {
         let path = String::from;
         let fy = match self.find_number(i64::from(year), self.default_scheme()) {
-            Numbered::Year(key) => self.timeline.year(key),
+            Numbered::Year(fy) => fy,
             Numbered::Skipped { before, after, .. } => {
                 return Err(Error::new(
                     ErrorCode::PeriodNotFound,
@@ -432,9 +434,10 @@ impl FiscalCalendar {
                 )
                 .hint(format!("use fiscal year {before} or {after}")));
             }
-            Numbered::OutOfRange => None,
-        }
-        .ok_or_else(|| out_of_range(path("year"), format!("fiscal year {year}")))?;
+            Numbered::OutOfRange => {
+                return Err(out_of_range(path("year"), format!("fiscal year {year}")));
+            }
+        };
         match (level, index) {
             (Level::Year, None) => Ok((fy, None)),
             (Level::Year, Some(_)) => Err(Error::new(
@@ -686,7 +689,8 @@ impl FiscalCalendar {
         }
         let scheme = self.default_scheme();
         let first = match self.find_number(i64::from(from), scheme) {
-            Numbered::Year(key) | Numbered::Skipped { next: key, .. } => key,
+            Numbered::Year(fy) => fy.key,
+            Numbered::Skipped { next, .. } => next,
             Numbered::OutOfRange => {
                 return Err(out_of_range("from", format!("fiscal year {from}")));
             }
@@ -831,13 +835,12 @@ impl FiscalCalendar {
                         n
                     };
                     let fy = match self.find_number(number, scheme) {
-                        Numbered::Year(key) => self.timeline.year(key),
+                        Numbered::Year(fy) => fy,
                         Numbered::Skipped { .. } => continue,
-                        Numbered::OutOfRange => None,
-                    };
-                    let Some(fy) = fy else {
-                        out_of_range_year = true;
-                        continue;
+                        Numbered::OutOfRange => {
+                            out_of_range_year = true;
+                            continue;
+                        }
                     };
                     if c.yy_end
                         .is_some_and(|ye| ye as i32 != fy.last_day_year().rem_euclid(100))
