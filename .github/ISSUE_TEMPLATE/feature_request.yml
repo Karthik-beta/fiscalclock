@@ -49,7 +49,9 @@ body:
         - "Phase 2: v0.2"
         - "Phase 3: v0.3"
         - "Phase 4: v0.4"
-        - "Phase 5: v1.0"
+        - "Phase 5: v0.5"
+        - "Phase 6: v0.6"
+        - "Phase 7: v1.0"
     validations:
       required: true
   - type: textarea
