@@ -653,7 +653,7 @@ fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
                 // only the years that open between 1892 and 2209. Every year
                 // the crate lists must then lie outside the reference's window.
                 assert!(
-                    refused_beyond(&years, &errors),
+                    refused_beyond(walk, &case.history, rule, &years, &errors),
                     "{errors} under {definition}"
                 );
                 tally.refused_beyond_window.fetch_add(1, Ordering::Relaxed);
@@ -669,8 +669,15 @@ fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
 }
 
 /// Whether `errors` is one numbering refusal whose `details.years` all lie
-/// outside the window of the reference's numbered `years`.
-fn refused_beyond(years: &[RefYear], errors: &fiscalclock::Errors) -> bool {
+/// outside the window of the reference's numbered `years` (see
+/// [`history::beyond_window`]).
+fn refused_beyond(
+    walk: &Walk,
+    h: &History,
+    rule: &'static str,
+    years: &[RefYear],
+    errors: &fiscalclock::Errors,
+) -> bool {
     let [e] = errors.as_slice() else {
         return false;
     };
@@ -682,7 +689,8 @@ fn refused_beyond(years: &[RefYear], errors: &fiscalclock::Errors) -> bool {
     let Some(Details::Years(listed)) = &e.details else {
         return false;
     };
-    e.path == "naming.schemes.fy.year_number" && history::beyond_window(years, why, listed)
+    e.path == "naming.schemes.fy.year_number"
+        && history::beyond_window(walk, h, rule, years, why, listed)
 }
 
 #[test]
