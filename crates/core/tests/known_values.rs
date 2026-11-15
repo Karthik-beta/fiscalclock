@@ -1,3 +1,4 @@
+mod changes;
 mod common;
 
 use common::*;
@@ -236,4 +237,157 @@ fn extra_week_is_the_last_week_of_its_period() {
         c.period(Level::Week, 2023, Some(53)).unwrap().last_day(),
         d("2024-02-03")
     );
+}
+
+// ---- Calendars whose rule changes (0.2.0) ----
+//
+// Dates, lengths and transition labels below are stated in the filings quoted
+// in research/filers/ (see the `changes` module for which file says what).
+// Day counts are calendar arithmetic on those dates.
+
+/// (year number, start, last day, days, quarters, periods, label) of each year.
+type YearRow = (i32, &'static str, &'static str, u32, u32, u32, &'static str);
+
+fn check_years(def: &serde_json::Value, rows: &[YearRow]) {
+    let c = cal(def);
+    for &(number, start, last, days, quarters, periods, label) in rows {
+        let y = c.period(Level::Year, number, None).unwrap();
+        assert_eq!(
+            (y.start, y.last_day(), y.days),
+            (d(start), d(last), days),
+            "{number}"
+        );
+        assert_eq!(
+            c.children(&y, Level::Quarter).unwrap().len() as u32,
+            quarters,
+            "{number}"
+        );
+        assert_eq!(
+            c.children(&y, Level::Period).unwrap().len() as u32,
+            periods,
+            "{number}"
+        );
+        if !label.is_empty() {
+            assert_eq!(c.format(&y, None).unwrap(), label, "{number}");
+            assert_eq!(c.parse(label).unwrap(), y, "{label}");
+        }
+        assert!(!y.has_extra_week && y.weeks.is_none(), "{number}");
+    }
+}
+
+#[test]
+fn pg_hygiene_nine_month_year_2024_25() {
+    // research/filers/pg-hygiene.md: "Financial Year 2024-25 is a 9 month
+    // period from July 1, 2024 to March 31, 2025"; 2025-26 runs from
+    // April 1, 2025 to March 31, 2026. The 2023-24 label is inferred there.
+    check_years(
+        &changes::pg(),
+        &[
+            (2023, "2023-07-01", "2024-06-30", 366, 4, 12, "2023-24"),
+            (2024, "2024-07-01", "2025-03-31", 274, 3, 9, "2024-25"),
+            (2025, "2025-04-01", "2026-03-31", 365, 4, 12, "2025-26"),
+        ],
+    );
+    let c = cal(&changes::pg());
+    let quarters: Vec<_> = c
+        .children(&c.period(Level::Year, 2024, None).unwrap(), Level::Quarter)
+        .unwrap()
+        .into_iter()
+        .map(|q| (q.start, q.last_day()))
+        .collect();
+    assert_eq!(
+        quarters,
+        [
+            (d("2024-07-01"), d("2024-09-30")),
+            (d("2024-10-01"), d("2024-12-31")),
+            (d("2025-01-01"), d("2025-03-31")),
+        ]
+    );
+}
+
+#[test]
+fn siemens_eighteen_month_fy_2024_26_skips_2025() {
+    // research/filers/siemens-india.md: "FY 2024-26 was for a period of
+    // eighteen months from October 1, 2024 to March 31, 2026, while the
+    // previous financial year i.e. FY 2023-24 was for a period of twelve
+    // months from October 1, 2023 to September 30, 2024", and the eighteen
+    // months "comprised of six quarters". FY 2026-27 ends on March 31, 2027.
+    check_years(
+        &changes::siemens(),
+        &[
+            (2023, "2023-10-01", "2024-09-30", 366, 4, 12, "FY 2023-24"),
+            (2024, "2024-10-01", "2026-03-31", 547, 6, 18, "FY 2024-26"),
+            (2026, "2026-04-01", "2027-03-31", 365, 4, 12, "FY 2026-27"),
+        ],
+    );
+    let c = cal(&changes::siemens());
+    let e = c.period(Level::Year, 2025, None).unwrap_err();
+    assert_eq!(
+        (e.code, e.path.as_str()),
+        (ErrorCode::PeriodNotFound, "year")
+    );
+    let q6 = c.period(Level::Quarter, 2024, Some(6)).unwrap();
+    assert_eq!(
+        (q6.start, q6.last_day()),
+        (d("2026-01-01"), d("2026-03-31"))
+    );
+}
+
+#[test]
+fn linde_fifteen_month_period_2022_23() {
+    // research/filers/linde-india.md: the Annual Report 2022-23 covers the
+    // "15 months period from 1 January 2022 to 31 March 2023", and the
+    // tentative calendar labels April 2023 to March 2024 "2023-24".
+    check_years(
+        &changes::linde(),
+        &[
+            (2021, "2021-01-01", "2021-12-31", 365, 4, 12, ""),
+            (2022, "2022-01-01", "2023-03-31", 455, 5, 15, "2022-23"),
+            (2023, "2023-04-01", "2024-03-31", 366, 4, 12, "2023-24"),
+        ],
+    );
+}
+
+#[test]
+fn yy_end_agrees_with_yy_next_for_april_to_march_years() {
+    let mut def = changes::fixed(4, "start", "{yyyy}-{yy_end}");
+    def["naming"]["schemes"]["next"] = serde_json::json!({
+        "year_number": "start", "templates": {"year": "{yyyy}-{yy_next}"}
+    });
+    let c = cal(&def);
+    for y in c.years(1990, 2110).unwrap() {
+        assert_eq!(
+            c.format(&y, None).unwrap(),
+            c.format(&y, Some("next")).unwrap()
+        );
+    }
+}
+
+#[test]
+fn week_pattern_transition_between_week_based_regimes() {
+    // Illustrative calendar (see `changes::retail_to_september`).
+    let c = cal(&changes::retail_to_september());
+    let years = c.years(2023, 2025).unwrap();
+    let summary: Vec<_> = years
+        .iter()
+        .map(|y| (y.year, y.start, y.last_day(), y.weeks, y.has_extra_week))
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            (2023, d("2023-01-29"), d("2024-02-03"), Some(53), true),
+            (2024, d("2024-02-04"), d("2024-09-28"), Some(34), false),
+            (2025, d("2024-09-29"), d("2025-09-27"), Some(52), false),
+        ]
+    );
+    let t = &years[1];
+    let weeks = c.children(t, Level::Week).unwrap();
+    assert_eq!(weeks.len(), 34);
+    assert!(weeks.iter().all(|w| w.days == 7 && !w.has_extra_week));
+    let periods = c.children(t, Level::Period).unwrap();
+    assert_eq!(
+        periods.iter().map(|p| p.weeks.unwrap()).collect::<Vec<_>>(),
+        [4, 5, 4, 4, 5, 4, 4, 4]
+    );
+    assert_eq!(c.children(t, Level::Quarter).unwrap().len(), 3);
 }

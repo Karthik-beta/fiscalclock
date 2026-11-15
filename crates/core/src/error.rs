@@ -25,9 +25,11 @@ pub enum ErrorCode {
     UnsupportedFeature,
     /// A subdivision type is not valid inside the year type.
     UnsupportedCombination,
-    /// `periods` does not sum to 52.
+    /// `periods` does not sum to 52, or a `week_pattern` transition's
+    /// `periods` does not sum to its number of weeks.
     WeeksSumMismatch,
-    /// `quarters` does not sum to the number of periods.
+    /// `quarters` does not sum to the number of periods, which for a
+    /// `calendar_months` transition is its number of months.
     QuartersSumMismatch,
     /// A week-based year has no `extra_week`.
     ExtraWeekMissing,
@@ -35,17 +37,26 @@ pub enum ErrorCode {
     ExtraWeekOutOfRange,
     /// `start.day` is 29–31 and `short_month` is absent.
     ShortMonthPolicyMissing,
-    /// `month_start_day` differs from `year.start.day`.
+    /// `month_start_day` differs from `year.start.day`, or a transition's
+    /// subdivision does not fit its dates.
     SubdivisionYearMismatch,
+    /// A history entry's change point is on or before the previous entry's `from`.
+    ExceptionsOverlap,
+    /// A history entry's change point is not the first day of a fiscal year
+    /// under the previous rule, or its `from` is not under its own rule.
+    ChangeNotOnBoundary,
     /// `naming.default` is not a scheme name.
     DefaultSchemeMissing,
     /// A template is malformed.
     InvalidTemplate,
     /// A two-digit year template has no `century_pivot`.
     CenturyPivotMissing,
-    /// A scheme gives two fiscal years the same number, or skips a number.
+    /// A scheme gives two fiscal years the same number, skips a number
+    /// between two fiscal years of one regime, or does not increase the
+    /// number across a change of rule.
     YearNumberCollision,
-    /// A `majority` scheme meets a fiscal year split evenly between two calendar years.
+    /// A `majority` scheme meets a fiscal year in which no calendar year holds
+    /// more than half of the days.
     MajorityTie,
     /// A date argument is not a valid `YYYY-MM-DD` civil date.
     InvalidDate,
@@ -87,6 +98,8 @@ impl ErrorCode {
             ErrorCode::ExtraWeekOutOfRange => "EXTRA_WEEK_OUT_OF_RANGE",
             ErrorCode::ShortMonthPolicyMissing => "SHORT_MONTH_POLICY_MISSING",
             ErrorCode::SubdivisionYearMismatch => "SUBDIVISION_YEAR_MISMATCH",
+            ErrorCode::ExceptionsOverlap => "EXCEPTIONS_OVERLAP",
+            ErrorCode::ChangeNotOnBoundary => "CHANGE_NOT_ON_BOUNDARY",
             ErrorCode::DefaultSchemeMissing => "DEFAULT_SCHEME_MISSING",
             ErrorCode::InvalidTemplate => "INVALID_TEMPLATE",
             ErrorCode::CenturyPivotMissing => "CENTURY_PIVOT_MISSING",
@@ -131,7 +144,8 @@ pub enum Details {
     Candidates(Vec<Candidate>),
     /// Up to five affected years of a numbering error. For
     /// [`ErrorCode::YearNumberCollision`] these are the year numbers given
-    /// twice or skipped, including the scheme's `offset`. For
+    /// twice or skipped, including the scheme's `offset`; for a pair of years
+    /// across a change of rule, the later year's number. For
     /// [`ErrorCode::MajorityTie`] they are the calendar years in which a tied
     /// fiscal year starts, without the offset.
     Years(Vec<i64>),

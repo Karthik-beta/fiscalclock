@@ -11,6 +11,7 @@ pub(crate) enum Part {
     Yyyy,
     Yy,
     YyNext,
+    YyEnd,
     Q,
     Pp,
     Ww,
@@ -43,6 +44,7 @@ impl Template {
                         "yyyy" => Part::Yyyy,
                         "yy" => Part::Yy,
                         "yy_next" => Part::YyNext,
+                        "yy_end" => Part::YyEnd,
                         "q" => Part::Q,
                         "pp" => Part::Pp,
                         "ww" => Part::Ww,
@@ -78,7 +80,7 @@ impl Template {
         }
         if !parts.iter().any(|p| matches!(p, Part::Yyyy | Part::Yy)) {
             return Err(String::from(
-                "the template has no year placeholder: it needs {yyyy} or {yy}, and {yy_next} alone is not enough",
+                "the template has no year placeholder: it needs {yyyy} or {yy}, and {yy_next} or {yy_end} is not enough",
             ));
         }
         let index = match level {
@@ -107,8 +109,10 @@ impl Template {
         !self.parts.contains(&Part::Yyyy) && self.parts.contains(&Part::Yy)
     }
 
-    /// Renders the label; `None` when `{yyyy}` would need a year outside 1–9999.
-    pub fn render(&self, year_number: i64, index: Option<u32>) -> Option<String> {
+    /// Renders the label of a period with `index` in the fiscal year numbered
+    /// `year_number` whose last day falls in calendar year `end_year`; `None`
+    /// when `{yyyy}` would need a year outside 1–9999.
+    pub fn render(&self, year_number: i64, end_year: i32, index: Option<u32>) -> Option<String> {
         let mut out = String::new();
         for part in &self.parts {
             match part {
@@ -124,6 +128,9 @@ impl Template {
                 }
                 Part::YyNext => {
                     let _ = write!(out, "{:02}", (year_number + 1).rem_euclid(100));
+                }
+                Part::YyEnd => {
+                    let _ = write!(out, "{:02}", end_year.rem_euclid(100));
                 }
                 Part::Q => {
                     let _ = write!(out, "{}", index.unwrap_or(0));
@@ -170,6 +177,7 @@ impl Template {
                     Part::Yyyy => set(&mut next.yyyy, value),
                     Part::Yy => set(&mut next.yy, value),
                     Part::YyNext => set(&mut next.yy_next, value),
+                    Part::YyEnd => set(&mut next.yy_end, value),
                     _ => set(&mut next.index, value),
                 };
                 if ok {
@@ -187,6 +195,7 @@ pub(crate) struct Captures {
     pub yyyy: Option<u32>,
     pub yy: Option<u32>,
     pub yy_next: Option<u32>,
+    pub yy_end: Option<u32>,
     pub index: Option<u32>,
 }
 
