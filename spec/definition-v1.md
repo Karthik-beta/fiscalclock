@@ -271,15 +271,17 @@ Validation runs in three stages: block-level checks, then cross-block checks, th
 
 Only when the definition has no block-level error do the following checks run, for every history entry *i*. Every error they find is reported. "The previous regime" of entry *i* is regime 0 when *i* = 0 and history entry *i* − 1 otherwise. "The first day of a fiscal year under a rule" means the first day of one of the years that the rule produces for any calendar year, regardless of the regime's own bounds.
 
-| Condition | Code | Path |
-| --- | --- | --- |
-| *i* ≥ 1 and *c*(*i*) is on or before entry *i* − 1's `from` (the regimes would overlap, or the previous regime would have no fiscal year) | `EXCEPTIONS_OVERLAP` | The field that holds *c*(*i*): `exceptions.history[i].transition.start` when the entry has a transition, otherwise `exceptions.history[i].from` |
-| *c*(*i*) is not the first day of a fiscal year under the previous regime's rule | `CHANGE_NOT_ON_BOUNDARY` | The field that holds *c*(*i*), as above |
-| `from` is not the first day of a fiscal year under the entry's own rule | `CHANGE_NOT_ON_BOUNDARY` | `exceptions.history[i].from` |
-| Transition `calendar_months`: `month_start_day` differs from the day of `transition.start` or from the day of `from` | `SUBDIVISION_YEAR_MISMATCH` | `exceptions.history[i].transition.subdivision.month_start_day` |
-| Transition `calendar_months`, only when the row above finds no error: `quarters` does not sum to the transition's number of months | `QUARTERS_SUM_MISMATCH` | `exceptions.history[i].transition.subdivision.quarters` |
-| Transition `week_pattern`: `transition.start` is not a `week.starts_on` day, or the transition's number of days is not a multiple of 7 (one error when both hold) | `SUBDIVISION_YEAR_MISMATCH` | `exceptions.history[i].transition.subdivision.type` |
-| Transition `week_pattern`, only when its number of days is a multiple of 7: `periods` does not sum to the transition's number of weeks | `WEEKS_SUM_MISMATCH` | `exceptions.history[i].transition.subdivision.periods` |
+Each path in the Error column is relative to the entry, `exceptions.history[i]`: for example `transition.start` stands for `exceptions.history[i].transition.start`.
+
+| Condition | Error |
+| --- | --- |
+| *i* ≥ 1 and *c*(*i*) is on or before entry *i* − 1's `from` (the regimes would overlap, or the previous regime would have no fiscal year) | `EXCEPTIONS_OVERLAP` at the field that holds *c*(*i*): `transition.start` when the entry has a transition, otherwise `from` |
+| *c*(*i*) is not the first day of a fiscal year under the previous regime's rule | `CHANGE_NOT_ON_BOUNDARY` at the field that holds *c*(*i*), as above |
+| `from` is not the first day of a fiscal year under the entry's own rule | `CHANGE_NOT_ON_BOUNDARY` at `from` |
+| Transition `calendar_months`: `month_start_day` differs from the day of `transition.start` or from the day of `from` | `SUBDIVISION_YEAR_MISMATCH` at `transition.subdivision.month_start_day` |
+| Transition `calendar_months`, only when the row above finds no error: `quarters` does not sum to the transition's number of months | `QUARTERS_SUM_MISMATCH` at `transition.subdivision.quarters` |
+| Transition `week_pattern`: `transition.start` is not a `week.starts_on` day, or the transition's number of days is not a multiple of 7 (one error when both hold) | `SUBDIVISION_YEAR_MISMATCH` at `transition.subdivision.type` |
+| Transition `week_pattern`, only when its number of days is a multiple of 7: `periods` does not sum to the transition's number of weeks | `WEEKS_SUM_MISMATCH` at `transition.subdivision.periods` |
 
 The first three checks run independently, so one entry can report more than one error. When an entry has no transition and its `from` fails both the previous-regime check and its own-rule check, both `CHANGE_NOT_ON_BOUNDARY` errors are reported at `exceptions.history[i].from`, the previous-regime error first. Hints name the nearest valid dates where that helps, for example the first days of the previous regime's fiscal years just before and just after *c*(*i*). Validation never picks a date for the user.
 
