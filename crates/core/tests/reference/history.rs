@@ -9,7 +9,9 @@
 
 use std::collections::HashMap;
 
-use super::{Civil, Numbering, RefDay, RefPeriod, Refused, Shape, Walk, rule_starts};
+use super::{
+    Civil, Numbering, RefDay, RefPeriod, Refused, Shape, Walk, rule_starts, rule_year_start,
+};
 
 /// The subdivision of a transition year.
 #[derive(Clone, Debug)]
@@ -371,21 +373,100 @@ pub fn numbers(walk: &Walk, h: &History, numbering: Numbering) -> Result<Vec<Ref
 /// its numbered `years` (which it found no fault with). The crate checks the
 /// numbering over its whole supported range, so it can refuse a numbering
 /// because of years beyond the walk; then the years it lists (see
-/// [`number_spans`] for what they are) must be at or beyond the edges of the
-/// window. The edges are included because a fault between the first or last
-/// year in the window and its neighbour outside names the edge year's number
-/// (a repeat, or a skip after it) or the calendar year in which the
-/// neighbour starts, which can equal the edge year's.
-pub fn beyond_window(years: &[RefYear], why: Refused, listed: &[i64]) -> bool {
+/// [`number_spans`] for what they are) must come from pairs that are not both
+/// inside the window.
+///
+/// Every rule gives a later fiscal year a number at least as large, so a
+/// faulty pair names a number between its two years' numbers. A year strictly
+/// below the first year's number, or strictly above the last year's, can only
+/// come from pairs outside the window. A year equal to an edge year's number
+/// can also come from a pair inside the window that the crate faults and the
+/// reference does not, so it is accepted only when the reference shows that
+/// the pair across that edge names it: the neighbour just outside the window
+/// repeats the edge year's number. For a tie the listed years are the calendar
+/// years in which tied fiscal years start, and an edge year is accepted only
+/// when the neighbour starts in that calendar year and is itself tied. When
+/// the walk does not hold the neighbour's days, an edge year is not accepted.
+pub fn beyond_window(
+    walk: &Walk,
+    h: &History,
+    numbering: Numbering,
+    years: &[RefYear],
+    why: Refused,
+    listed: &[i64],
+) -> bool {
     let (first, last) = (years[0], years[years.len() - 1]);
+    let (before, after) = neighbours(walk, h);
+    let shown = |n: &Neighbour, edge: i32| match why {
+        Refused::Collision => n.number(walk, numbering) == Some(Some(edge)),
+        Refused::Tie => {
+            n.first.is_some_and(|i| walk.days[i].y == edge)
+                && n.number(walk, numbering) == Some(None)
+        }
+    };
     let (lo, hi) = match why {
         Refused::Collision => (first.number, last.number),
         Refused::Tie => (first.start.y, last.start.y),
     };
     !listed.is_empty()
-        && listed
-            .iter()
-            .all(|&y| y <= i64::from(lo) || y >= i64::from(hi))
+        && listed.iter().all(|&y| {
+            y < i64::from(lo)
+                || y > i64::from(hi)
+                || (y == i64::from(lo) && before.as_ref().is_some_and(|n| shown(n, lo)))
+                || (y == i64::from(hi) && after.as_ref().is_some_and(|n| shown(n, hi)))
+        })
+}
+
+/// A fiscal year just outside the window, as walk indexes of its first day
+/// and of the day after its last, each `None` when the walk does not hold it.
+struct Neighbour {
+    first: Option<usize>,
+    end: Option<usize>,
+}
+
+impl Neighbour {
+    /// Its number under `numbering`: `Some(None)` for a majority tie, `None`
+    /// when the walk does not hold the days the number depends on.
+    fn number(&self, walk: &Walk, numbering: Numbering) -> Option<Option<i32>> {
+        match numbering {
+            "start" => self.first.map(|i| Some(walk.days[i].y)),
+            "end" => self.end.map(|i| Some(walk.days[i - 1].y)),
+            _ => {
+                let s = Span {
+                    first: self.first?,
+                    end: self.end?,
+                    kind: Kind::Regime(0),
+                };
+                Some(raw_number(walk, &s, numbering))
+            }
+        }
+    }
+}
+
+/// The fiscal years just before the first and just after the last complete
+/// year of the window: the top-level rule's year of 1891 when the window
+/// opens under that rule, and the last rule's year of 2209 when the window
+/// closes under it. `None` when the window opens or closes with a transition
+/// or another regime.
+fn neighbours(walk: &Walk, h: &History) -> (Option<Neighbour>, Option<Neighbour>) {
+    let spans = timeline(walk, h);
+    let (first, last) = (spans[0], spans[spans.len() - 1]);
+    let before = (first.kind == Kind::Regime(0)).then(|| {
+        assert_eq!(rule_year_start(walk, &h.base, 1892), Some(first.first));
+        Neighbour {
+            first: rule_year_start(walk, &h.base, 1891),
+            end: Some(first.first),
+        }
+    });
+    let rule = h.entries.len();
+    let after = (last.kind == Kind::Regime(rule)).then(|| {
+        assert_eq!(rule_year_start(walk, h.shape(rule), 2209), Some(last.end));
+        Neighbour {
+            first: Some(last.end),
+            end: rule_year_start(walk, h.shape(rule), 2210),
+        }
+    });
+    (before, after)
 }
 
 /// A fiscal year's subdivision: its quarters, and either a week pattern

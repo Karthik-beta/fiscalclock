@@ -45,7 +45,7 @@ fn build(walk: &Walk, seed: u64) -> Result<Built, TestCaseError> {
         // The crate checks the numbering over its whole supported range; the
         // reference only within its window. A refusal is allowed only when
         // every year it lists lies outside that window.
-        Err(errors) if refused_beyond(&years, &errors) => {
+        Err(errors) if refused_beyond(walk, &case.history, rule, &years, &errors) => {
             return Err(TestCaseError::reject(
                 "numbering refused beyond the reference's window",
             ));
@@ -65,8 +65,15 @@ fn build(walk: &Walk, seed: u64) -> Result<Built, TestCaseError> {
 }
 
 /// Whether `errors` is one numbering refusal whose `details.years` all lie
-/// outside the window of the reference's numbered `years`.
-fn refused_beyond(years: &[history::RefYear], errors: &Errors) -> bool {
+/// outside the window of the reference's numbered `years` (see
+/// [`history::beyond_window`]).
+fn refused_beyond(
+    walk: &Walk,
+    h: &history::History,
+    rule: &'static str,
+    years: &[history::RefYear],
+    errors: &Errors,
+) -> bool {
     let [e] = errors.as_slice() else {
         return false;
     };
@@ -78,7 +85,8 @@ fn refused_beyond(years: &[history::RefYear], errors: &Errors) -> bool {
     let Some(Details::Years(listed)) = &e.details else {
         return false;
     };
-    e.path == "naming.schemes.fy.year_number" && history::beyond_window(years, why, listed)
+    e.path == "naming.schemes.fy.year_number"
+        && history::beyond_window(walk, h, rule, years, why, listed)
 }
 
 /// A date: near a change (within 1,000 days) or anywhere in 1900-2200.
