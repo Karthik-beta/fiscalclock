@@ -1,0 +1,281 @@
+{
+  "name": "definition-exceptions-example",
+  "description": "The worked example in spec/definition-v1.md, exceptions, \"Example: a change from July to June years to April to March years\": the definition as printed, the table of year numbers, bounds, day counts and labels, the transition's three quarters and nine calendar-month periods, and its 40 weeks (weeks 1 to 39 have 7 days and week 40 is 31 March 2025 alone). The spec marks the quarter split and the week block as illustrative.",
+  "source": {
+    "kind": "spec",
+    "citation": "spec/definition-v1.md, exceptions > Example: a change from July to June years to April to March years (fiscalclock 0.2.0)",
+    "url": null,
+    "checked_by": "Transcribed from the spec text at commit ee978f1, 2026-11-15; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "01e7f99ea9a84fe6",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2025-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-07-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":7},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "year": 2023,
+        "start": "2023-07-01",
+        "last_day": "2024-06-30",
+        "days": 366
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2023-24",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect_subset": {
+        "year": 2024,
+        "start": "2024-07-01",
+        "last_day": "2025-03-31",
+        "days": 274
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2025
+      },
+      "expect_subset": {
+        "year": 2025,
+        "start": "2025-04-01",
+        "last_day": "2026-03-31",
+        "days": 365
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 1
+      },
+      "expect_subset": {
+        "start": "2024-07-01",
+        "last_day": "2024-09-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 2
+      },
+      "expect_subset": {
+        "start": "2024-10-01",
+        "last_day": "2024-12-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3
+      },
+      "expect_subset": {
+        "start": "2025-01-01",
+        "last_day": "2025-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 1
+      },
+      "expect_subset": {
+        "start": "2024-07-01",
+        "last_day": "2024-07-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 9
+      },
+      "expect_subset": {
+        "start": "2025-03-01",
+        "last_day": "2025-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 1
+      },
+      "expect_subset": {
+        "start": "2024-07-01",
+        "days": 7
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 39
+      },
+      "expect_subset": {
+        "days": 7
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 40
+      },
+      "expect_subset": {
+        "start": "2025-03-31",
+        "last_day": "2025-03-31",
+        "days": 1
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 41
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    }
+  ]
+}
