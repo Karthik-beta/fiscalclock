@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import copy
 
-from fiscal_oracle import Calendar
+import history_vectors
+from fiscal_oracle import Calendar, FiscalError
 from oracle_vectors import apple_definition, matches_subset, nrf_definition
 from vectorlib import fixed_date, naming, run, scheme, source, validate_case, vector, week_based
 
@@ -16,6 +17,13 @@ SPEC_CHECK = "Transcribed from the spec text 2026-10-31; conformance/generators/
 
 
 def agree(cal: Calendar, c: dict) -> dict:
+    if "expect_error" in c:
+        try:
+            run(cal, c["op"], c["args"])
+        except FiscalError as err:
+            assert err.expect_error() == c["expect_error"], (c, err.expect_error())
+            return c
+        raise AssertionError(f"expected an error: {c}")
     got = run(cal, c["op"], c["args"])
     if "expect" in c:
         assert got == c["expect"], (c, got)
@@ -58,7 +66,40 @@ def spec_vectors() -> list[dict]:
         vector("api-error-example", "The Error example in spec/api-v1.md: periods summing to 51 weeks give WEEKS_SUM_MISMATCH at subdivision.periods.",
                source("spec", "spec/api-v1.md, Values > Error", "Transcribed from the spec text 2026-10-31"), bad,
                [{"op": "validate", "args": {}, "expect_error": {"code": "WEEKS_SUM_MISMATCH", "path": "subdivision.periods"}}]),
+        exceptions_example_vector(),
     ]
+
+
+def exceptions_example_vector() -> dict:
+    """The worked example in spec/definition-v1.md, exceptions > Example (fiscalclock 0.2.0)."""
+    defn = history_vectors.jul_to_apr_definition()
+    defn["naming"]["schemes"]["fy"]["templates"] = {"year": "{yyyy}-{yy_end}"}
+    cal = Calendar(defn)
+    rows = [(2023, "2023-07-01", "2024-06-30", 366, "2023-24"), (2024, "2024-07-01", "2025-03-31", 274, "2024-25"), (2025, "2025-04-01", "2026-03-31", 365, "2025-26")]
+    cases = [validate_case(defn)]
+    for y, start, last, days, label in rows:
+        cases.append(agree(cal, {"op": "period", "args": {"level": "year", "year": y}, "expect_subset": {"year": y, "start": start, "last_day": last, "days": days}}))
+        cases.append(agree(cal, {"op": "format", "args": {"period": {"level": "year", "year": y, "index": None}}, "expect": {"label": label, "scheme": "fy"}}))
+    for i, (start, last) in enumerate((("2024-07-01", "2024-09-30"), ("2024-10-01", "2024-12-31"), ("2025-01-01", "2025-03-31")), 1):
+        cases.append(agree(cal, {"op": "period", "args": {"level": "quarter", "year": 2024, "index": i}, "expect_subset": {"start": start, "last_day": last}}))
+    cases += [agree(cal, c) for c in (
+        {"op": "period", "args": {"level": "period", "year": 2024, "index": 1}, "expect_subset": {"start": "2024-07-01", "last_day": "2024-07-31"}},
+        {"op": "period", "args": {"level": "period", "year": 2024, "index": 9}, "expect_subset": {"start": "2025-03-01", "last_day": "2025-03-31"}},
+        {"op": "period", "args": {"level": "week", "year": 2024, "index": 1}, "expect_subset": {"start": "2024-07-01", "days": 7}},
+        {"op": "period", "args": {"level": "week", "year": 2024, "index": 39}, "expect_subset": {"days": 7}},
+        {"op": "period", "args": {"level": "week", "year": 2024, "index": 40}, "expect_subset": {"start": "2025-03-31", "last_day": "2025-03-31", "days": 1}},
+        {"op": "period", "args": {"level": "week", "year": 2024, "index": 41}, "expect_error": {"code": "PERIOD_NOT_FOUND", "path": "index"}},
+    )]
+    desc = (
+        "The worked example in spec/definition-v1.md, exceptions, \"Example: a change from July to June years to April to March years\": the definition as "
+        "printed, the table of year numbers, bounds, day counts and labels, the transition's three quarters and nine calendar-month periods, and its 40 weeks "
+        "(weeks 1 to 39 have 7 days and week 40 is 31 March 2025 alone). The spec marks the quarter split and the week block as illustrative."
+    )
+    return vector("definition-exceptions-example", desc,
+                  source("spec", "spec/definition-v1.md, exceptions > Example: a change from July to June years to April to March years (fiscalclock 0.2.0)",
+                         "Transcribed from https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#example-a-change-from-july-to-june-years-to-april-to-march-years (the 0.2.0 text), 2026-11-15; "
+                         "conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"),
+                  defn, cases)
 
 
 NRF_URL = "https://nrf.com/resources/4-5-4-calendar"
@@ -218,8 +259,9 @@ def pg_hygiene_vectors() -> list[dict]:
         "2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) "
         "\"re-appointed M/s. Ashwin Solanki & Associates, as the Cost Auditors of the Company for the financial year 2026-27.\" and "
         "\"to audit the cost records of the Company for the financial year ending March 31, 2027, is being placed for the approval of the shareholders of the Company\" (p. 18). "
-        "Establishes the 1 April start, start-year naming in the form 2025-26, the bounds of 2025-26 and the end of 2026-27. "
-        "The nine-month year 2024-25 is outside spec version 1 and has no case; see research/filers/pg-hygiene.md."
+        "Establishes the 1 April start, the label form 2025-26 (start-year numbering is consistent with it), the bounds of 2025-26 and the end of 2026-27. "
+        "The nine-month year 2024-25 needs exceptions.history (fiscalclock 0.2.0) and is asserted in pghh-annual-report-2024-25-transition and "
+        "pghh-annual-report-2025-26-transition; see research/filers/pg-hygiene.md."
     )
     july = fixed_date(7, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_next}"})}))
     cal = Calendar(july)
@@ -267,7 +309,7 @@ def siemens_india_vectors() -> list[dict]:
         "Second week of February 2027 Year ending March 31, 2027 Fourth week of May 2027\" (Report on Corporate Governance, p. 74) "
         "\"the next Annual General Meeting of the Company (69th AGM) for FY 2026-27\" (p. 22). "
         "Establishes the 1 April start, the end of FY 2026-27 and of its first three quarters, and the label FY 2026-27. "
-        "The 18-month FY 2024-26 is outside spec version 1 and has no case; see research/filers/siemens-india.md."
+        "The 18-month FY 2024-26 needs exceptions.history (fiscalclock 0.2.0) and is asserted in siemens-india-annual-report-2024-26-transition; see research/filers/siemens-india.md."
     )
     october = fixed_date(10, 1, "monday", fy)
     cal = Calendar(october)
@@ -295,6 +337,171 @@ def siemens_india_vectors() -> list[dict]:
             source("cited", october_citation, PDF_QUOTES_CHECKED, SIEMENS_URL), october, october_cases,
         ),
     ]
+
+
+# Transitions (fiscalclock 0.2.0, exceptions.history) --------------------------------------------------------
+
+PGHH_2025_URL = "https://downloads.ctfassets.net/oe48y40ukei6/1u4fKj5iFk4bevuObG5vJd/f5a65c7f94bab8a53fe33769070ac956/Annual_Report_2025.pdf"
+LINDE_URL = "https://assets.linde.com/-/media/global/apac/linde-india-limited/cp/linde-india_annual-report-2022-23_tcm526-678037.pdf"
+DAYS_NOTE = "is calendar arithmetic on the stated first and last days, not a figure the filing prints"
+
+
+def year_coords(y: int) -> dict:
+    return {"level": "year", "year": y, "index": None}
+
+
+PGHH_TRANSITION_DESCRIPTION = (
+    "covering the nine-month financial year from 1 July 2024 to 31 March 2025 between its July-June and April-March calendars, expressed with "
+    "exceptions.history (fiscalclock 0.2.0). The transition's three quarters of three months, the quarters of the other years and the week block are "
+    "illustrative: the reports print no quarter or week dates. year_number 'start' is consistent with the report (majority gives the same numbers for "
+    "the years it states). Only fields this report states are asserted."
+)
+
+
+def pg_hygiene_transition_definition() -> dict:
+    defn = history_vectors.jul_to_apr_definition()
+    defn["naming"]["schemes"]["fy"]["templates"] = {"year": "{yyyy}-{yy_end}"}
+    return defn
+
+
+def pg_hygiene_transition_vectors() -> list[dict]:
+    """One vector per annual report, so that every case is traceable to the document its citation quotes."""
+    defn = pg_hygiene_transition_definition()
+    cal = Calendar(defn)
+    year = {"level": "year"}
+    cases_2025 = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2024}, "expect_subset": {"start": "2024-07-01", "last_day": "2025-03-31", "days": 274}},
+        {"op": "format", "args": {"period": year_coords(2024)}, "expect": {"label": "2024-25", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2024-25"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
+        {"op": "locate", "args": {"date": "2024-06-30"}, "expect_subset": {"year": {"start": "2023-07-01", "last_day": "2024-06-30"}}},
+        {"op": "shift", "args": {"period": year_coords(2024), "n": -1}, "expect_subset": {"start": "2023-07-01", "last_day": "2024-06-30"}},
+        {"op": "shift", "args": {"period": year_coords(2024), "n": 1}, "expect_subset": {"start": "2025-04-01", "last_day": "2026-03-31"}},
+    )]
+    citation_2025 = (
+        "\"The Board of Directors of the Company, on January 23, 2025, approved the change in the Financial Year of the Company from “July 1 – June 30” period "
+        "to “April 1 – March 31” period. Consequently, the Financial Year of the Company for the period under review, viz., 2024-25, is a period of 9 months "
+        "commencing on July 1, 2024, and ending on March 31, 2025. Subsequent financial years of the Company shall commence on April 1 every year and end on "
+        "March 31 of the succeeding year.\" (Directors' Report, p. 10) "
+        "\"the numbers are not comparable to the previous financial year, which was a twelve months period (July 1, 2023 to June 30, 2024).\" (p. 10) "
+        "Establishes the bounds and the label 2024-25 of the nine-month transition year, the bounds of the twelve-month year before it, and that the year "
+        "after it runs from 1 April 2025 to 31 March 2026 (the first year of the stated April 1 to March 31 rule). "
+        f"The 274-day length {DAYS_NOTE}. The year before the transition is reached by date and by shift, because its label 2023-24 is inferred; "
+        "the year after it is reached by shift, because this report does not label it."
+    )
+    cases_2026 = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2025}, "expect_subset": {"start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "format", "args": {"period": year_coords(2025)}, "expect": {"label": "2025-26", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2025-26"}, "expect_subset": {"level": "year", "year": 2025, "start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "shift", "args": {"period": year_coords(2025), "n": -1}, "expect_subset": {"year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
+        {"op": "format", "args": {"period": year_coords(2024)}, "expect": {"label": "2024-25", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2024-25"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
+    )]
+    citation_2026 = (
+        "\"The Board of Directors of the Company, on January 23, 2025, had approved the change in Financial Year of the Company from “July 1 – June 30” period "
+        "to “April 1 – March 31” period. The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on "
+        "March 31, 2026.\" (Directors' Report, p. 9) "
+        "\"*Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025, and hence not comparable with current Financial Year "
+        "2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) "
+        "Establishes the bounds and the label 2025-26 of the first April to March year, and the bounds and the label 2024-25 of the nine-month year before it."
+    )
+    return [
+        vector(
+            "pghh-annual-report-2024-25-transition",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2024-25, " + PGHH_TRANSITION_DESCRIPTION,
+            source("cited", citation_2025, PDF_QUOTES_CHECKED, PGHH_2025_URL), defn, cases_2025,
+        ),
+        vector(
+            "pghh-annual-report-2025-26-transition",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2025-26, the first report after the change, on the same "
+            "definition as pghh-annual-report-2024-25-transition, " + PGHH_TRANSITION_DESCRIPTION,
+            source("cited", citation_2026, PDF_QUOTES_CHECKED, PGHH_2026_URL), defn, cases_2026,
+        ),
+    ]
+
+
+def siemens_india_transition_vector() -> dict:
+    defn = history_vectors.oct_to_apr_definition("start")
+    defn["naming"]["schemes"]["fy"]["templates"] = {"year": "FY {yyyy}-{yy_end}"}
+    cal = Calendar(defn)
+    year = {"level": "year"}
+    cases = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2024}, "expect_subset": {"start": "2024-10-01", "last_day": "2026-03-31", "days": 547}},
+        {"op": "format", "args": {"period": year_coords(2024)}, "expect": {"label": "FY 2024-26", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "FY 2024-26"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-10-01", "last_day": "2026-03-31"}},
+        {"op": "period", "args": {"level": "quarter", "year": 2024, "index": 6}, "expect_subset": {"level": "quarter", "year": 2024, "index": 6}},
+        {"op": "period", "args": {"level": "quarter", "year": 2024, "index": 7}, "expect_error": {"code": "PERIOD_NOT_FOUND", "path": "index"}},
+        {"op": "period", "args": {**year, "year": 2023}, "expect_subset": {"start": "2023-10-01", "last_day": "2024-09-30"}},
+        {"op": "format", "args": {"period": year_coords(2023)}, "expect": {"label": "FY 2023-24", "scheme": "fy"}},
+        {"op": "shift", "args": {"period": year_coords(2024), "n": -1}, "expect_subset": {"year": 2023, "start": "2023-10-01", "last_day": "2024-09-30"}},
+        {"op": "shift", "args": {"period": year_coords(2024), "n": 1}, "expect_subset": {"year": 2026, "start": "2026-04-01", "last_day": "2027-03-31"}},
+        {"op": "format", "args": {"period": year_coords(2026)}, "expect": {"label": "FY 2026-27", "scheme": "fy"}},
+        *({"op": "period", "args": {"level": "quarter", "year": 2026, "index": i}, "expect_subset": {"last_day": d}}
+          for i, d in enumerate(("2026-06-30", "2026-09-30", "2026-12-31"), 1)),
+    )]
+    citation = (
+        "\"Consequently, as a transitional measure, the last financial year of the Company i.e. FY 2024-26 was for a period of eighteen months from October 1, 2024 "
+        "to March 31, 2026, while the previous financial year i.e. FY 2023-24 was for a period of twelve months from October 1, 2023 to September 30, 2024.\" "
+        "(Directors' Report, p. 35) "
+        "\"The Board of Directors at its meeting held on August 8, 2025 approved the change of financial year of the Company to uniform financial year commencing "
+        "on April 1 of every year and ending on March 31 of the following year including observing a one-time transitional financial year from October 1, 2024 "
+        "to March 31, 2026 (18 months).\" (p. 35) "
+        "\"Consequently, as a transitional arrangement, the Company observed an eighteen-month financial year from October 2024 to 31 March 2026 which comprised "
+        "of six quarters, while the immediately preceding financial year was for a period of twelve months from 1 October 2023 to 30 September 2024.\" "
+        "(Secretarial Audit Report, p. 110) "
+        "\"For the Financial Year 2026-27, Financial Results will be announced as per the following tentative schedule: 1st quarter ending June 30, 2026 "
+        "Second week of August 2026 2nd quarter ending September 30, 2026 Second week of November 2026 3rd quarter ending December 31, 2026 "
+        "Second week of February 2027 Year ending March 31, 2027 Fourth week of May 2027\" (Report on Corporate Governance, p. 74). "
+        "Establishes the bounds and label of the eighteen-month FY 2024-26, that it has six quarters, the bounds and label of FY 2023-24 before it, and the "
+        "1 April start, label, first three quarter ends and year end of FY 2026-27 after it. "
+        f"The 547-day length {DAYS_NOTE}."
+    )
+    return vector(
+        "siemens-india-annual-report-2024-26-transition",
+        "Siemens Limited Annual Report 2026: the eighteen-month FY 2024-26 between its October-September and April-March calendars, expressed with "
+        "exceptions.history (fiscalclock 0.2.0). The filing states six quarters but not their dates, so the transition's split into six quarters of three "
+        "calendar months, the other quarters before 2026 and the week block are illustrative; only fields the document states are asserted, and for the "
+        "transition's quarters that is only that quarter 6 exists and quarter 7 does not.",
+        source("cited", citation, PDF_QUOTES_CHECKED, SIEMENS_URL), defn, cases,
+    )
+
+
+def linde_india_transition_vector() -> dict:
+    base = fixed_date(1, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_end}"}), "cy": scheme("start", {"year": "FY {yyyy}"})}, default="fy"))
+    defn = history_vectors.with_history(base, history_vectors.entry("2023-04-01", *history_vectors.fixed_rule(4, 1), start="2022-01-01", transition_sub=history_vectors.months(1, [3] * 5)))
+    cal = Calendar(defn)
+    cases = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "locate", "args": {"date": "2022-01-01"}, "expect_subset": {"year": {"start": "2022-01-01", "last_day": "2023-03-31", "days": 455}}},
+        {"op": "locate", "args": {"date": "2023-03-31"}, "expect_subset": {"year": {"start": "2022-01-01", "last_day": "2023-03-31"}}},
+        {"op": "locate", "args": {"date": "2021-12-31"}, "expect_subset": {"year": {"start": "2021-01-01", "last_day": "2021-12-31"}}},
+        {"op": "format", "args": {"period": year_coords(2021), "scheme": "cy"}, "expect": {"label": "FY 2021", "scheme": "cy"}},
+        {"op": "parse", "args": {"label": "FY 2021"}, "expect_subset": {"level": "year", "start": "2021-01-01", "last_day": "2021-12-31"}},
+        {"op": "locate", "args": {"date": "2023-04-01"}, "expect_subset": {"year": {"start": "2023-04-01", "last_day": "2024-03-31"}}},
+    )]
+    citation = (
+        "\"The Board of Directors had at its meeting held on 14 November 2022, approved the change in Financial Year of the Company from existing “1 January to "
+        "31 December” to “1 April to 31 March” in order to avoid preparation of two sets of Audited Financial Statements - one as per the Calendar Year (Accounting "
+        "Year) and the other as per the Financial Year (April - March) for Income Tax purposes, which was requiring a lot of management time and substantial "
+        "efforts, at various levels every year. The Regional Director – Eastern Region, Ministry of Corporate Affairs had vide its Order dated 29 March 2023, "
+        "approved the Company’s application for change in its Financial Year from Calendar Year (January – December) to uniform Financial Year (April – March). "
+        "Consequently, the current Financial Year of the Company comprised of 15 months period from 1 January 2022 to 31 March 2023 and thereafter from 1 April "
+        "every year to 31 March of the subsequent year.\" (Directors' Report, p. 14) "
+        "\"the previous financial year ended 31 December 2021 (FY 2021)\" (p. 13) "
+        "\"Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021\" (p. 84). "
+        "Establishes the bounds of the fifteen-month period, the calendar year 2021 before it and its label FY 2021, and that the year after it runs from "
+        "1 April 2023 to 31 March 2024 (the first year of the stated 1 April to 31 March rule). "
+        f"The 455-day length {DAYS_NOTE}."
+    )
+    return vector(
+        "linde-india-annual-report-2022-23-transition",
+        "Linde India Limited Annual Report 2022-23, covering the fifteen months from 1 January 2022 to 31 March 2023 between its calendar-year and April-March "
+        "calendars, expressed with exceptions.history (fiscalclock 0.2.0). The report labels the year 2021 'FY 2021', so the definition has a scheme 'cy' for "
+        "that form. The scheme 'fy' and its labels are inferred and not asserted: the report's title 'Annual Report 2022-23' (page header) and its cover line "
+        "'For 15 months period from 1 January 2022 to 31 March 2023' are separate texts, and no sentence ties '2022-23' to those dates; '2023-24' comes from "
+        "the heading of a tentative financial calendar. The fifteen-month period and the year after it are therefore reached by date. year_number 'start' is "
+        "consistent with the report ('end' and 'majority' also give 2021 for the calendar year 2021). The transition's five quarters of three months, the "
+        "quarters of the other years and the week block are illustrative: the report states no quarter structure. Only fields the document states are asserted.",
+        source("cited", citation, PDF_QUOTES_CHECKED, LINDE_URL), defn, cases,
+    )
 
 
 def abb_india_vector() -> dict:
@@ -359,7 +566,10 @@ def cited_vectors() -> list[dict]:
     return [
         reliance_vector(),
         *pg_hygiene_vectors(),
+        *pg_hygiene_transition_vectors(),
         *siemens_india_vectors(),
+        siemens_india_transition_vector(),
+        linde_india_transition_vector(),
         abb_india_vector(),
         vector("nrf-53-week-years", "NRF's published list of 53-week fiscal years, checked against the NRF 4-5-4 definition.",
                source("cited", nrf_citation, FETCHED, NRF_URL), nrf, nrf_cases),

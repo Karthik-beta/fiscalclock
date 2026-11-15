@@ -1,0 +1,172 @@
+{
+  "name": "pghh-annual-report-2024-25-transition",
+  "description": "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2024-25, covering the nine-month financial year from 1 July 2024 to 31 March 2025 between its July-June and April-March calendars, expressed with exceptions.history (fiscalclock 0.2.0). The transition's three quarters of three months, the quarters of the other years and the week block are illustrative: the reports print no quarter or week dates. year_number 'start' is consistent with the report (majority gives the same numbers for the years it states). Only fields this report states are asserted.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"The Board of Directors of the Company, on January 23, 2025, approved the change in the Financial Year of the Company from “July 1 – June 30” period to “April 1 – March 31” period. Consequently, the Financial Year of the Company for the period under review, viz., 2024-25, is a period of 9 months commencing on July 1, 2024, and ending on March 31, 2025. Subsequent financial years of the Company shall commence on April 1 every year and end on March 31 of the succeeding year.\" (Directors' Report, p. 10) \"the numbers are not comparable to the previous financial year, which was a twelve months period (July 1, 2023 to June 30, 2024).\" (p. 10) Establishes the bounds and the label 2024-25 of the nine-month transition year, the bounds of the twelve-month year before it, and that the year after it runs from 1 April 2025 to 31 March 2026 (the first year of the stated April 1 to March 31 rule). The 274-day length is calendar arithmetic on the stated first and last days, not a figure the filing prints. The year before the transition is reached by date and by shift, because its label 2023-24 is inferred; the year after it is reached by shift, because this report does not label it.",
+    "url": "https://downloads.ctfassets.net/oe48y40ukei6/1u4fKj5iFk4bevuObG5vJd/f5a65c7f94bab8a53fe33769070ac956/Annual_Report_2025.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "01e7f99ea9a84fe6",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2025-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-07-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":7},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect_subset": {
+        "start": "2024-07-01",
+        "last_day": "2025-03-31",
+        "days": 274
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2024-25"
+      },
+      "expect_subset": {
+        "level": "year",
+        "year": 2024,
+        "start": "2024-07-01",
+        "last_day": "2025-03-31"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2024-06-30"
+      },
+      "expect_subset": {
+        "year": {
+          "start": "2023-07-01",
+          "last_day": "2024-06-30"
+        }
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "n": -1
+      },
+      "expect_subset": {
+        "start": "2023-07-01",
+        "last_day": "2024-06-30"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "n": 1
+      },
+      "expect_subset": {
+        "start": "2025-04-01",
+        "last_day": "2026-03-31"
+      }
+    }
+  ]
+}

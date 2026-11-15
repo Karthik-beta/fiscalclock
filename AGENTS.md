@@ -17,7 +17,7 @@ The source of truth for behaviour is the [PDR](https://github.com/Karthik-beta/f
 | `crates/core/` | The Rust core crate `fiscalclock`: definition parsing and validation, all calendar arithmetic, labels, the JSON API used by every binding. | Language-specific type conversion; I/O; named calendars. |
 | `bindings/python/` | The PyO3 extension and pure-Python wrapper: conversion between Python types and the core's JSON API. | Calendar arithmetic or validation logic. |
 | `bindings/js/` | The wasm-bindgen wrapper and TypeScript layer: conversion between JS types and the core's JSON API. | Calendar arithmetic or validation logic. |
-| `cli/` | The command-line interface and MCP server (planned for v0.4). | Logic that is not also reachable through the core's JSON API. |
+| `cli/` | The command-line interface and MCP server (planned for v0.6). | Logic that is not also reachable through the core's JSON API. |
 | `spec/` | The normative definition format and API contract. | Implementation notes. |
 | `conformance/` | Shared vectors loaded by every test suite, their JSON Schema, and the independent generators. | Expected values produced by running fiscalclock. |
 | `research/verification/` | Standard-library scripts that reproduce claims made in prose, and their committed output. | Library code. |

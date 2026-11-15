@@ -9,10 +9,11 @@ use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
 use crate::calendar::{FiscalCalendar, Level};
-use crate::date::Weekday;
+use crate::date::{Date, Weekday};
 use crate::error::{Error, ErrorCode, Errors};
 use crate::json::{write_list, write_str};
 use crate::label::Template;
+use crate::timeline::month_index;
 
 /// Declares a fieldless enum for a definition field that takes one of a fixed
 /// set of strings. Each variant is listed once with its string, so the parser,
@@ -81,6 +82,45 @@ pub(crate) enum Structure {
     WeekBased(WeekBased),
 }
 
+/// How a transition year is split into periods.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum TransitionSubdivision {
+    /// Fiscal months starting on `month_start_day`, which equals the day of the
+    /// transition's first day and of its entry's `from`.
+    CalendarMonths {
+        month_start_day: u32,
+        quarters: Vec<u32>,
+    },
+    /// Runs of whole weeks; the transition starts on `week.starts_on`.
+    WeekPattern {
+        periods: Vec<u32>,
+        quarters: Vec<u32>,
+    },
+}
+
+/// A transition: one fiscal year from `start` to the day before its entry's `from`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Transition {
+    pub start: Date,
+    pub subdivision: TransitionSubdivision,
+}
+
+/// One entry of `exceptions.history`: a rule in force from `from`, optionally
+/// after a transition year.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Change {
+    pub from: Date,
+    pub transition: Option<Transition>,
+    pub structure: Structure,
+}
+
+impl Change {
+    /// The change point: the first day that the previous rule no longer covers.
+    pub(crate) fn change_point(&self) -> Date {
+        self.transition.as_ref().map_or(self.from, |t| t.start)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Scheme {
     pub name: String,
@@ -89,9 +129,10 @@ pub(crate) struct Scheme {
     pub century_pivot: Option<i32>,
     /// Indexed by [`Level::index`].
     pub templates: [Option<Template>; 4],
-    /// Year number minus fiscal year key, before `offset`. Constant because
-    /// validation rejects schemes whose numbers are not consecutive.
-    pub shift: i64,
+    /// The number, before `offset`, of the first fiscal year of each segment
+    /// of the calendar's timeline; numbers are consecutive within a segment.
+    /// Empty until numbering has run.
+    pub numbers: Vec<i64>,
 }
 
 /// A parsed and validated calendar definition.
@@ -100,7 +141,10 @@ pub(crate) struct Scheme {
 /// this type satisfies the whole of `spec/definition-v1.md`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Definition {
+    /// The top-level rule, regime 0.
     pub(crate) structure: Structure,
+    /// `exceptions.history` in order; empty when `exceptions` is absent.
+    pub(crate) history: Vec<Change>,
     pub(crate) week_start: Weekday,
     /// Sorted by name.
     pub(crate) schemes: Vec<Scheme>,
@@ -116,13 +160,13 @@ impl Definition {
     ///
     /// Returns every validation error, sorted by path and then code. Any code
     /// the error catalogue lists as raised by `validate` can appear, from
-    /// `INVALID_JSON` to `MAJORITY_TIE`.
+    /// `INVALID_JSON` to `CHANGE_NOT_ON_BOUNDARY`.
     pub fn from_json(text: &str) -> Result<Definition, Errors> {
         FiscalCalendar::numbered(Definition::parse(text)?).map(|cal| cal.def)
     }
 
     /// Everything `from_json` checks except year numbering, which needs the
-    /// year boundaries of a calendar. Every scheme's `shift` is still 0.
+    /// timeline of a calendar. Every scheme's `numbers` is still empty.
     pub(crate) fn parse(text: &str) -> Result<Definition, Errors> {
         let value: Value = match crate::strict::parse(text) {
             Ok(v) => v,
@@ -159,52 +203,7 @@ impl Definition {
     }
 
     fn canonical_value(&self) -> Value {
-        let (year, subdivision) = match &self.structure {
-            Structure::FixedDate(f) => (
-                obj([
-                    (
-                        "short_month",
-                        f.short_month.map_or(Value::Null, |s| s.name().into()),
-                    ),
-                    (
-                        "start",
-                        obj([("day", f.day.into()), ("month", f.month.into())]),
-                    ),
-                    ("type", YearType::FixedDate.name().into()),
-                ]),
-                obj([
-                    ("month_start_day", f.day.into()),
-                    ("quarters", f.quarters.clone().into()),
-                    ("type", SubdivisionType::CalendarMonths.name().into()),
-                ]),
-            ),
-            Structure::WeekBased(w) => (
-                obj([
-                    (
-                        "anchor",
-                        obj([
-                            (
-                                "day",
-                                match w.day {
-                                    AnchorDay::Day(d) => d.into(),
-                                    AnchorDay::Last => "last".into(),
-                                },
-                            ),
-                            ("edge", w.edge.name().into()),
-                            ("month", w.month.into()),
-                            ("rule", w.rule.name().into()),
-                        ]),
-                    ),
-                    ("type", YearType::WeekBased.name().into()),
-                ]),
-                obj([
-                    ("extra_week", obj([("period", w.extra_period.into())])),
-                    ("periods", w.periods.clone().into()),
-                    ("quarters", w.quarters.clone().into()),
-                    ("type", SubdivisionType::WeekPattern.name().into()),
-                ]),
-            ),
-        };
+        let (year, subdivision) = rule_values(&self.structure);
         let mut schemes = Map::new();
         for s in &self.schemes {
             let mut templates = Map::new();
@@ -226,7 +225,7 @@ impl Definition {
                 ]),
             );
         }
-        obj([
+        let mut top = obj([
             (
                 "naming",
                 obj([
@@ -247,8 +246,257 @@ impl Definition {
                 ]),
             ),
             ("year", year),
-        ])
+        ]);
+        // Absent exceptions are left out, so that a definition without them
+        // keeps its 0.1.0 canonical form and calendar_id.
+        if let (false, Value::Object(map)) = (self.history.is_empty(), &mut top) {
+            let history = self.history.iter().map(change_value).collect();
+            map.insert(
+                String::from("exceptions"),
+                obj([("history", Value::Array(history))]),
+            );
+        }
+        top
     }
+
+    /// The checks that compare blocks with each other. They run only when
+    /// every block is valid on its own, and report every error they find.
+    fn cross_block_errors(&self) -> Vec<Error> {
+        let ws = self.week_start;
+        let mut errors = Vec::new();
+        // The previous regime's rule, its `from` (none for regime 0) and its name.
+        let mut previous = (&self.structure, None, String::from("the top-level rule"));
+        for (i, change) in self.history.iter().enumerate() {
+            let path = format!("exceptions.history[{i}]");
+            let point = change.change_point();
+            let point_path = if change.transition.is_some() {
+                format!("{path}.transition.start")
+            } else {
+                format!("{path}.from")
+            };
+            let (rule, previous_from, name) = &previous;
+            if let Some(pf) = previous_from.filter(|&pf: &Date| point <= pf) {
+                errors.push(
+                    Error::new(
+                        ErrorCode::ExceptionsOverlap,
+                        point_path.clone(),
+                        format!(
+                            "the change on {point} is not after exceptions.history[{}].from ({pf}), so that entry's rule would have no fiscal year",
+                            i - 1
+                        ),
+                    )
+                    .hint("list history entries in date order, each change after the previous entry's from"),
+                );
+            }
+            if let Some((before, after)) = rule.off_boundary(ws, point) {
+                errors.push(
+                    Error::new(
+                        ErrorCode::ChangeNotOnBoundary,
+                        point_path,
+                        format!("{point} is not the first day of a fiscal year under {name}"),
+                    )
+                    .hint(format!(
+                        "under {name}, the fiscal years around {point} start on {before} and {after}"
+                    )),
+                );
+            }
+            if let Some((before, after)) = change.structure.off_boundary(ws, change.from) {
+                errors.push(
+                    Error::new(
+                        ErrorCode::ChangeNotOnBoundary,
+                        format!("{path}.from"),
+                        format!(
+                            "{} is not the first day of a fiscal year under this entry's rule",
+                            change.from
+                        ),
+                    )
+                    .hint(format!(
+                        "under this entry's rule, the fiscal years around {} start on {before} and {after}",
+                        change.from
+                    )),
+                );
+            }
+            if let Some(t) = &change.transition {
+                transition_errors(t, change.from, ws, &path, &mut errors);
+            }
+            previous = (
+                &change.structure,
+                Some(change.from),
+                format!("the rule of {path}"),
+            );
+        }
+        errors
+    }
+}
+
+/// The cross-block checks of a transition's subdivision against its dates.
+fn transition_errors(
+    t: &Transition,
+    from: Date,
+    week_start: Weekday,
+    entry: &str,
+    errors: &mut Vec<Error>,
+) {
+    let path = format!("{entry}.transition.subdivision");
+    let (start, last) = (t.start, from.add(-1));
+    match &t.subdivision {
+        TransitionSubdivision::CalendarMonths {
+            month_start_day: day,
+            quarters,
+        } => {
+            if start.day() != *day || from.day() != *day {
+                let hint = if start.day() == from.day() {
+                    format!("set month_start_day to {}", start.day())
+                } else {
+                    String::from(
+                        "a calendar_months transition needs transition.start and from on the same day of the month",
+                    )
+                };
+                errors.push(
+                    Error::new(
+                        ErrorCode::SubdivisionYearMismatch,
+                        format!("{path}.month_start_day"),
+                        format!(
+                            "month_start_day is {day}, but the transition runs from {start} to {last}"
+                        ),
+                    )
+                    .hint(hint),
+                );
+                // The number of months is defined only when the days agree.
+                return;
+            }
+            let months =
+                month_index(from.year(), from.month()) - month_index(start.year(), start.month());
+            let sum: u64 = quarters.iter().map(|&q| u64::from(q)).sum();
+            if u64::try_from(months).ok() != Some(sum) {
+                errors.push(
+                    Error::new(
+                        ErrorCode::QuartersSumMismatch,
+                        format!("{path}.quarters"),
+                        format!(
+                            "quarters sum to {sum} periods, but the transition from {start} to {last} has {months} months"
+                        ),
+                    )
+                    .hint(format!("make the quarter sizes add up to {months}")),
+                );
+            }
+        }
+        TransitionSubdivision::WeekPattern { periods, .. } => {
+            let days = start.days_until(from);
+            if start.weekday() != week_start || days % 7 != 0 {
+                errors.push(
+                    Error::new(
+                        ErrorCode::SubdivisionYearMismatch,
+                        format!("{path}.type"),
+                        format!(
+                            "a week_pattern transition must start on a {} and last whole weeks, but this one starts on a {} and lasts {days} days",
+                            week_start.title(),
+                            start.weekday().title()
+                        ),
+                    )
+                    .hint("use a calendar_months transition, or dates that span whole weeks"),
+                );
+            }
+            if days % 7 == 0 {
+                let weeks = days / 7;
+                let sum: u64 = periods.iter().map(|&p| u64::from(p)).sum();
+                if u64::try_from(weeks).ok() != Some(sum) {
+                    errors.push(
+                        Error::new(
+                            ErrorCode::WeeksSumMismatch,
+                            format!("{path}.periods"),
+                            format!(
+                                "periods sum to {sum} weeks, but the transition from {start} to {last} has {weeks} weeks"
+                            ),
+                        )
+                        .hint(format!("make the periods add up to {weeks} weeks")),
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// The canonical `year` and `subdivision` blocks of a rule.
+fn rule_values(structure: &Structure) -> (Value, Value) {
+    match structure {
+        Structure::FixedDate(f) => (
+            obj([
+                (
+                    "short_month",
+                    f.short_month.map_or(Value::Null, |s| s.name().into()),
+                ),
+                (
+                    "start",
+                    obj([("day", f.day.into()), ("month", f.month.into())]),
+                ),
+                ("type", YearType::FixedDate.name().into()),
+            ]),
+            obj([
+                ("month_start_day", f.day.into()),
+                ("quarters", f.quarters.clone().into()),
+                ("type", SubdivisionType::CalendarMonths.name().into()),
+            ]),
+        ),
+        Structure::WeekBased(w) => (
+            obj([
+                (
+                    "anchor",
+                    obj([
+                        (
+                            "day",
+                            match w.day {
+                                AnchorDay::Day(d) => d.into(),
+                                AnchorDay::Last => "last".into(),
+                            },
+                        ),
+                        ("edge", w.edge.name().into()),
+                        ("month", w.month.into()),
+                        ("rule", w.rule.name().into()),
+                    ]),
+                ),
+                ("type", YearType::WeekBased.name().into()),
+            ]),
+            obj([
+                ("extra_week", obj([("period", w.extra_period.into())])),
+                ("periods", w.periods.clone().into()),
+                ("quarters", w.quarters.clone().into()),
+                ("type", SubdivisionType::WeekPattern.name().into()),
+            ]),
+        ),
+    }
+}
+
+/// The canonical form of a history entry.
+fn change_value(change: &Change) -> Value {
+    let (year, subdivision) = rule_values(&change.structure);
+    let transition = change.transition.as_ref().map_or(Value::Null, |t| {
+        let subdivision = match &t.subdivision {
+            TransitionSubdivision::CalendarMonths {
+                month_start_day,
+                quarters,
+            } => obj([
+                ("month_start_day", (*month_start_day).into()),
+                ("quarters", quarters.clone().into()),
+                ("type", SubdivisionType::CalendarMonths.name().into()),
+            ]),
+            TransitionSubdivision::WeekPattern { periods, quarters } => obj([
+                ("periods", periods.clone().into()),
+                ("quarters", quarters.clone().into()),
+                ("type", SubdivisionType::WeekPattern.name().into()),
+            ]),
+        };
+        obj([
+            ("start", format!("{}", t.start).into()),
+            ("subdivision", subdivision),
+        ])
+    });
+    obj([
+        ("from", format!("{}", change.from).into()),
+        ("subdivision", subdivision),
+        ("transition", transition),
+        ("year", year),
+    ])
 }
 
 pub(crate) fn calendar_id_of(canonical: &str) -> String {
@@ -306,7 +554,16 @@ fn join(path: &str, key: &str) -> String {
     }
 }
 
-const PLANNED: &str = "planned for fiscalclock 0.2";
+const PLANNED: &str = "planned for fiscalclock 0.3";
+
+/// The first and last dates allowed in `exceptions`.
+///
+/// They do not make every regime reach the supported range. A change near
+/// the first date can leave regime 0 with no supported fiscal year, when each
+/// of its years before the change starts before 0001-01-02; a change near the
+/// last date can leave the last regime with none, when its first year ends
+/// after 9999-12-30. The timeline then has no segment for that regime.
+const CHANGE_DATES: (Date, Date) = (Date::civil(2, 1, 1), Date::civil(9998, 12, 31));
 
 enum YearKind {
     Fixed { day: Option<u32> },
@@ -377,8 +634,9 @@ impl Validator {
                 "week",
                 "subdivision",
                 "naming",
+                "exceptions",
             ],
-            &["exceptions"],
+            &[],
         );
         if let Some(v) = self.required(top, "", "spec_version") {
             self.integer(v, "spec_version");
@@ -386,80 +644,118 @@ impl Validator {
         if let Some(v) = top.get("$schema") {
             self.string(v, "$schema");
         }
-        let year = self.required(top, "", "year").map(|v| self.year(v));
-        let (year_kind, year_spec) = year.unwrap_or((None, None));
+        let structure = self.rule(top, "");
         let week_start = self.required(top, "", "week").and_then(|v| self.week(v));
-        let sub = self
-            .required(top, "", "subdivision")
-            .map(|v| self.subdivision(v));
-        let (sub_kind, sub_spec) = sub.unwrap_or((None, None));
         let naming = self
             .required(top, "", "naming")
             .and_then(|v| self.naming(v));
+        let history = match top.get("exceptions") {
+            None | Some(Value::Null) => Some(Vec::new()),
+            Some(v) => self.exceptions(v),
+        };
+        if !self.errors.is_empty() {
+            return Err(Errors::sorted(self.errors));
+        }
+        let (Some(structure), Some(week_start), Some((schemes, default_scheme)), Some(history)) =
+            (structure, week_start, naming, history)
+        else {
+            return Err(Errors::sorted(self.errors));
+        };
+        let def = Definition {
+            structure,
+            history,
+            week_start,
+            schemes,
+            default_scheme,
+        };
+        let cross = def.cross_block_errors();
+        if cross.is_empty() {
+            Ok(def)
+        } else {
+            Err(Errors::sorted(cross))
+        }
+    }
+
+    /// The `year` and `subdivision` blocks of the object at `prefix`, checked
+    /// together; `None` when either is invalid.
+    fn rule(&mut self, m: &Map<String, Value>, prefix: &str) -> Option<Structure> {
+        let year_path = join(prefix, "year");
+        let sub_path = join(prefix, "subdivision");
+        let (year_kind, year_spec) = self
+            .required(m, prefix, "year")
+            .map_or((None, None), |v| self.year(v, &year_path));
+        let (sub_kind, sub_spec) = self
+            .required(m, prefix, "subdivision")
+            .map_or((None, None), |v| self.subdivision(v, &sub_path));
 
         match (&year_kind, &sub_kind) {
-            (Some(YearKind::Fixed { .. }), Some(SubKind::WeekPattern)) => self.push(
-                Error::new(
-                    ErrorCode::UnsupportedCombination,
-                    "subdivision.type",
-                    "a week_pattern subdivision inside a fixed_date year needs subdivision.stub, which is not supported yet",
-                )
-                .hint("use a week_based year, or calendar_months for a fixed_date year; stubs are planned for fiscalclock 0.2"),
-            ),
-            (Some(YearKind::Week), Some(SubKind::CalendarMonths { .. })) => self.push(
-                Error::new(
-                    ErrorCode::UnsupportedCombination,
-                    "subdivision.type",
-                    "a calendar_months subdivision is valid only inside a fixed_date year",
-                )
-                .hint("use a week_pattern subdivision for a week_based year"),
-            ),
+            (Some(YearKind::Fixed { .. }), Some(SubKind::WeekPattern)) => {
+                self.push(
+                    Error::new(
+                        ErrorCode::UnsupportedCombination,
+                        join(&sub_path, "type"),
+                        "a week_pattern subdivision inside a fixed_date year needs subdivision.stub, which is not supported yet",
+                    )
+                    .hint("use a week_based year, or calendar_months for a fixed_date year; stubs are planned for fiscalclock 0.3"),
+                );
+                return None;
+            }
+            (Some(YearKind::Week), Some(SubKind::CalendarMonths { .. })) => {
+                self.push(
+                    Error::new(
+                        ErrorCode::UnsupportedCombination,
+                        join(&sub_path, "type"),
+                        "a calendar_months subdivision is valid only inside a fixed_date year",
+                    )
+                    .hint("use a week_pattern subdivision for a week_based year"),
+                );
+                return None;
+            }
             (
                 Some(YearKind::Fixed { day: Some(day) }),
                 Some(SubKind::CalendarMonths {
                     month_start_day: Some(msd),
                 }),
-            ) if day != msd => self.push(
-                Error::new(
-                    ErrorCode::SubdivisionYearMismatch,
-                    "subdivision.month_start_day",
-                    format!("month_start_day is {msd} but year.start.day is {day}"),
-                )
-                .hint(format!("set month_start_day to {day}")),
-            ),
+            ) if day != msd => {
+                self.push(
+                    Error::new(
+                        ErrorCode::SubdivisionYearMismatch,
+                        join(&sub_path, "month_start_day"),
+                        format!("month_start_day is {msd} but year.start.day is {day}"),
+                    )
+                    .hint(format!("set month_start_day to {day}")),
+                );
+                return None;
+            }
             _ => {}
         }
-
-        if !self.errors.is_empty() {
-            return Err(Errors::sorted(self.errors));
-        }
-        let structure = match (year_spec, sub_spec) {
+        match (year_spec?, sub_spec?) {
             (
-                Some(YearSpec::Fixed {
+                YearSpec::Fixed {
                     month,
                     day,
                     short_month,
-                }),
-                Some(SubSpec::CalendarMonths { quarters }),
-            ) => Structure::FixedDate(FixedDate {
+                },
+                SubSpec::CalendarMonths { quarters },
+            ) => Some(Structure::FixedDate(FixedDate {
                 month,
                 day,
                 short_month,
                 quarters,
-            }),
+            })),
             (
-                Some(YearSpec::Week {
+                YearSpec::Week {
                     edge,
                     month,
                     day,
                     rule,
-                }),
-                Some(SubSpec::WeekPattern {
+                },
+                SubSpec::WeekPattern {
                     periods,
                     quarters,
                     extra_period,
-                }),
-            ) => Structure::WeekBased(WeekBased {
+                },
+            ) => Some(Structure::WeekBased(WeekBased {
                 edge,
                 month,
                 day,
@@ -467,57 +763,50 @@ impl Validator {
                 periods,
                 quarters,
                 extra_period,
-            }),
-            _ => return Err(Errors::sorted(self.errors)),
-        };
-        match (week_start, naming) {
-            (Some(week_start), Some((schemes, default_scheme))) => Ok(Definition {
-                structure,
-                week_start,
-                schemes,
-                default_scheme,
-            }),
-            _ => Err(Errors::sorted(self.errors)),
+            })),
+            _ => None,
         }
     }
 
-    fn year(&mut self, v: &Value) -> (Option<YearKind>, Option<YearSpec>) {
-        let path = "year";
+    fn year(&mut self, v: &Value, path: &str) -> (Option<YearKind>, Option<YearSpec>) {
         let Some(m) = self.object(v, path) else {
             return (None, None);
         };
         let Some(t) = self.required(m, path, "type") else {
             return (None, None);
         };
-        let Some(kind) = self.choice(t, "year.type", YearType::ALL, YearType::name, &["table"])
-        else {
+        let Some(kind) = self.choice(
+            t,
+            &join(path, "type"),
+            YearType::ALL,
+            YearType::name,
+            &["table"],
+        ) else {
             return (None, None);
         };
         if kind == YearType::FixedDate {
             self.fields(m, path, &["type", "start", "short_month"], &[]);
+            let start_path = join(path, "start");
             let mut month = None;
             let mut day = None;
             if let Some(s) = self.required(m, path, "start") {
-                if let Some(sm) = self.object(s, "year.start") {
-                    self.fields(sm, "year.start", &["month", "day"], &[]);
-                    month = self
-                        .required(sm, "year.start", "month")
-                        .and_then(|v| self.int_in(v, "year.start.month", 1, 12).map(|n| n as u32));
-                    day = self
-                        .required(sm, "year.start", "day")
-                        .and_then(|v| self.int_in(v, "year.start.day", 1, 31).map(|n| n as u32));
+                if let Some(sm) = self.object(s, &start_path) {
+                    self.fields(sm, &start_path, &["month", "day"], &[]);
+                    month = self.required(sm, &start_path, "month").and_then(|v| {
+                        self.int_in(v, &join(&start_path, "month"), 1, 12)
+                            .map(|n| n as u32)
+                    });
+                    day = self.required(sm, &start_path, "day").and_then(|v| {
+                        self.int_in(v, &join(&start_path, "day"), 1, 31)
+                            .map(|n| n as u32)
+                    });
                 }
             }
+            let short_path = join(path, "short_month");
             let short = match m.get("short_month") {
                 None | Some(Value::Null) => Some(None),
                 Some(v) => self
-                    .choice(
-                        v,
-                        "year.short_month",
-                        ShortMonth::ALL,
-                        ShortMonth::name,
-                        &[],
-                    )
+                    .choice(v, &short_path, ShortMonth::ALL, ShortMonth::name, &[])
                     .map(Some),
             };
             let mut short_ok = short;
@@ -526,7 +815,7 @@ impl Validator {
                     self.push(
                         Error::new(
                             ErrorCode::ShortMonthPolicyMissing,
-                            "year.short_month",
+                            short_path,
                             format!("start.day is {d}, which some months do not have, and short_month is absent"),
                         )
                         .hint("add \"short_month\": \"clamp\" to use the month's last day, or \"next\" to use the first day of the following month"),
@@ -537,7 +826,7 @@ impl Validator {
                     self.push(
                         Error::new(
                             ErrorCode::InvalidValue,
-                            "year.short_month",
+                            short_path,
                             format!("short_month never applies because start.day {d} exists in every month"),
                         )
                         .hint("remove short_month"),
@@ -560,23 +849,23 @@ impl Validator {
             let Some(a) = self.required(m, path, "anchor") else {
                 return (Some(YearKind::Week), None);
             };
-            let ap = "year.anchor";
-            let Some(am) = self.object(a, ap) else {
+            let ap = join(path, "anchor");
+            let Some(am) = self.object(a, &ap) else {
                 return (Some(YearKind::Week), None);
             };
-            self.fields(am, ap, &["edge", "month", "day", "rule"], &[]);
+            self.fields(am, &ap, &["edge", "month", "day", "rule"], &[]);
             let edge = self
-                .required(am, ap, "edge")
-                .and_then(|v| self.choice(v, "year.anchor.edge", Edge::ALL, Edge::name, &[]));
+                .required(am, &ap, "edge")
+                .and_then(|v| self.choice(v, &join(&ap, "edge"), Edge::ALL, Edge::name, &[]));
             let month = self
-                .required(am, ap, "month")
-                .and_then(|v| self.int_in(v, "year.anchor.month", 1, 12).map(|n| n as u32));
+                .required(am, &ap, "month")
+                .and_then(|v| self.int_in(v, &join(&ap, "month"), 1, 12).map(|n| n as u32));
             let day = self
-                .required(am, ap, "day")
-                .and_then(|v| self.anchor_day(v));
+                .required(am, &ap, "day")
+                .and_then(|v| self.anchor_day(v, &join(&ap, "day")));
             let rule = self
-                .required(am, ap, "rule")
-                .and_then(|v| self.choice(v, "year.anchor.rule", Rule::ALL, Rule::name, &[]));
+                .required(am, &ap, "rule")
+                .and_then(|v| self.choice(v, &join(&ap, "rule"), Rule::ALL, Rule::name, &[]));
             let spec = match (edge, month, day, rule) {
                 (Some(edge), Some(month), Some(day), Some(rule)) => Some(YearSpec::Week {
                     edge,
@@ -590,8 +879,7 @@ impl Validator {
         }
     }
 
-    fn anchor_day(&mut self, v: &Value) -> Option<AnchorDay> {
-        let path = "year.anchor.day";
+    fn anchor_day(&mut self, v: &Value, path: &str) -> Option<AnchorDay> {
         match v {
             Value::String(s) if s == "last" => Some(AnchorDay::Last),
             Value::String(s) => {
@@ -666,23 +954,26 @@ impl Validator {
         numbering.and(starts_on)
     }
 
-    fn subdivision(&mut self, v: &Value) -> (Option<SubKind>, Option<SubSpec>) {
-        let path = "subdivision";
-        let Some(m) = self.object(v, path) else {
-            return (None, None);
-        };
-        let Some(t) = self.required(m, path, "type") else {
-            return (None, None);
-        };
-        let Some(kind) = self.choice(
+    /// The subdivision `type` at `path`, with the reserved types rejected.
+    fn subdivision_type(&mut self, m: &Map<String, Value>, path: &str) -> Option<SubdivisionType> {
+        let t = self.required(m, path, "type")?;
+        self.choice(
             t,
-            "subdivision.type",
+            &join(path, "type"),
             SubdivisionType::ALL,
             SubdivisionType::name,
             &["anchored"],
-        ) else {
+        )
+    }
+
+    fn subdivision(&mut self, v: &Value, path: &str) -> (Option<SubKind>, Option<SubSpec>) {
+        let Some(m) = self.object(v, path) else {
             return (None, None);
         };
+        let Some(kind) = self.subdivision_type(m, path) else {
+            return (None, None);
+        };
+        let quarters_path = join(path, "quarters");
         if kind == SubdivisionType::CalendarMonths {
             self.fields(
                 m,
@@ -691,19 +982,19 @@ impl Validator {
                 &["stub", "special_periods"],
             );
             let msd = self.required(m, path, "month_start_day").and_then(|v| {
-                self.int_in(v, "subdivision.month_start_day", 1, 31)
+                self.int_in(v, &join(path, "month_start_day"), 1, 31)
                     .map(|n| n as u32)
             });
             let quarters = self
                 .required(m, path, "quarters")
-                .and_then(|v| self.positive_array(v, "subdivision.quarters"));
+                .and_then(|v| self.positive_array(v, &quarters_path));
             if let Some(q) = &quarters {
                 let sum: u64 = q.iter().map(|&x| u64::from(x)).sum();
                 if sum != 12 {
                     self.push(
                         Error::new(
                             ErrorCode::QuartersSumMismatch,
-                            "subdivision.quarters",
+                            quarters_path,
                             format!("quarters sum to {sum} periods, expected 12"),
                         )
                         .hint("a calendar_months year has 12 periods, for example [3, 3, 3, 3]"),
@@ -733,14 +1024,15 @@ impl Validator {
                 &["type", "periods", "quarters", "extra_week"],
                 &["stub", "special_periods"],
             );
+            let periods_path = join(path, "periods");
             let mut periods = self
                 .required(m, path, "periods")
-                .and_then(|v| self.positive_array(v, "subdivision.periods"));
+                .and_then(|v| self.positive_array(v, &periods_path));
             if let Some(p) = &periods {
                 if p.len() != 12 && p.len() != 13 {
                     self.push(Error::new(
                         ErrorCode::InvalidValue,
-                        "subdivision.periods",
+                        periods_path,
                         format!("periods has {} entries, expected 12 or 13", p.len()),
                     ));
                     periods = None;
@@ -765,7 +1057,7 @@ impl Validator {
                         self.push(
                             Error::new(
                                 ErrorCode::WeeksSumMismatch,
-                                "subdivision.periods",
+                                periods_path,
                                 format!("periods sum to {sum} weeks, expected 52"),
                             )
                             .hint(hint),
@@ -774,36 +1066,21 @@ impl Validator {
                     }
                 }
             }
-            let mut quarters = self
-                .required(m, path, "quarters")
-                .and_then(|v| self.positive_array(v, "subdivision.quarters"));
-            if let (Some(q), Some(p)) = (&quarters, &periods) {
-                let sum: u64 = q.iter().map(|&x| u64::from(x)).sum();
-                if sum != p.len() as u64 {
-                    self.push(
-                        Error::new(
-                            ErrorCode::QuartersSumMismatch,
-                            "subdivision.quarters",
-                            format!("quarters sum to {sum} periods, expected {}", p.len()),
-                        )
-                        .hint("make the quarter sizes add up to the number of entries in periods"),
-                    );
-                    quarters = None;
-                }
-            }
+            let quarters = self.pattern_quarters(m, path, periods.as_deref());
+            let extra_path = join(path, "extra_week");
             let extra = match m.get("extra_week") {
                 None => {
                     self.push(
                         Error::new(
                             ErrorCode::ExtraWeekMissing,
-                            "subdivision.extra_week",
+                            extra_path,
                             "extra_week is missing, but every week-based rule produces 53-week years (71 in every 400 years)",
                         )
                         .hint("add \"extra_week\": {\"period\": N} naming the period that gains the 53rd week"),
                     );
                     None
                 }
-                Some(v) => self.extra_week(v, periods.as_ref().map(Vec::len)),
+                Some(v) => self.extra_week(v, &extra_path, periods.as_ref().map(Vec::len)),
             };
             let spec = match (periods, quarters, extra) {
                 (Some(periods), Some(quarters), Some(extra_period)) => Some(SubSpec::WeekPattern {
@@ -817,18 +1094,47 @@ impl Validator {
         }
     }
 
-    fn extra_week(&mut self, v: &Value, n_periods: Option<usize>) -> Option<u32> {
-        let path = "subdivision.extra_week";
+    /// The `quarters` of a `week_pattern` subdivision at `path`, which must
+    /// sum to the number of `periods` when those are valid.
+    fn pattern_quarters(
+        &mut self,
+        m: &Map<String, Value>,
+        path: &str,
+        periods: Option<&[u32]>,
+    ) -> Option<Vec<u32>> {
+        let quarters_path = join(path, "quarters");
+        let quarters = self
+            .required(m, path, "quarters")
+            .and_then(|v| self.positive_array(v, &quarters_path))?;
+        if let Some(p) = periods {
+            let sum: u64 = quarters.iter().map(|&x| u64::from(x)).sum();
+            if sum != p.len() as u64 {
+                self.push(
+                    Error::new(
+                        ErrorCode::QuartersSumMismatch,
+                        quarters_path,
+                        format!("quarters sum to {sum} periods, expected {}", p.len()),
+                    )
+                    .hint("make the quarter sizes add up to the number of entries in periods"),
+                );
+                return None;
+            }
+        }
+        Some(quarters)
+    }
+
+    fn extra_week(&mut self, v: &Value, path: &str, n_periods: Option<usize>) -> Option<u32> {
         let m = self.object(v, path)?;
         self.fields(m, path, &["period"], &["standalone", "by_year"]);
         let p = self.required(m, path, "period")?;
-        let n = self.integer(p, "subdivision.extra_week.period")?;
+        let period_path = join(path, "period");
+        let n = self.integer(p, &period_path)?;
         let n_periods = n_periods?;
         if n < 1 || n > n_periods as i64 {
             self.push(
                 Error::new(
                     ErrorCode::ExtraWeekOutOfRange,
-                    "subdivision.extra_week.period",
+                    period_path,
                     format!("extra_week.period is {n}, but the year has periods 1 to {n_periods}"),
                 )
                 .hint(format!("name a period from 1 to {n_periods}")),
@@ -836,6 +1142,167 @@ impl Validator {
             return None;
         }
         Some(n as u32)
+    }
+
+    fn exceptions(&mut self, v: &Value) -> Option<Vec<Change>> {
+        let path = "exceptions";
+        let m = self.object(v, path)?;
+        self.fields(m, path, &["history"], &["overrides"]);
+        let history = self.required(m, path, "history")?;
+        let history_path = "exceptions.history";
+        let Some(entries) = history.as_array() else {
+            self.type_error(history, history_path, "an array of history entries");
+            return None;
+        };
+        if entries.is_empty() {
+            self.push(
+                Error::new(
+                    ErrorCode::InvalidValue,
+                    history_path,
+                    "exceptions.history must contain at least one entry",
+                )
+                .hint("add an entry with from, year and subdivision, or remove exceptions"),
+            );
+            return None;
+        }
+        let mut out = Some(Vec::with_capacity(entries.len()));
+        for (i, entry) in entries.iter().enumerate() {
+            let change = self.change(entry, &format!("{history_path}[{i}]"));
+            match (&mut out, change) {
+                (Some(list), Some(c)) => list.push(c),
+                _ => out = None,
+            }
+        }
+        out
+    }
+
+    fn change(&mut self, v: &Value, path: &str) -> Option<Change> {
+        let m = self.object(v, path)?;
+        self.fields(m, path, &["from", "year", "subdivision", "transition"], &[]);
+        let from = self
+            .required(m, path, "from")
+            .and_then(|v| self.date(v, &join(path, "from")));
+        let structure = self.rule(m, path);
+        let transition_path = join(path, "transition");
+        let transition = match m.get("transition") {
+            None | Some(Value::Null) => Some(None),
+            Some(v) => self.transition(v, &transition_path, from).map(Some),
+        };
+        Some(Change {
+            from: from?,
+            transition: transition?,
+            structure: structure?,
+        })
+    }
+
+    /// Parses a transition. Its start is compared with `from` here, apart from
+    /// the subdivision, so that an invalid subdivision cannot hide the error.
+    fn transition(&mut self, v: &Value, path: &str, from: Option<Date>) -> Option<Transition> {
+        let m = self.object(v, path)?;
+        self.fields(m, path, &["start", "subdivision"], &[]);
+        let start_path = join(path, "start");
+        let start = self
+            .required(m, path, "start")
+            .and_then(|v| self.date(v, &start_path))
+            .filter(|&start| match from {
+                Some(from) if start >= from => {
+                    self.push(
+                        Error::new(
+                            ErrorCode::InvalidValue,
+                            start_path.as_str(),
+                            format!(
+                                "transition.start is {start}, which is not before from ({from})"
+                            ),
+                        )
+                        .hint(
+                            "a transition ends the day before from, so it must start before from",
+                        ),
+                    );
+                    false
+                }
+                _ => true,
+            });
+        let subdivision = self
+            .required(m, path, "subdivision")
+            .and_then(|v| self.transition_subdivision(v, &join(path, "subdivision")));
+        Some(Transition {
+            start: start?,
+            subdivision: subdivision?,
+        })
+    }
+
+    fn transition_subdivision(&mut self, v: &Value, path: &str) -> Option<TransitionSubdivision> {
+        let m = self.object(v, path)?;
+        let kind = self.subdivision_type(m, path)?;
+        if kind == SubdivisionType::CalendarMonths {
+            self.fields(
+                m,
+                path,
+                &["type", "month_start_day", "quarters"],
+                &["stub", "special_periods"],
+            );
+            let month_start_day = self.required(m, path, "month_start_day").and_then(|v| {
+                self.int_in(v, &join(path, "month_start_day"), 1, 28)
+                    .map(|n| n as u32)
+            });
+            let quarters = self
+                .required(m, path, "quarters")
+                .and_then(|v| self.positive_array(v, &join(path, "quarters")));
+            Some(TransitionSubdivision::CalendarMonths {
+                month_start_day: month_start_day?,
+                quarters: quarters?,
+            })
+        } else {
+            self.fields(
+                m,
+                path,
+                &["type", "periods", "quarters"],
+                &["stub", "special_periods"],
+            );
+            let periods_path = join(path, "periods");
+            let periods = self
+                .required(m, path, "periods")
+                .and_then(|v| self.positive_array(v, &periods_path))
+                .filter(|p| {
+                    if p.is_empty() {
+                        self.push(
+                            Error::new(
+                                ErrorCode::InvalidValue,
+                                periods_path.clone(),
+                                "periods must have at least one entry",
+                            )
+                            .hint("list the weeks in each period of the transition"),
+                        );
+                    }
+                    !p.is_empty()
+                });
+            let quarters = self.pattern_quarters(m, path, periods.as_deref());
+            Some(TransitionSubdivision::WeekPattern {
+                periods: periods?,
+                quarters: quarters?,
+            })
+        }
+    }
+
+    /// A date in `exceptions`: a `YYYY-MM-DD` string from 0002-01-01 to 9998-12-31.
+    fn date(&mut self, v: &Value, path: &str) -> Option<Date> {
+        let Some(s) = v.as_str() else {
+            self.type_error(v, path, "a YYYY-MM-DD date string");
+            return None;
+        };
+        let (lo, hi) = CHANGE_DATES;
+        let date = Date::parse_iso(s).filter(|d| (lo..=hi).contains(d));
+        if date.is_none() {
+            self.push(
+                Error::new(
+                    ErrorCode::InvalidValue,
+                    path,
+                    format!("\"{s}\" is not a YYYY-MM-DD date from {lo} to {hi}"),
+                )
+                .hint("write the date as YYYY-MM-DD, for example \"2025-04-01\""),
+            );
+        }
+        date
     }
 
     fn naming(&mut self, v: &Value) -> Option<(Vec<Scheme>, usize)> {
@@ -979,7 +1446,7 @@ impl Validator {
                                 ok = false;
                                 self.push(
                                     Error::new(ErrorCode::InvalidTemplate, lp, reason).hint(
-                                        "placeholders are {yyyy} {yy} {yy_next} everywhere, {q} in quarter, {pp} in period and {ww} in week templates",
+                                        "placeholders are {yyyy} {yy} {yy_next} {yy_end} everywhere, {q} in quarter, {pp} in period and {ww} in week templates",
                                     ),
                                 );
                             }
@@ -1013,7 +1480,7 @@ impl Validator {
             offset: offset?,
             century_pivot: pivot?,
             templates: templates?,
-            shift: 0,
+            numbers: Vec::new(),
         })
     }
 
@@ -1028,7 +1495,7 @@ impl Validator {
                     Error::new(
                         ErrorCode::UnsupportedFeature,
                         p.clone(),
-                        format!("{p} is reserved and not supported in fiscalclock 0.1"),
+                        format!("{p} is reserved and not supported in fiscalclock 0.2"),
                     )
                     .hint(PLANNED),
                 );
@@ -1164,7 +1631,7 @@ impl Validator {
                 Error::new(
                     ErrorCode::UnsupportedFeature,
                     path,
-                    format!("{path} \"{s}\" is reserved and not supported in fiscalclock 0.1"),
+                    format!("{path} \"{s}\" is reserved and not supported in fiscalclock 0.2"),
                 )
                 .hint(PLANNED),
             );

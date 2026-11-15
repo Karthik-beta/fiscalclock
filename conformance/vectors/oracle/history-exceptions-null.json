@@ -1,0 +1,57 @@
+{
+  "name": "history-exceptions-null",
+  "description": "A definition with 'exceptions': null, which means no exceptions. The canonical form leaves exceptions out, so calendar_id is ee12e36448ae0a13, the same as calendar-id-pair-a, which has no exceptions field (asserted by the generator).",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.canonical; equality with calendar-id-pair-a asserted"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "cal",
+      "schemes": {
+        "cal": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}"
+          }
+        }
+      }
+    },
+    "exceptions": null
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "ee12e36448ae0a13",
+        "canonical": "{\"naming\":{\"default\":\"cal\",\"schemes\":{\"cal\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    }
+  ]
+}

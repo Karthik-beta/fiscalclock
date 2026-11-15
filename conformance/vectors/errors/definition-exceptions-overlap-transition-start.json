@@ -1,0 +1,128 @@
+{
+  "name": "definition-exceptions-overlap-transition-start",
+  "description": "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the definition has no block-level error. Entry 1's change point, its transition.start 2025-04-01, is on entry 0's from. The complete error list is asserted (code and path of each error, sorted by path, then code).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#cross-block-checks",
+    "checked_by": "Manual reading of the 0.2.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#exceptions and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error (Paths for common errors), 2026-11-15; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}",
+            "quarter": "Q{q} {yyyy}-{yy_end}",
+            "period": "P{pp} {yyyy}-{yy_end}",
+            "week": "W{ww} {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "from": "2026-04-01",
+          "transition": {
+            "start": "2025-04-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              4,
+              4,
+              4
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "EXCEPTIONS_OVERLAP",
+          "path": "exceptions.history[1].transition.start"
+        }
+      ]
+    }
+  ]
+}

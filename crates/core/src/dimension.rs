@@ -95,10 +95,10 @@ impl FiscalCalendar {
         let days = self.dimension_span(start, end_exclusive)?;
         let mut rows = Vec::with_capacity(days as usize);
         for d in 0..days {
-            let (key, location) = self.locate_keyed(start.add(d), "start")?;
+            let (fy, location) = self.locate_in(start.add(d), "start")?;
             let labels = self
                 .label_slots()
-                .map(|(s, l)| self.label_for(s, l, &location, key))
+                .map(|(s, l)| self.label_for(s, l, &location, &fy))
                 .collect();
             rows.push(DimensionRow { location, labels });
         }

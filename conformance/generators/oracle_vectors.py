@@ -444,6 +444,30 @@ def ambiguous_label_vector() -> dict:
     return vector("labels-ambiguous-india", desc, oracle_source("fiscal_oracle.py parse"), defn, cases)
 
 
+def label_range_vector() -> dict:
+    defn = fixed_date(4, 1, "monday", naming({
+        "fy": scheme("start", {"year": "{yyyy}-{yy_next}"}),
+        "short": scheme("start", {"year": "{yy}-{yy_next}"}, pivot=9999),
+        "slash": scheme("start", {"year": "{yyyy}/{yy}"}),
+    }))
+    cal = Calendar(defn)
+    lowest, highest = cal.number(0), cal.number(cal.last_key())
+    assert (lowest, highest) == (1, 9998), (lowest, highest)
+    cases = [validate_case(defn)]
+    for label in ("0000-05", "0000-01", "99-05", "99-00", "98-99", "0000/01", "2024/25", "2024/24"):
+        cases.append(case(cal, "parse", {"label": label}))
+    desc = (
+        "parse checks the range of the year a label names before the two-digit year checks. Fiscal years start 1 April and are "
+        "numbered by start year, so the supported numbers are 1 to 9998 (fiscal 9999 would end in 10000). Scheme 'fy' is "
+        "{yyyy}-{yy_next}: '0000-05' names year 0, which is out of range, so it is OUT_OF_RANGE although {yy_next} also "
+        "disagrees (fiscalclock 0.1.0 returned LABEL_NOT_RECOGNISED). Scheme 'short' is {yy}-{yy_next} with century_pivot 9999, "
+        "so '99' resolves to 9999 (the pivot window is 9900-9999): '99-05' and '99-00' are OUT_OF_RANGE whether or not {yy_next} "
+        "agrees, and '98-99' is fiscal 9998. Scheme 'slash' is {yyyy}/{yy}: '0000/01' is OUT_OF_RANGE, '2024/25' names an in-range "
+        "year whose {yy} disagrees with {yyyy}, so it is LABEL_NOT_RECOGNISED, and '2024/24' is fiscal 2024."
+    )
+    return vector("labels-range-before-checks", desc, oracle_source("fiscal_oracle.py parse"), defn, cases)
+
+
 def calendar_id_vectors() -> list[dict]:
     a = {
         "spec_version": 1,
@@ -505,8 +529,7 @@ def range_edge_vectors() -> list[dict]:
     defs = [("nrf", nrf_definition()), ("jan-1", fixed_date(1, 1, "monday", naming({"cal": scheme("start", {"year": "{yyyy}"})}))), ("apple", apple_definition())]
     for label, defn in defs:
         cal = Calendar(defn)
-        first = next(k for k in range(1, 10) if cal.in_range(k))
-        last = next(k for k in range(10000, 9990, -1) if cal.in_range(k))
+        first, last = 0, cal.last_key()
         cases = [validate_case(defn)]
         for k in (first, last):
             s, e = cal.key_bounds(k)
@@ -519,6 +542,6 @@ def range_edge_vectors() -> list[dict]:
 
 
 def build() -> list[dict]:
-    vectors = week_based_spread() + [nrf_vector(), apple_vector(), iso_vector(), dimension_vector(), ambiguous_label_vector()]
+    vectors = week_based_spread() + [nrf_vector(), apple_vector(), iso_vector(), dimension_vector(), ambiguous_label_vector(), label_range_vector()]
     vectors += fixed_vectors() + calendar_id_vectors() + [canonical_non_ascii_vector()] + range_edge_vectors()
     return vectors

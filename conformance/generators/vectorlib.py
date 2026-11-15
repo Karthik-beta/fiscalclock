@@ -50,7 +50,7 @@ def fixed_date(month, day, starts_on, names: dict, short_month: str | None = Non
 
 def run(cal: Calendar, op: str, args: dict):
     if op == "validate":
-        errors = cal.naming_errors()
+        errors = cal.validation_errors()
         if errors:
             raise errors[0]
         return {"ok": True, "calendar_id": calendar_id(cal.definition), "canonical": canonical(cal.definition)}

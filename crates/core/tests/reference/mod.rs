@@ -8,6 +8,12 @@
 
 use std::collections::HashMap;
 
+// Not every test target uses calendars that change.
+#[allow(dead_code)]
+pub mod cases;
+#[allow(dead_code)]
+pub mod history;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Civil {
     pub y: i32,
@@ -98,8 +104,15 @@ impl Walk {
         let at = days.iter().enumerate().map(|(i, &c)| (c, i)).collect();
         Walk { days, weekday, at }
     }
+
+    /// The `i`-th walked day.
+    #[allow(dead_code)]
+    pub fn day(&self, i: usize) -> Civil {
+        self.days[i]
+    }
 }
 
+#[derive(Clone, Debug)]
 pub enum Shape {
     Week {
         starts_on: &'static str,
@@ -343,90 +356,17 @@ fn years_of(
     shape: &Shape,
     numbering: Numbering,
 ) -> Result<(Vec<(usize, i32)>, Vec<bool>), Refused> {
-    let n = walk.days.len();
+    let (firsts, is_period_start) = rule_starts(walk, shape);
     // Each fiscal year as (index of its first day, year number), in order.
-    let mut years: Vec<(usize, i32)> = Vec::new();
-    let mut is_period_start = vec![false; n];
-    let starts_on = match shape {
-        Shape::Week { starts_on, .. } | Shape::Fixed { starts_on, .. } => *starts_on,
-    };
-    match shape {
-        Shape::Week {
-            edge_end,
-            month,
-            day,
-            rule,
-            ..
-        } => {
-            let pos = NAMES.iter().position(|&s| s == starts_on).unwrap();
-            let qualifying = if *edge_end {
-                NAMES[(pos + 6) % 7]
-            } else {
-                starts_on
-            };
-            let target = |y: i32| {
-                walk.at[&Civil {
-                    y,
-                    m: *month,
-                    d: day.unwrap_or(month_len(y, *month)),
-                }]
-            };
-            let boundary = |y: i32| {
-                let t = target(y);
-                let hits = (t - 6..=t + 6).filter(|&i| walk.weekday[i] == qualifying);
-                match *rule {
-                    "last" => hits.filter(|&i| i <= t).max().unwrap(),
-                    "first" => hits.filter(|&i| i >= t).min().unwrap(),
-                    _ => hits.min_by_key(|&i| i.abs_diff(t)).unwrap(),
-                }
-            };
-            for y in 1892..=2209 {
-                // Year y: (B(y-1), B(y)] for edge "end", [B(y), B(y+1)) for "start".
-                let first = if *edge_end {
-                    boundary(y - 1) + 1
-                } else {
-                    boundary(y)
-                };
-                years.push((first, 0));
-            }
-        }
-        Shape::Fixed {
-            month, day, next, ..
-        } => {
-            let month_start = |y: i32, m: u32| {
-                if *day <= month_len(y, m) {
-                    walk.at[&Civil { y, m, d: *day }]
-                } else {
-                    let last = walk.at[&Civil {
-                        y,
-                        m,
-                        d: month_len(y, m),
-                    }];
-                    if *next { last + 1 } else { last }
-                }
-            };
-            for y in 1892..=2209 {
-                let (mut yy, mut mm) = (y, *month);
-                for _ in 0..12 {
-                    is_period_start[month_start(yy, mm)] = true;
-                    mm += 1;
-                    if mm == 13 {
-                        mm = 1;
-                        yy += 1;
-                    }
-                }
-                years.push((month_start(y, *month), 0));
-            }
-        }
-    }
+    let mut years: Vec<(usize, i32)> = firsts.into_iter().map(|i| (i, 0)).collect();
 
     // Number each year by counting its days per calendar year. Any even split
     // is reported before checking that consecutive years get consecutive numbers.
     if numbering == "majority" {
         for w in years.windows(2) {
             let mut held: HashMap<i32, usize> = HashMap::new();
-            for j in w[0].0..w[1].0 {
-                *held.entry(walk.days[j].y).or_default() += 1;
+            for c in &walk.days[w[0].0..w[1].0] {
+                *held.entry(c.y).or_default() += 1;
             }
             if held.values().any(|&c| c * 2 == w[1].0 - w[0].0) {
                 return Err(Refused::Tie);
@@ -436,10 +376,10 @@ fn years_of(
     for i in 0..years.len() - 1 {
         let (first, next_first) = (years[i].0, years[i + 1].0);
         let mut held: Vec<(i32, usize)> = Vec::new();
-        for j in first..next_first {
+        for c in &walk.days[first..next_first] {
             match held.last_mut() {
-                Some((y, count)) if *y == walk.days[j].y => *count += 1,
-                _ => held.push((walk.days[j].y, 1)),
+                Some((y, count)) if *y == c.y => *count += 1,
+                _ => held.push((c.y, 1)),
             }
         }
         let total = next_first - first;
@@ -459,4 +399,97 @@ fn years_of(
     }
     years.pop();
     Ok((years, is_period_start))
+}
+
+/// The index of the first day of every fiscal year that `shape`'s rule opens
+/// in the years 1892 to 2209, in order, and which days start a fiscal month
+/// under a `fixed_date` rule (none under a week-based rule).
+pub fn rule_starts(walk: &Walk, shape: &Shape) -> (Vec<usize>, Vec<bool>) {
+    let n = walk.days.len();
+    let mut is_period_start = vec![false; n];
+    let firsts: Vec<usize> = (1892..=2209)
+        .map(|y| {
+            rule_year_start(walk, shape, y)
+                .expect("the walk holds every day the scan reads for 1892 to 2209")
+        })
+        .collect();
+    if let Shape::Fixed { month, .. } = shape {
+        for y in 1892..=2209 {
+            let (mut yy, mut mm) = (y, *month);
+            for _ in 0..12 {
+                is_period_start[month_start(walk, shape, yy, mm).unwrap()] = true;
+                mm += 1;
+                if mm == 13 {
+                    mm = 1;
+                    yy += 1;
+                }
+            }
+        }
+    }
+    (firsts, is_period_start)
+}
+
+/// The first day of a `fixed_date` rule's fiscal month that starts in month
+/// `m` of year `y`, or `None` when that day is not walked.
+fn month_start(walk: &Walk, shape: &Shape, y: i32, m: u32) -> Option<usize> {
+    let Shape::Fixed { day, next, .. } = shape else {
+        unreachable!("only fixed_date rules have calendar months")
+    };
+    let i = if *day <= month_len(y, m) {
+        *walk.at.get(&Civil { y, m, d: *day })?
+    } else {
+        let last = *walk.at.get(&Civil {
+            y,
+            m,
+            d: month_len(y, m),
+        })?;
+        if *next { last + 1 } else { last }
+    };
+    (i < walk.days.len()).then_some(i)
+}
+
+/// The index of the first day of the fiscal year that `shape`'s rule opens
+/// in year `y`, or `None` when the walk does not hold every day the scan
+/// reads (the six days on each side of a week-based target).
+pub fn rule_year_start(walk: &Walk, shape: &Shape, y: i32) -> Option<usize> {
+    match shape {
+        Shape::Week {
+            starts_on,
+            edge_end,
+            month,
+            day,
+            rule,
+            ..
+        } => {
+            let pos = NAMES.iter().position(|s| s == starts_on).unwrap();
+            let qualifying = if *edge_end {
+                NAMES[(pos + 6) % 7]
+            } else {
+                *starts_on
+            };
+            let boundary = |y: i32| {
+                let t = *walk.at.get(&Civil {
+                    y,
+                    m: *month,
+                    d: day.unwrap_or(month_len(y, *month)),
+                })?;
+                if t < 6 || t + 6 >= walk.days.len() {
+                    return None;
+                }
+                let hits = (t - 6..=t + 6).filter(|&i| walk.weekday[i] == qualifying);
+                Some(match *rule {
+                    "last" => hits.filter(|&i| i <= t).max().unwrap(),
+                    "first" => hits.filter(|&i| i >= t).min().unwrap(),
+                    _ => hits.min_by_key(|&i| i.abs_diff(t)).unwrap(),
+                })
+            };
+            // Year y: (B(y-1), B(y)] for edge "end", [B(y), B(y+1)) for "start".
+            if *edge_end {
+                boundary(y - 1).map(|b| b + 1)
+            } else {
+                boundary(y)
+            }
+        }
+        Shape::Fixed { month, .. } => month_start(walk, shape, y, *month),
+    }
 }

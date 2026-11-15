@@ -1,3 +1,4 @@
+mod changes;
 mod common;
 
 use common::*;
@@ -179,8 +180,9 @@ fn unsupported_spec_version() {
 #[test]
 fn unsupported_feature_for_every_reserved_part() {
     let mut d = nrf();
-    d["exceptions"] = json!({});
-    only(&d, ErrorCode::UnsupportedFeature, "exceptions");
+    d["exceptions"] =
+        json!({"overrides": null, "history": [changes::entry("2030-04-01", 4, None)]});
+    only(&d, ErrorCode::UnsupportedFeature, "exceptions.overrides");
 
     let mut d = nrf();
     d["year"] = json!({"type": "table"});
@@ -237,7 +239,7 @@ fn unsupported_feature_for_every_reserved_part() {
     let e = &Definition::from_json(&d.to_string())
         .unwrap_err()
         .into_vec()[0];
-    assert!(e.hint.as_deref().unwrap().contains("0.2"));
+    assert!(e.hint.as_deref().unwrap().contains("0.3"));
 }
 
 #[test]
@@ -253,14 +255,16 @@ fn unsupported_combination_both_ways() {
 }
 
 #[test]
-fn weeks_sum_mismatch_matches_the_api_example() {
+fn weeks_sum_mismatch_has_the_layout_of_the_api_example() {
+    // The message and hint wording is not API, only their place in the JSON.
     let mut d = nrf();
     d["subdivision"]["periods"][1] = json!(4);
     let out = json::validate(&d.to_string());
-    assert_eq!(
-        out,
-        r#"{"errors":[{"code":"WEEKS_SUM_MISMATCH","path":"subdivision.periods","message":"periods sum to 51 weeks, expected 52","hint":"add one week to a period","details":null}]}"#
-    );
+    let layout =
+        r#"{"errors":[{"code":"WEEKS_SUM_MISMATCH","path":"subdivision.periods","message":""#;
+    assert!(out.starts_with(layout), "{out}");
+    assert!(out.ends_with(r#"","details":null}]}"#), "{out}");
+    assert_eq!(out.matches(r#"","hint":""#).count(), 1, "{out}");
 }
 
 #[test]
@@ -467,4 +471,555 @@ fn canonical_form_escapes_control_characters_and_keeps_utf8() {
         c.canonical_json()
     );
     assert!(c.canonical_json().contains("\"short_month\":null"));
+}
+
+// ---- exceptions.history (0.2.0) ----
+
+/// P&G Hygiene and Health Care's calendar (see `changes`) with `edit` applied
+/// to its only history entry.
+fn pg_with(edit: impl FnOnce(&mut Value)) -> Value {
+    let mut d = changes::pg();
+    edit(&mut d["exceptions"]["history"][0]);
+    d
+}
+
+fn errors_and_hints(def: &Value) -> Vec<(ErrorCode, String, String)> {
+    Definition::from_json(&def.to_string())
+        .expect_err("definition should be rejected")
+        .into_vec()
+        .into_iter()
+        .map(|e| (e.code, e.path, e.hint.unwrap_or_default()))
+        .collect()
+}
+
+#[test]
+fn the_filer_timelines_validate() {
+    for (name, def) in changes::all() {
+        let result = Definition::from_json(&def.to_string());
+        assert!(result.is_ok(), "{name}: {:?}", result.err());
+    }
+}
+
+#[test]
+fn exceptions_block_level_errors() {
+    let h = "exceptions.history";
+    let cases: Vec<(Value, ErrorCode, String)> = vec![
+        (
+            {
+                let mut d = nrf();
+                d["exceptions"] = json!(5);
+                d
+            },
+            ErrorCode::InvalidType,
+            "exceptions".into(),
+        ),
+        (
+            {
+                let mut d = nrf();
+                d["exceptions"] = json!({});
+                d
+            },
+            ErrorCode::MissingField,
+            h.into(),
+        ),
+        (
+            {
+                let mut d = nrf();
+                d["exceptions"] = json!({"history": []});
+                d
+            },
+            ErrorCode::InvalidValue,
+            h.into(),
+        ),
+        (
+            {
+                let mut d = nrf();
+                d["exceptions"] = json!({"history": null});
+                d
+            },
+            ErrorCode::InvalidType,
+            h.into(),
+        ),
+        (
+            {
+                let mut d = changes::pg();
+                d["exceptions"]["transitions"] = json!([]);
+                d
+            },
+            ErrorCode::UnknownField,
+            "exceptions.transitions".into(),
+        ),
+        (
+            {
+                let mut d = changes::pg();
+                d["exceptions"]["history"][0] = json!("2025-04-01");
+                d
+            },
+            ErrorCode::InvalidType,
+            format!("{h}[0]"),
+        ),
+        (
+            pg_with(|e| e["week"] = json!({"starts_on": "sunday", "numbering": "contains_start"})),
+            ErrorCode::UnknownField,
+            format!("{h}[0].week"),
+        ),
+        (
+            pg_with(|e| e["naming"] = json!({})),
+            ErrorCode::UnknownField,
+            format!("{h}[0].naming"),
+        ),
+        (
+            pg_with(|e| {
+                e.as_object_mut().unwrap().remove("from");
+            }),
+            ErrorCode::MissingField,
+            format!("{h}[0].from"),
+        ),
+        (
+            pg_with(|e| {
+                e.as_object_mut().unwrap().remove("subdivision");
+            }),
+            ErrorCode::MissingField,
+            format!("{h}[0].subdivision"),
+        ),
+        (
+            pg_with(|e| e["from"] = json!(20250401)),
+            ErrorCode::InvalidType,
+            format!("{h}[0].from"),
+        ),
+        (
+            pg_with(|e| e["transition"] = json!("2024-07-01")),
+            ErrorCode::InvalidType,
+            format!("{h}[0].transition"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["extra_week"] = json!({"period": 1})),
+            ErrorCode::UnknownField,
+            format!("{h}[0].transition.subdivision.extra_week"),
+        ),
+        (
+            pg_with(|e| e["transition"]["end"] = json!("2025-03-31")),
+            ErrorCode::UnknownField,
+            format!("{h}[0].transition.end"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["type"] = json!("anchored")),
+            ErrorCode::UnsupportedFeature,
+            format!("{h}[0].transition.subdivision.type"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["type"] = json!("table")),
+            ErrorCode::InvalidValue,
+            format!("{h}[0].transition.subdivision.type"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["stub"] = json!({})),
+            ErrorCode::UnsupportedFeature,
+            format!("{h}[0].transition.subdivision.stub"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["special_periods"] = json!([])),
+            ErrorCode::UnsupportedFeature,
+            format!("{h}[0].transition.subdivision.special_periods"),
+        ),
+        (
+            pg_with(|e| e["transition"]["subdivision"]["month_start_day"] = json!(29)),
+            ErrorCode::InvalidValue,
+            format!("{h}[0].transition.subdivision.month_start_day"),
+        ),
+        (
+            pg_with(|e| {
+                e["transition"]["subdivision"] =
+                    json!({"type": "week_pattern", "periods": [], "quarters": [1]});
+            }),
+            ErrorCode::InvalidValue,
+            format!("{h}[0].transition.subdivision.periods"),
+        ),
+        (
+            pg_with(|e| {
+                e["transition"]["subdivision"] =
+                    json!({"type": "week_pattern", "periods": [13, 13, 13], "quarters": [1, 1]});
+            }),
+            ErrorCode::QuartersSumMismatch,
+            format!("{h}[0].transition.subdivision.quarters"),
+        ),
+        (
+            pg_with(|e| e["transition"]["start"] = json!("2025-04-01")),
+            ErrorCode::InvalidValue,
+            format!("{h}[0].transition.start"),
+        ),
+        (
+            pg_with(|e| e["transition"]["start"] = json!("2026-01-01")),
+            ErrorCode::InvalidValue,
+            format!("{h}[0].transition.start"),
+        ),
+        (
+            pg_with(|e| {
+                e["year"]["start"]["day"] = json!(31);
+                e["subdivision"]["month_start_day"] = json!(31);
+            }),
+            ErrorCode::ShortMonthPolicyMissing,
+            format!("{h}[0].year.short_month"),
+        ),
+        (
+            pg_with(|e| e["subdivision"]["month_start_day"] = json!(2)),
+            ErrorCode::SubdivisionYearMismatch,
+            format!("{h}[0].subdivision.month_start_day"),
+        ),
+        (
+            pg_with(|e| e["subdivision"] = nrf()["subdivision"].clone()),
+            ErrorCode::UnsupportedCombination,
+            format!("{h}[0].subdivision.type"),
+        ),
+        (
+            pg_with(|e| e["subdivision"]["quarters"] = json!([6, 6, 1])),
+            ErrorCode::QuartersSumMismatch,
+            format!("{h}[0].subdivision.quarters"),
+        ),
+        (
+            pg_with(|e| e["subdivision"]["stub"] = json!({})),
+            ErrorCode::UnsupportedFeature,
+            format!("{h}[0].subdivision.stub"),
+        ),
+        (
+            pg_with(|e| e["year"] = json!({"type": "table"})),
+            ErrorCode::UnsupportedFeature,
+            format!("{h}[0].year.type"),
+        ),
+    ];
+    for (d, code, path) in cases {
+        only(&d, code, &path);
+    }
+}
+
+#[test]
+fn exceptions_dates_are_strict_and_bounded() {
+    for bad in [
+        "2025-4-1",
+        "2025-02-29",
+        "2025-04-01T00:00:00",
+        "0001-12-31",
+        "9999-01-01",
+        "",
+    ] {
+        only(
+            &pg_with(|e| e["from"] = json!(bad)),
+            ErrorCode::InvalidValue,
+            "exceptions.history[0].from",
+        );
+        only(
+            &pg_with(|e| e["transition"]["start"] = json!(bad)),
+            ErrorCode::InvalidValue,
+            "exceptions.history[0].transition.start",
+        );
+    }
+}
+
+#[test]
+fn reserved_overrides_is_unsupported_even_when_null() {
+    let mut d = changes::pg();
+    d["exceptions"]["overrides"] = Value::Null;
+    only(&d, ErrorCode::UnsupportedFeature, "exceptions.overrides");
+    let e = &Definition::from_json(&d.to_string())
+        .unwrap_err()
+        .into_vec()[0];
+    assert!(e.hint.as_deref().unwrap().contains("0.3"));
+}
+
+#[test]
+fn exceptions_overlap_is_reported_at_the_change_point() {
+    // Siemens (see `changes`) plus a second entry whose change is on or before
+    // the first entry's from, 2026-04-01.
+    let mut d = changes::siemens();
+    d["exceptions"]["history"]
+        .as_array_mut()
+        .unwrap()
+        .push(changes::entry("2025-04-01", 4, None));
+    only(
+        &d,
+        ErrorCode::ExceptionsOverlap,
+        "exceptions.history[1].from",
+    );
+
+    let mut d = changes::siemens();
+    d["exceptions"]["history"]
+        .as_array_mut()
+        .unwrap()
+        .push(changes::entry(
+            "2027-01-01",
+            1,
+            Some(("2026-04-01", &[3, 3, 3])),
+        ));
+    only(
+        &d,
+        ErrorCode::ExceptionsOverlap,
+        "exceptions.history[1].transition.start",
+    );
+
+    // A year later the change falls on the first day of the previous rule's
+    // second year: valid.
+    let mut d = changes::siemens();
+    d["exceptions"]["history"]
+        .as_array_mut()
+        .unwrap()
+        .push(changes::entry(
+            "2028-01-01",
+            1,
+            Some(("2027-04-01", &[3, 3, 3])),
+        ));
+    let result = Definition::from_json(&d.to_string());
+    assert!(result.is_ok(), "{:?}", result.err());
+}
+
+#[test]
+fn change_not_on_boundary_for_the_previous_and_the_own_rule() {
+    // The transition starts on 1 August, which no July to June year does.
+    let d = pg_with(|e| {
+        e["transition"]["start"] = json!("2024-08-01");
+        e["transition"]["subdivision"]["quarters"] = json!([3, 3, 2]);
+    });
+    let errors = errors_and_hints(&d);
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_eq!(
+        (errors[0].0, errors[0].1.as_str()),
+        (
+            ErrorCode::ChangeNotOnBoundary,
+            "exceptions.history[0].transition.start"
+        )
+    );
+    // The hint names the year starts either side and picks neither.
+    assert!(errors[0].2.contains("2024-07-01") && errors[0].2.contains("2025-07-01"));
+
+    // from is 1 May, which no April to March year starts on.
+    let d = pg_with(|e| {
+        e["from"] = json!("2025-05-01");
+        e["transition"]["subdivision"]["quarters"] = json!([3, 3, 3, 1]);
+    });
+    let errors = errors_and_hints(&d);
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_eq!(
+        (errors[0].0, errors[0].1.as_str()),
+        (ErrorCode::ChangeNotOnBoundary, "exceptions.history[0].from")
+    );
+    assert!(errors[0].2.contains("2025-04-01") && errors[0].2.contains("2026-04-01"));
+
+    // Without a transition, a from on neither rule's boundary fails both
+    // checks at the same path, the previous rule's first.
+    let mut d = changes::fixed(7, "start", "FY{yyyy}");
+    d["exceptions"] = json!({"history": [changes::entry("2025-03-01", 4, None)]});
+    let errors = errors_and_hints(&d);
+    assert_eq!(
+        errors
+            .iter()
+            .map(|(c, p, _)| (*c, p.as_str()))
+            .collect::<Vec<_>>(),
+        [
+            (ErrorCode::ChangeNotOnBoundary, "exceptions.history[0].from"),
+            (ErrorCode::ChangeNotOnBoundary, "exceptions.history[0].from"),
+        ]
+    );
+    // The first hint names the July years around 1 March 2025, the second
+    // the April years.
+    assert!(errors[0].2.contains("2024-07-01") && errors[0].2.contains("2025-07-01"));
+    assert!(errors[1].2.contains("2024-04-01") && errors[1].2.contains("2025-04-01"));
+}
+
+#[test]
+fn calendar_months_transition_must_fit_its_dates() {
+    // The quarters check needs whole months, so it is not also reported.
+    let d = pg_with(|e| e["transition"]["subdivision"]["month_start_day"] = json!(2));
+    only(
+        &d,
+        ErrorCode::SubdivisionYearMismatch,
+        "exceptions.history[0].transition.subdivision.month_start_day",
+    );
+    let d = pg_with(|e| e["transition"]["subdivision"]["quarters"] = json!([3, 3, 3, 3]));
+    only(
+        &d,
+        ErrorCode::QuartersSumMismatch,
+        "exceptions.history[0].transition.subdivision.quarters",
+    );
+}
+
+#[test]
+fn calendar_months_transition_needs_month_start_day_on_both_dates() {
+    // July years starting on the 15th, then April years starting on the 1st,
+    // through a transition from 15 July 2024 to 31 March 2025. Each of the
+    // transition's dates is a year start of its rule, but they fall on
+    // different days of the month, so no month_start_day fits both.
+    let mut d = changes::fixed(7, "start", "FY{yyyy}");
+    d["year"]["start"]["day"] = json!(15);
+    d["subdivision"]["month_start_day"] = json!(15);
+    let base = changes::with_history(
+        d,
+        vec![changes::entry(
+            "2025-04-01",
+            4,
+            Some(("2024-07-15", &[3, 3, 3])),
+        )],
+    );
+    let path = "exceptions.history[0].transition.subdivision.month_start_day";
+    for day in [15, 1] {
+        let mut d = base.clone();
+        d["exceptions"]["history"][0]["transition"]["subdivision"]["month_start_day"] = json!(day);
+        only(&d, ErrorCode::SubdivisionYearMismatch, path);
+    }
+}
+
+#[test]
+fn extra_week_errors_in_a_history_entry() {
+    let path = "exceptions.history[0].subdivision.extra_week";
+    let mut d = changes::retail_to_september();
+    d["exceptions"]["history"][0]["subdivision"]
+        .as_object_mut()
+        .unwrap()
+        .remove("extra_week");
+    only(&d, ErrorCode::ExtraWeekMissing, path);
+    for p in [0, 13] {
+        let mut d = changes::retail_to_september();
+        d["exceptions"]["history"][0]["subdivision"]["extra_week"]["period"] = json!(p);
+        only(
+            &d,
+            ErrorCode::ExtraWeekOutOfRange,
+            &format!("{path}.period"),
+        );
+    }
+}
+
+#[test]
+fn week_pattern_transition_must_fit_its_dates() {
+    let base = changes::retail_to_september();
+    let t = "exceptions.history[0].transition";
+
+    let mut d = base.clone();
+    d["exceptions"]["history"][0]["transition"]["subdivision"]["periods"][7] = json!(5);
+    only(
+        &d,
+        ErrorCode::WeeksSumMismatch,
+        &format!("{t}.subdivision.periods"),
+    );
+
+    // Starts on a Monday, 237 days before from: one mismatch for both faults,
+    // and no weeks check because the length is not whole weeks.
+    let mut d = base;
+    d["exceptions"]["history"][0]["transition"]["start"] = json!("2024-02-05");
+    assert_eq!(
+        errors_of(&d),
+        [
+            (ErrorCode::ChangeNotOnBoundary, format!("{t}.start")),
+            (
+                ErrorCode::SubdivisionYearMismatch,
+                format!("{t}.subdivision.type")
+            ),
+        ]
+    );
+
+    // Whole weeks from the wrong weekday: the weeks are still counted.
+    // 2025-01-01 is a Wednesday and 2025-04-02 is 13 weeks later.
+    let mut d = changes::fixed(1, "start", "FY{yyyy}");
+    d["exceptions"] = json!({"history": [{
+        "from": "2025-04-02",
+        "transition": {"start": "2025-01-01", "subdivision": {
+            "type": "week_pattern", "periods": [4, 4, 4], "quarters": [3]}},
+        "year": {"type": "fixed_date", "start": {"month": 4, "day": 2}},
+        "subdivision": {"type": "calendar_months", "month_start_day": 2, "quarters": [3, 3, 3, 3]}
+    }]});
+    assert_eq!(
+        errors_of(&d),
+        [
+            (
+                ErrorCode::WeeksSumMismatch,
+                format!("{t}.subdivision.periods")
+            ),
+            (
+                ErrorCode::SubdivisionYearMismatch,
+                format!("{t}.subdivision.type")
+            ),
+        ]
+    );
+}
+
+#[test]
+fn cross_block_checks_wait_for_every_block_and_numbering_waits_for_them() {
+    // A block-level error anywhere hides the cross-block errors.
+    let mut d = pg_with(|e| e["from"] = json!("2025-05-01"));
+    d["naming"]["default"] = json!("missing");
+    only(&d, ErrorCode::DefaultSchemeMissing, "naming.default");
+
+    let mut d = changes::siemens();
+    d["exceptions"]["history"]
+        .as_array_mut()
+        .unwrap()
+        .push(changes::entry("2025-04-01", 4, None));
+    d["exceptions"]["history"][0]["transition"]["start"] = json!("2026-04-01");
+    only(
+        &d,
+        ErrorCode::InvalidValue,
+        "exceptions.history[0].transition.start",
+    );
+
+    // A cross-block error hides numbering errors: ISO week years numbered by
+    // "start" collide, but only the misplaced change is reported.
+    let mut d = iso();
+    d["naming"]["schemes"]["fy"]["year_number"] = json!("start");
+    d["exceptions"] = json!({"history": [{
+        "from": "2030-01-02",
+        "year": d["year"].clone(),
+        "subdivision": d["subdivision"].clone()
+    }]});
+    assert_eq!(
+        errors_of(&d),
+        [
+            (
+                ErrorCode::ChangeNotOnBoundary,
+                "exceptions.history[0].from".into()
+            ),
+            (
+                ErrorCode::ChangeNotOnBoundary,
+                "exceptions.history[0].from".into()
+            ),
+        ]
+    );
+}
+
+#[test]
+fn numbers_may_skip_only_at_a_change() {
+    // Siemens numbered by "start" goes 2023, 2024 (transition), 2026.
+    assert!(Definition::from_json(&changes::siemens().to_string()).is_ok());
+
+    // A three-month transition in calendar year 2025 after January to
+    // December years: "start" gives 2024, 2025, 2025.
+    let mut d = changes::fixed(1, "start", "FY{yyyy}");
+    d["exceptions"] =
+        json!({"history": [changes::entry("2025-04-01", 4, Some(("2025-01-01", &[3])))]});
+    let errors = Definition::from_json(&d.to_string())
+        .unwrap_err()
+        .into_vec();
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_eq!(errors[0].code, ErrorCode::YearNumberCollision);
+    assert_eq!(errors[0].path, "naming.schemes.fy.year_number");
+    assert_eq!(errors[0].details, Some(Details::Years(vec![2025])));
+    assert!(errors[0].hint.as_deref().unwrap().contains("\"end\""));
+
+    // The offset is included in details.years.
+    d["naming"]["schemes"]["fy"]["offset"] = json!(1);
+    let errors = Definition::from_json(&d.to_string())
+        .unwrap_err()
+        .into_vec();
+    assert_eq!(errors[0].details, Some(Details::Years(vec![2026])));
+}
+
+#[test]
+fn majority_tie_covers_a_transition_without_a_majority_year() {
+    // 1 January 2023 to 30 June 2025 is 365 + 366 + 181 days, so no calendar
+    // year holds more than half of the 912.
+    let mut d = changes::fixed(1, "majority", "FY{yyyy}");
+    d["exceptions"] =
+        json!({"history": [changes::entry("2025-07-01", 7, Some(("2023-01-01", &[3; 10])))]});
+    let errors = Definition::from_json(&d.to_string())
+        .unwrap_err()
+        .into_vec();
+    assert_eq!(errors.len(), 1, "{errors:?}");
+    assert_eq!(errors[0].code, ErrorCode::MajorityTie);
+    assert_eq!(errors[0].details, Some(Details::Years(vec![2023])));
 }

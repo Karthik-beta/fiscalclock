@@ -2,9 +2,9 @@
 
 <!-- cspell:words vide Annexure annexures Sunsole -->
 
-Siemens Limited (India) followed an October to September financial year until 30 September 2024, then changed to April to March through a one-time 18-month transition year from 1 October 2024 to 31 March 2026; spec version 1 can express the October to September year and the April to March year as two separate definitions, but not the 18-month transition period.
+Siemens Limited (India) followed an October to September financial year until 30 September 2024, then changed to April to March through a one-time 18-month transition year from 1 October 2024 to 31 March 2026. From fiscalclock 0.2.0, one definition with `exceptions.history` expresses both regimes and the transition year.
 
-Last reviewed: 4 Nov 2026
+Last reviewed: 15 Nov 2026
 
 ## Document
 
@@ -121,11 +121,51 @@ The document gives no quarter end dates for the old October to September year or
 | Board decision on the change | 8 August 2025 | Printed pages 21, 35, 74, 110, 225 |
 | Regional Director's order | 13 May 2026 | Printed pages 21, 74 |
 
-## Spec version 1 definition
+## Definition with the change (fiscalclock 0.2.0)
 
-Spec version 1 cannot express the transition period. Every year in a `fixed_date` calendar is twelve months, and the format has no way to switch between two calendars or to hold one year of eighteen months (`exceptions` is reserved and rejected with `UNSUPPORTED_FEATURE`; see [spec/definition-v1.md](../../spec/definition-v1.md)). No definition is given for 1 October 2024 to 31 March 2026.
+fiscalclock 0.2.0 adds `exceptions.history` to spec version 1 ([spec/definition-v1.md](../../spec/definition-v1.md#exceptions)): a history entry starts a new year rule on its `from` date, after an optional transition year. The `{yy_end}` placeholder writes the last two digits of the calendar year in which the fiscal year ends, which gives "FY 2024-26" for the transition.
 
-The two regimes on either side can each be written as a separate definition.
+```json
+{
+  "spec_version": 1,
+  "year": {"type": "fixed_date", "start": {"month": 10, "day": 1}},
+  "week": {"starts_on": "monday", "numbering": "contains_start"},
+  "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]},
+  "naming": {"default": "fy", "schemes": {"fy": {"year_number": "start", "templates": {"year": "FY {yyyy}-{yy_end}"}}}},
+  "exceptions": {
+    "history": [
+      {
+        "from": "2026-04-01",
+        "transition": {
+          "start": "2024-10-01",
+          "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3, 3, 3]}
+        },
+        "year": {"type": "fixed_date", "start": {"month": 4, "day": 1}},
+        "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]}
+      }
+    ]
+  }
+}
+```
+
+| Field | Value | Basis |
+| --- | --- | --- |
+| `year.start` (top level) | 1 October | Stated by the filing ("financial year from 1 October to 30 September until 30 September 2024") |
+| `exceptions.history[0].transition.start` | 2024-10-01 | Stated by the filing ("FY 2024-26 was for a period of eighteen months from October 1, 2024 to March 31, 2026") |
+| `exceptions.history[0].from`, `year.start` | 2026-04-01; 1 April | Stated by the filing ("uniform financial year commencing on April 1 of every year and ending on March 31 of the following year") |
+| Number of quarters in the transition | 6 | Stated by the filing ("which comprised of six quarters") |
+| Length of each transition quarter (three calendar months) | 3, 3, 3, 3, 3, 3 | Illustrative. The filing does not print the six quarters' dates (see "Still to check"). |
+| `subdivision` from April 2026 | calendar months, quarters 3, 3, 3, 3 | Stated by the filing for the quarter ends of FY 2026-27; the calendar-month periods are illustrative |
+| `subdivision` before October 2024 | calendar months, quarters 3, 3, 3, 3 | Illustrative |
+| `week` | `monday`, `contains_start` | Illustrative. The document does not describe weeks. |
+| `year_number` | `start` | Stated by the filing ("FY 2023-24" for October 2023 to September 2024, "FY 2024-26" for the transition, "FY 2026-27" for the year ending 31 March 2027) |
+| `templates.year` | `FY {yyyy}-{yy_end}` | Stated by the filing for the same three labels. "FY 2026*" for October 2025 to September 2026 does not fit it (see "How the years are named"). |
+
+Numbered by `start`, the years run 2023, 2024 (the transition) and 2026: no fiscal year has the number 2025. The spec allows a skipped number only at a change of rule. The transition has 547 days by calendar arithmetic on the stated dates; the filing says "eighteen months".
+
+## Spec version 1 definitions of each regime (before 0.2.0)
+
+Before fiscalclock 0.2.0, `exceptions` was reserved and every year in a `fixed_date` calendar is twelve months, so the two regimes on either side were written as separate definitions. The cited vectors for these two definitions predate 0.2.0 and are kept.
 
 ### From 1 April 2026 (April to March)
 
@@ -169,8 +209,9 @@ The two regimes on either side can each be written as a separate definition.
 
 ## Conformance vectors
 
-Two vectors from `conformance/generators/spec_cited_vectors.py`, one per calendar. Neither asserts anything about the 18-month FY 2024-26, which is a candidate for a 0.2 vector once `exceptions.transitions` exists.
+Three vectors from `conformance/generators/spec_cited_vectors.py`.
 
+- `conformance/vectors/cited/siemens-india-annual-report-2024-26-transition.json` has 14 cases on the 0.2.0 definition above: validation; the start, last day and 547 days of FY 2024-26; its label `FY 2024-26` and parsing it; that it has a sixth quarter and no seventh (only the count is stated, so no quarter dates are asserted); the bounds and label of FY 2023-24; `shift` from the transition one year back to FY 2023-24 and one year on to FY 2026-27 (1 April 2026 to 31 March 2027); the label `FY 2026-27`; and the last days of its first three quarters.
 - `conformance/vectors/cited/siemens-india-annual-report-2024-26-april.json` has 5 cases: validation, the last day of FY 2026-27 and of its first three quarters, and the label `FY 2026-27`.
 - `conformance/vectors/cited/siemens-india-annual-report-2024-26-october.json` has 3 cases: validation, the start and last day of FY 2023-24, and its label `FY 2023-24`.
 
@@ -180,5 +221,5 @@ Two vectors from `conformance/generators/spec_cited_vectors.py`, one per calenda
 2. The report does not say whether "FY 2026*" (1 October 2025 to 30 September 2026) or "FY 2024-25" (1 October 2024 to 30 September 2025) were ever financial years of the company. They appear as approval periods for related-party transactions made before the change, and both overlap the 18-month FY 2024-26. Do not use either label as a financial year of the company without a clearer source.
 3. Printed page 68 (Corporate Governance Report) refers to "the first quarter of FY26 (December 2024)" and "Q2 FY26", which cannot be reconciled with "FY 2024-26" or "FY 2026*". Find how Siemens defines "FY26" before using that label.
 4. The orders themselves (Company Law Board 2015; Regional Director 13 May 2026) have not been read; only the annual report's description of them has. Whether shareholders approved the change is not stated in the passages quoted.
-5. Spec version 1 has no support for a one-time transition year or a change of calendar. An ADR would be needed before a conformance vector can assert dates inside 1 October 2024 to 31 March 2026.
+5. The quarter dates inside the transition. fiscalclock 0.2.0 can express the change (ADR-0032), but a vector can assert a transition quarter's dates only once a source states them (item 1).
 6. Only the passages found by searching "quarter", "financial year", "transition" and "eighteen" were read; a full read of the Directors' Report could turn up more quarter ends.

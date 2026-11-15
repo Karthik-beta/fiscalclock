@@ -1,0 +1,147 @@
+{
+  "name": "definition-transition-week-pattern-extra-week",
+  "description": "Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: A transition week_pattern has no extra_week; the field is UNKNOWN_FIELD there. The definition has no other error, so the complete error list is asserted (code and path of each error, sorted by path, then code).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#transitions",
+    "checked_by": "Manual reading of the 0.2.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#exceptions and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error (Paths for common errors), 2026-11-15"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 12
+      }
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "majority",
+          "templates": {
+            "year": "FY{yyyy}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2024-12-29",
+          "transition": {
+            "start": "2024-02-04",
+            "subdivision": {
+              "type": "week_pattern",
+              "periods": [
+                4,
+                4,
+                5,
+                4,
+                4,
+                5,
+                4,
+                4,
+                5,
+                4,
+                4
+              ],
+              "quarters": [
+                3,
+                3,
+                3,
+                2
+              ],
+              "extra_week": {
+                "period": 11
+              }
+            }
+          },
+          "year": {
+            "type": "week_based",
+            "anchor": {
+              "edge": "end",
+              "month": 12,
+              "day": "last",
+              "rule": "nearest"
+            }
+          },
+          "subdivision": {
+            "type": "week_pattern",
+            "periods": [
+              4,
+              4,
+              5,
+              4,
+              4,
+              5,
+              4,
+              4,
+              5,
+              4,
+              4,
+              5
+            ],
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "extra_week": {
+              "period": 12
+            }
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "UNKNOWN_FIELD",
+          "path": "exceptions.history[0].transition.subdivision.extra_week"
+        }
+      ]
+    }
+  ]
+}
