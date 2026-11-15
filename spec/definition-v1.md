@@ -4,7 +4,7 @@ Status: draft for fiscalclock 0.2.0. Last reviewed: 15 Nov 2026.
 
 A calendar definition is one JSON object that describes how a fiscal year is bounded, subdivided, divided into weeks and named, and, optionally, how that rule changes on a date. The library computes every answer from this object and holds no built-in calendars.
 
-This document is normative for the parts that fiscalclock 0.2.0 implements. Parts of the format that are designed but not yet implemented are listed in [Reserved for later releases](#reserved-for-later-releases); a definition that uses them is rejected with `UNSUPPORTED_FEATURE`, so it never produces a silent wrong answer. [ADR-0032](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0032-year-rule-history-and-transitions) records the design of [`exceptions`](#exceptions), new in 0.2.0. A definition without `exceptions` has the same meaning, canonical form and `calendar_id` as in fiscalclock 0.1.0.
+This document is normative for the parts that fiscalclock 0.2.0 implements. Parts of the format that are designed but not yet implemented are listed in [Reserved for later releases](#reserved-for-later-releases); a definition that uses them is rejected with `UNSUPPORTED_FEATURE`, so it never produces a silent wrong answer. [ADR-0032](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0032-year-rule-history-and-transitions) records the design of [`exceptions`](#exceptions), new in 0.2.0. Every definition that fiscalclock 0.1.0 accepts keeps its meaning, canonical form and `calendar_id`, and every successful output is byte-identical. Definitions that 0.1.0 rejected may now be valid (`exceptions`, `{yy_end}`), and some messages and hints changed (reserved features now name 0.3).
 
 The key words "must", "must not" and "may" are used as in RFC 2119.
 
@@ -177,8 +177,16 @@ A definition without `exceptions` has one regime, so every scheme must give cons
 
 Validation rejects:
 
-- `YEAR_NUMBER_COLLISION` when a pair breaks these rules: two fiscal years get the same number, a number is skipped between two years of the same regime, or a number does not increase across a change of rule. Within one rule, this happens with `"start"` or `"end"` when the year boundary can fall on either side of 1 January. For example, ISO week years numbered by `"start"` give both the year starting Monday 1 January 2018 and the year starting Monday 31 December 2018 the number 2018. `details.years` lists up to five of the year numbers, `offset` included, that are given twice or skipped; for a pair across a change of rule it lists the later year's number, which with `"start"`, `"end"` and `"majority"` is always a repeated number, because those rules never give a later fiscal year a smaller number. The hint suggests a `year_number` that works.
-- `MAJORITY_TIE` when `"majority"` is used and some fiscal year, transitions included, has no calendar year that holds more than half of its days. For a fiscal year of at most 371 days this happens only when it has exactly half of its days in each of two calendar years; a long transition can also span three or more calendar years without a majority. `details.years` lists up to five of the calendar years in which a tied fiscal year starts. A scheme with a tie is not also reported for collisions.
+- `YEAR_NUMBER_COLLISION` when a pair breaks these rules: two fiscal years get the same number, a number is skipped between two years of the same regime, or a number does not increase across a change of rule. Within one rule, this happens with `"start"` or `"end"` when the year boundary can fall on either side of 1 January. For example, ISO week years numbered by `"start"` give both the year starting Monday 1 January 2018 and the year starting Monday 31 December 2018 the number 2018. The hint suggests a `year_number` that works.
+- `MAJORITY_TIE` when `"majority"` is used and some fiscal year, transitions included, has no calendar year that holds more than half of its days. For a fiscal year of at most 371 days this happens only when it has exactly half of its days in each of two calendar years; a long transition can also span three or more calendar years without a majority. A scheme with a tie is not also reported for collisions.
+
+`details.years` of `YEAR_NUMBER_COLLISION` lists the first five distinct affected numbers, in the date order of the pairs that break the rules, with the scheme's `offset` included. The affected number of a pair is:
+
+- within one regime, when the later year repeats the earlier year's number: the repeated number;
+- within one regime, for any other break: the earlier year's number plus one, which is the first skipped number;
+- across a change of rule: the later year's number. With `"start"`, `"end"` and `"majority"` this is always a repeated number, because those rules never give a later fiscal year a smaller number.
+
+`details.years` of `MAJORITY_TIE` lists, for the first five tied fiscal years in date order, the calendar year in which each starts, without `offset`, as in fiscalclock 0.1.0.
 
 The path is `naming.schemes.<name>.year_number`.
 
@@ -259,7 +267,7 @@ The fiscal years of the calendar are, in date order: the years of regime 0, then
 
 ### Cross-block checks
 
-Block-level checks are the checks on types, required and unknown fields, values and their ranges, reserved features and combinations, in every block and history entry. They include `transition.start` on or after `from`, an empty transition `periods`, and a transition `week_pattern`'s `quarters` that do not sum to the length of its `periods` (checked when `periods` is otherwise valid). They run as for the other blocks, and every error they find is reported together. The checks that compare a transition's subdivision with its dates are not block-level, although the field tables above mention them; they are in the table below.
+Validation runs in three stages: block-level checks, then cross-block checks, then year numbering. The cross-block checks are exactly the rows of the table below, and year numbering is described in [Year numbers must be unique](#year-numbers-must-be-unique). Every other check is block-level. "Block-level" names the stage, not the number of blocks a check reads: it covers types, required and unknown fields, values and their ranges, reserved features and combinations, in every block and history entry, and also `SUBDIVISION_YEAR_MISMATCH` against `year.start.day`, `DEFAULT_SCHEME_MISSING`, `QUARTERS_SUM_MISMATCH`, `WEEKS_SUM_MISMATCH`, `EXTRA_WEEK_MISSING`, `EXTRA_WEEK_OUT_OF_RANGE`, `INVALID_TEMPLATE`, `CENTURY_PIVOT_MISSING` and `SHORT_MONTH_POLICY_MISSING`, at the top level and in history entries, except the transition rows of the table below. Block-level checks include `transition.start` on or after `from`, an empty transition `periods`, and a transition `week_pattern`'s `quarters` that do not sum to the length of its `periods` (checked when `periods` is otherwise valid). Every error they find is reported together. The checks that compare a transition's subdivision with its dates are cross-block, although the field tables above mention them; they are in the table below.
 
 Only when the definition has no block-level error do the following checks run, for every history entry *i*. Every error they find is reported. "The previous regime" of entry *i* is regime 0 when *i* = 0 and history entry *i* − 1 otherwise. "The first day of a fiscal year under a rule" means the first day of one of the years that the rule produces for any calendar year, regardless of the regime's own bounds.
 
@@ -306,7 +314,7 @@ Procter & Gamble Hygiene and Health Care Limited changed its financial year from
 }
 ```
 
-The year boundaries before, during and after the change, the label "2024-25" of the transition year and the label "2025-26" of the year after it are stated by the company's annual reports. The transition's three quarters of three months, the quarters of the other years and the `week` block are illustrative: the reports print no quarter or week dates. The label "2023-24" for the year from 1 July 2023 to 30 June 2024 is inferred: the research record found it next to those dates, not in one sentence with them.
+The year boundaries before, during and after the change, the label "2024-25" of the transition year and the label "2025-26" of the year after it are stated by the company's annual reports. The transition's periods of one calendar month and its three quarters of three months, the periods and quarters of the other years, and the `week` block are illustrative: the reports print no period, quarter or week dates. The label "2023-24" for the year from 1 July 2023 to 30 June 2024 is inferred: the research record found it next to those dates, not in one sentence with them.
 
 The definition passes the cross-block checks: the change point 2024-07-01 is the first day of a July to June year, `from` 2025-04-01 is the first day of an April to March year, `month_start_day` 1 is the day of both dates, and July 2024 to April 2025 is 9 months, which the transition's `quarters` sum to.
 
@@ -316,7 +324,7 @@ The definition passes the cross-block checks: the change point 2024-07-01 is the
 | 2024 | Transition of entry 0 | 2024-07-01 | 2025-03-31 | 274 | 2024-25 |
 | 2025 | Regime 1 (April to March) | 2025-04-01 | 2026-03-31 | 365 | 2025-26 |
 
-Numbered by `"start"`, the three years are consecutive, so no number is skipped. The day counts are calendar arithmetic; for example `date(2025, 4, 1) - date(2024, 7, 1)` in Python is 274 days. In the transition, periods 1 to 9 are the calendar months July 2024 to March 2025, and the quarters run 2024-07-01 to 2024-09-30, 2024-10-01 to 2024-12-31 and 2025-01-01 to 2025-03-31. With weeks starting on Monday, the transition has 40 weeks: 1 July 2024 is a Monday, so weeks 1 to 39 have 7 days, and week 40 is Monday 31 March 2025 alone.
+Numbered by `"start"`, the three years are consecutive, so no number is skipped. The day counts are calendar arithmetic; for example `date(2025, 4, 1) - date(2024, 7, 1)` in Python is 274 days. The rest of this paragraph follows from the illustrative parts of the definition, not from the reports. Under the illustrative subdivision, periods 1 to 9 of the transition are the calendar months July 2024 to March 2025, and its quarters run 2024-07-01 to 2024-09-30, 2024-10-01 to 2024-12-31 and 2025-01-01 to 2025-03-31. Under the illustrative `week` block, with weeks starting on Monday, the transition has 40 weeks: 1 July 2024 is a Monday, so weeks 1 to 39 have 7 days, and week 40 is Monday 31 March 2025 alone.
 
 ## Supported range
 
@@ -328,7 +336,7 @@ The canonical form is the definition after parsing, serialised as JSON with:
 
 - `$schema` removed;
 - optional fields with a default written out (`offset: 0`), and optional fields without a default written as `null` (`short_month`, `century_pivot`, and a history entry's `transition`); template levels that are absent stay absent;
-- `exceptions` left out when it is absent or `null`, so the canonical form and `calendar_id` of a definition without `exceptions` are the same as in fiscalclock 0.1.0; when present, it is written with its `history` and the rules above apply inside it (for example, a history entry's `fixed_date` year has `short_month`, `null` when absent);
+- `exceptions` left out when it is absent or `null`, so every definition that fiscalclock 0.1.0 accepts keeps its 0.1.0 canonical form and `calendar_id`; when present, it is written with its `history` and the rules above apply inside it (for example, a history entry's `fixed_date` year has `short_month`, `null` when absent);
 - object keys sorted by their UTF-8 bytes at every level; array elements, including the entries of `exceptions.history`, keep their order;
 - dates in `exceptions` written as the `YYYY-MM-DD` strings given;
 - no insignificant whitespace, integers in plain decimal, strings with the minimal JSON escapes: `\"`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`, other characters U+0000 to U+001F as `\u00xx` with lower-case hexadecimal digits, and every other character, including non-ASCII, written as UTF-8.

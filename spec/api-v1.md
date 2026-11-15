@@ -85,7 +85,7 @@ Paths for common errors:
 | `PERIOD_NOT_FOUND` from `period` for a negative index or one too large to represent | `index` |
 | `INVALID_ARGUMENT` from `period` when an `index` is given for a year, or none is given for a quarter, period or week | `index` |
 | `OUT_OF_RANGE` for a `year` argument that is an integer too large for 32 bits | `year` |
-| `OUT_OF_RANGE` from `parse` when every matching label names a fiscal year outside the supported range | `label` |
+| `OUT_OF_RANGE` from `parse` when at least one template match is out of range and none is in range (see [`parse`](#parse)) | `label` |
 | `INVALID_DATE` | The date argument: `date`, `start` or `end_exclusive` |
 | `INVALID_ARGUMENT` for a missing argument, or one of the wrong JSON type | The argument's name |
 | `INVALID_ARGUMENT` for an unknown operation name | `op` |
@@ -93,7 +93,7 @@ Paths for common errors:
 
 When validation finds a `MAJORITY_TIE` in a scheme, it does not also report `YEAR_NUMBER_COLLISION` for that scheme.
 
-A failed operation returns `{"errors":[Error, …]}`. Validation reports every error it finds, sorted by `path` and then `code`. Errors with the same `path` and `code` keep the order in which the checks are listed in the definition spec; the only such case is a history entry without a transition whose `from` fails both `CHANGE_NOT_ON_BOUNDARY` checks, where the previous regime's error comes first (see [Cross-block checks](definition-v1.md#cross-block-checks)). Other operations report one error.
+A failed operation returns `{"errors":[Error, …]}`. Validation reports every error it finds, sorted by the UTF-8 bytes of `path`, then by `code`; errors with the same path and code keep the order in which validation found them. For example, when a history entry without a transition has a `from` that fails both `CHANGE_NOT_ON_BOUNDARY` checks, the previous regime's error comes first (see [Cross-block checks](definition-v1.md#cross-block-checks)). Other operations report one error.
 
 ## Operations
 
@@ -116,13 +116,22 @@ Argument keys that an operation does not use are ignored, so a binding may pass 
 
 A `period` argument is a Period value or its coordinates `{"level","year","index"}`. The core recomputes the period from its coordinates and ignores any other keys, so a stale or edited Period cannot produce wrong bounds.
 
+### `period`
+
+`period(level, year, index)` reads its arguments in the order `level`, `year`, `index`. A missing argument, or one of the wrong JSON type, is `INVALID_ARGUMENT` at its name; a `year` integer too large for 32 bits is `OUT_OF_RANGE` at `year`; and a negative `index`, or one too large to represent, is `PERIOD_NOT_FOUND` at `index` for a quarter, period or week (for a year, any `index` is `INVALID_ARGUMENT` at `index`, as below). With arguments that can be read, the checks run in this order, and the first that fails gives the error:
+
+1. `year` is below the first or above the last supported year number: `OUT_OF_RANGE` at `year`.
+2. `year` is a number skipped at a change of rule: `PERIOD_NOT_FOUND` at `year`.
+3. An `index` is given for a year, or none is given for a quarter, period or week: `INVALID_ARGUMENT` at `index`.
+4. The fiscal year has no quarter, period or week with that `index`: `PERIOD_NOT_FOUND` at `index`.
+
 ### Calendars whose rule changes
 
-A definition with `exceptions` has a sequence of fiscal years in which the year rule changes, possibly through a transition year ([Timeline](definition-v1.md#timeline)). Every output keeps the shape described in this document. For a definition without `exceptions`, every output is byte-identical to fiscalclock 0.1.0.
+A definition with `exceptions` has a sequence of fiscal years in which the year rule changes, possibly through a transition year ([Timeline](definition-v1.md#timeline)). Every output keeps the shape described in this document. Every definition that fiscalclock 0.1.0 accepts keeps its meaning, canonical form and `calendar_id`, and every successful output is byte-identical. Definitions that 0.1.0 rejected may now be valid (`exceptions`, `{yy_end}`), and some messages and hints changed (reserved features now name 0.3).
 
 - Each fiscal year has its own subdivision: a regime's year uses its regime's `subdivision`, and a transition uses its transition's `subdivision`. The number of quarters, periods and weeks, and so the valid indexes, can differ from one fiscal year to the next. Weeks follow the single rule in [`week`](definition-v1.md#week) in every fiscal year.
 - `shift` steps through the sequence of fiscal years, and through each fiscal year's own quarters, periods or weeks. `shift` of a year by `n` moves `n` fiscal years along the sequence, not by `n` in the year number. A result outside the supported range is `OUT_OF_RANGE` at `n`, as for any calendar.
-- `period` with a `year` between the first and last supported year numbers that no fiscal year has, because the number is skipped at a change of rule, is `PERIOD_NOT_FOUND` at `year`. A `year` below the first or above the last supported number is `OUT_OF_RANGE` at `year`, as for any calendar. A `period` argument to another operation whose coordinates name a skipped number is `PERIOD_NOT_FOUND` at `period`.
+- `period` with a `year` between the first and last supported year numbers that no fiscal year has, because the number is skipped at a change of rule, is `PERIOD_NOT_FOUND` at `year`. A `year` below the first or above the last supported number is `OUT_OF_RANGE` at `year`, as for any calendar. [`period`](#period) gives the order of these checks. A `period` argument to another operation whose coordinates name a skipped number is `PERIOD_NOT_FOUND` at `period`.
 - `years(from, to)` returns every fiscal year whose number lies in [`from`, `to`], in order, and can be empty only when every number in the range is skipped. The bounds for `OUT_OF_RANGE` are the first and last supported year numbers, and the limit of 10,000 years means `to` − `from` + 1 ≤ 10,000, whether or not numbers are skipped.
 - `parse`: a label that names a skipped number gives no candidate from that template.
 - `explain` names the regime or transition that the date falls in. As for every `explain` string, the wording is not part of the API.
@@ -131,9 +140,10 @@ A definition with `exceptions` has a sequence of fiscal years in which the year 
 ### `parse`
 
 1. Each template of each scheme is compiled to an exact, case-sensitive pattern. `{yyyy}` matches 4 digits, `{yy}`, `{yy_next}` and `{yy_end}` 2 digits, `{pp}` and `{ww}` 2 digits, and `{q}` a digit 1–9 optionally followed by a second digit (no leading zero).
-2. Every template that matches the whole label yields a candidate, provided its values are consistent: a fiscal year has the year number, indexes are in range for that year, when `{yyyy}` and `{yy_next}` both appear, `{yy_next}` equals the last two digits of `{yyyy}` + 1, and when `{yy_end}` appears, it equals the last two digits of the calendar year of that fiscal year's last day. Two-digit years without `{yyyy}` resolve through the scheme's `century_pivot`. The scheme's `offset` is removed before the fiscal year is looked up. A year number that lies between the first and last supported numbers but that no fiscal year has (a number skipped at a change of rule) yields no candidate.
-3. Candidates that denote the same period (same level and start) are merged.
-4. One candidate: return its Period. More than one: `AMBIGUOUS_LABEL` with `details: {"candidates":[{"period":Period,"scheme":"…","level":"…"},…]}`, ordered by start date, then scheme name, then level (`year` first). None: `LABEL_NOT_RECOGNISED`, unless every match names a fiscal year outside the supported range, which is `OUT_OF_RANGE` at `label`. A skipped year number is not outside the supported range, so a label whose only matches name skipped numbers is `LABEL_NOT_RECOGNISED`.
+2. A template *matches* the label when its pattern matches the whole label. Each match names a fiscal year number: the value of `{yyyy}`, or, in a template without `{yyyy}`, the value of `{yy}` resolved through the scheme's `century_pivot`, with the scheme's `offset` removed. The match is *out of range* when that number is below the first or above the last supported year number under that scheme (also without `offset`), and *in range* otherwise. A number skipped at a change of rule lies between the first and last supported numbers, so a match that names it is in range.
+3. An in-range match yields a candidate when its values are consistent: a fiscal year has the year number, indexes are in range for that year, when `{yyyy}` and `{yy_next}` both appear, `{yy_next}` equals the last two digits of `{yyyy}` + 1, and when `{yy_end}` appears, it equals the last two digits of the calendar year of that fiscal year's last day. A match that names a skipped number yields no candidate, because no fiscal year has that number. An out-of-range match yields no candidate.
+4. Candidates that denote the same period (same level and start) are merged.
+5. One candidate: return its Period. More than one: `AMBIGUOUS_LABEL` with `details: {"candidates":[{"period":Period,"scheme":"…","level":"…"},…]}`, ordered by start date, then scheme name, then level (`year` first). None: `OUT_OF_RANGE` at `label` when there is at least one out-of-range match and no in-range match; otherwise `LABEL_NOT_RECOGNISED` at `label`. So a label that no template matches, or whose in-range matches all fail the checks of step 3, is `LABEL_NOT_RECOGNISED`, even when another template's match is out of range; and a label whose only matches name skipped numbers is `LABEL_NOT_RECOGNISED`.
 
 ### `dimension`
 
