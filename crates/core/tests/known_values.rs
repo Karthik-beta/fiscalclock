@@ -391,3 +391,167 @@ fn week_pattern_transition_between_week_based_regimes() {
     );
     assert_eq!(c.children(t, Level::Quarter).unwrap().len(), 3);
 }
+
+// ---- A transition of 9,994 years ----
+//
+// The format sets no limit on a transition's length, so a valid calendar can
+// have one transition from 0003-01-01 to 9997-01-01 (both Wednesdays, 521,462
+// weeks apart) between two January to December rules. Its subdivision then
+// has about 120,000 fiscal months, or hundreds of thousands of runs of
+// weeks. A lookup inside it must not cost more the more quarters or periods
+// come before it: summing them for each of the 347,641 periods of the
+// week-pattern test below would take tens of billions of steps. Most of each
+// test's time is the 400-year dimension, which costs about the same on a
+// calendar without exceptions.
+
+const TRANSITION_START: &str = "0003-01-01";
+const TRANSITION_MONTHS: u32 = 9994 * 12;
+const TRANSITION_WEEKS: u32 = 521_462;
+
+fn long_transition(subdivision: serde_json::Value, starts_on: &str) -> serde_json::Value {
+    let mut def = changes::fixed(1, "start", "FY{yyyy}");
+    def["week"]["starts_on"] = json!(starts_on);
+    def["exceptions"] = json!({"history": [{
+        "from": "9997-01-01",
+        "transition": {"start": TRANSITION_START, "subdivision": subdivision},
+        "year": def["year"].clone(),
+        "subdivision": def["subdivision"].clone()
+    }]});
+    def
+}
+
+/// `days` days after `date`.
+fn plus(date: Date, days: u32) -> Date {
+    date.checked_add_days(i64::from(days)).unwrap()
+}
+
+/// The first day of calendar month `k` counted from January 0003 as 1.
+fn transition_month(k: u32) -> Date {
+    let m = k - 1;
+    Date::from_ymd(3 + (m / 12) as i32, m % 12 + 1, 1).unwrap()
+}
+
+#[test]
+fn a_calendar_months_transition_of_119_928_months() {
+    let c = cal(&long_transition(
+        json!({"type": "calendar_months", "month_start_day": 1,
+               "quarters": vec![1; TRANSITION_MONTHS as usize]}),
+        "monday",
+    ));
+    let year = c.period(Level::Year, 3, None).unwrap();
+    assert_eq!(
+        (year.start, year.end_exclusive),
+        (d(TRANSITION_START), d("9997-01-01"))
+    );
+    // One-month quarters: quarter k and period k are both calendar month k.
+    for level in [Level::Quarter, Level::Period] {
+        let children = c.children(&year, level).unwrap();
+        assert_eq!(children.len(), TRANSITION_MONTHS as usize);
+        for k in [1, 2, 13, 24_254, TRANSITION_MONTHS - 1, TRANSITION_MONTHS] {
+            let p = &children[k as usize - 1];
+            assert_eq!(p.index, Some(k), "{level:?} {k}");
+            assert_eq!(p.start, transition_month(k), "{level:?} {k}");
+            assert_eq!(p.end_exclusive, transition_month(k + 1), "{level:?} {k}");
+        }
+    }
+    // 400 years of the dimension inside the transition.
+    let first = d("2000-01-01");
+    let rows = c.dimension(first, d("2400-01-01")).unwrap();
+    assert_eq!(rows.len(), 146_097);
+    for (date, month, day) in [
+        ("2000-01-01", (2000 - 3) * 12 + 1, 1),
+        ("2024-02-29", (2024 - 3) * 12 + 2, 29),
+        ("2399-12-31", (2399 - 3) * 12 + 12, 31),
+    ] {
+        let at = &rows[first.days_until(d(date)) as usize].location;
+        assert_eq!(at.date, d(date));
+        assert_eq!(at.year.year, 3, "{date}");
+        assert_eq!(at.quarter.index, Some(month), "{date}");
+        assert_eq!(at.period.index, Some(month), "{date}");
+        assert_eq!(at.day_of_period, day, "{date}");
+        assert_eq!(
+            at.day_of_year,
+            d(TRANSITION_START).days_until(d(date)) as u32 + 1
+        );
+    }
+}
+
+#[test]
+fn a_week_pattern_transition_of_347_641_periods() {
+    // Periods of 1 and 2 weeks in turn, then a last period of 2 weeks:
+    // 173,820 pairs of 3 weeks and 2 weeks more make 521,462 weeks.
+    // Quarters of three periods, then a last quarter of one.
+    let pairs = 173_820;
+    let periods_n = 2 * pairs + 1;
+    let mut periods = [1, 2].repeat(pairs as usize);
+    periods.push(2);
+    let mut quarters = vec![3; pairs as usize * 2 / 3];
+    quarters.push(1);
+    let c = cal(&long_transition(
+        json!({"type": "week_pattern", "periods": periods, "quarters": quarters}),
+        "wednesday",
+    ));
+    // Weeks before period k and weeks in it, from the pattern above.
+    let period = |k: u32| -> (u32, u32) {
+        let j = (k - 1) / 2;
+        match k {
+            _ if k == periods_n => (3 * pairs, 2),
+            _ if k % 2 == 1 => (3 * j, 1),
+            _ => (3 * j + 1, 2),
+        }
+    };
+    let start = d(TRANSITION_START);
+    let week_start = |w: u32| plus(start, 7 * w);
+    let year = c.period(Level::Year, 3, None).unwrap();
+    assert_eq!(year.weeks, Some(TRANSITION_WEEKS));
+
+    let children = c.children(&year, Level::Period).unwrap();
+    assert_eq!(children.len(), periods_n as usize);
+    for k in [1, 2, 3, 4, 200_001, periods_n - 1, periods_n] {
+        let (before, own) = period(k);
+        let p = &children[k as usize - 1];
+        assert_eq!(
+            (p.start, p.end_exclusive, p.weeks),
+            (week_start(before), week_start(before + own), Some(own)),
+            "period {k}"
+        );
+        assert_eq!(c.parent(p).unwrap().index, Some(k.div_ceil(3).min(115_881)));
+    }
+
+    let children = c.children(&year, Level::Quarter).unwrap();
+    assert_eq!(children.len(), 115_881);
+    for q in [1, 2, 100_000, 115_880, 115_881] {
+        let (first, last) = (3 * q - 2, (3 * q).min(periods_n));
+        let p = &children[q as usize - 1];
+        assert_eq!(p.start, week_start(period(first).0), "quarter {q}");
+        let (before, own) = period(last);
+        assert_eq!(p.end_exclusive, week_start(before + own), "quarter {q}");
+    }
+
+    let weeks = c.children(&year, Level::Week).unwrap();
+    assert_eq!(weeks.len(), TRANSITION_WEEKS as usize);
+    assert_eq!(
+        weeks[TRANSITION_WEEKS as usize - 1].start,
+        week_start(TRANSITION_WEEKS - 1)
+    );
+
+    // 400 years of the dimension inside the transition.
+    let first = d("2000-01-01");
+    let rows = c.dimension(first, d("2400-01-01")).unwrap();
+    assert_eq!(rows.len(), 146_097);
+    for date in ["2000-01-01", "2024-02-29", "2399-12-31"] {
+        let at = &rows[first.days_until(d(date)) as usize].location;
+        let w = start.days_until(d(date)) as u32 / 7;
+        // Week w (from 0) is the first week of period 2j + 1 or within
+        // period 2j + 2 of its run of three.
+        let k = if w % 3 == 0 {
+            2 * (w / 3) + 1
+        } else {
+            2 * (w / 3) + 2
+        };
+        assert_eq!(at.week.index, Some(w + 1), "{date}");
+        assert_eq!(at.period.index, Some(k), "{date}");
+        assert_eq!(at.quarter.index, Some(k.div_ceil(3)), "{date}");
+        assert_eq!(at.period.start, week_start(period(k).0), "{date}");
+    }
+}
