@@ -10,7 +10,7 @@ The Rust core of [fiscalclock](https://github.com/Karthik-beta/fiscalclock), a f
 
 The crate has no built-in calendars. Every calendar, including well-known ones, is a definition you supply. The format is specified in [`spec/definition-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md) and the operations in [`spec/api-v1.md`](https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md).
 
-Status: 0.2.0 adds definitions whose year rule changes, with transition periods (see the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md)). The definition format and API are version 1 drafts and may change before 1.0.
+Status as of 15 Nov 2026: 0.2.0 adds definitions whose year rule changes, with transition periods (see the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md)). The definition format and API are version 1 drafts and may change before 1.0.
 
 ## Example
 

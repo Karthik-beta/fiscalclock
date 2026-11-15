@@ -12,7 +12,7 @@ The package has no built-in calendars. Every calendar is a definition you supply
 
 All computation happens in the fiscalclock Rust core, compiled to WebAssembly. The TypeScript layer only converts values, so results are identical to the Rust crate and the Python package.
 
-Status: 0.2.0 adds definitions whose year rule changes, with transition periods (see the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md)). The definition format and API are version 1 drafts and may change before 1.0.
+Status as of 15 Nov 2026: 0.2.0 adds definitions whose year rule changes, with transition periods (see the [changelog](https://github.com/Karthik-beta/fiscalclock/blob/main/CHANGELOG.md)). The definition format and API are version 1 drafts and may change before 1.0.
 
 ## Install
 
