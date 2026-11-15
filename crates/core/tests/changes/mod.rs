@@ -14,9 +14,11 @@
 //!   fifteen-month period "2022-23" from 1 January 2022 to 31 March 2023, then
 //!   April to March.
 //!
-//! Illustrative, not from the filings: the `week` blocks, the quarters of the
-//! regular years and of the P&G and Linde transitions, and the week-based
-//! calendar in [`retail_to_september`].
+//! Illustrative, not from the filings: the `week` blocks, the calendar-month
+//! periods, the quarters of the regular years, the quarters of every
+//! transition (Siemens' filing states that its transition has six quarters,
+//! but not their dates, so their three-month lengths are illustrative), and
+//! the week-based calendar in [`retail_to_september`].
 
 #![allow(dead_code)]
 

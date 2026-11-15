@@ -241,11 +241,16 @@ fn extra_week_is_the_last_week_of_its_period() {
 
 // ---- Calendars whose rule changes (0.2.0) ----
 //
-// Dates, lengths and transition labels below are stated in the filings quoted
-// in research/filers/ (see the `changes` module for which file says what).
-// Day counts are calendar arithmetic on those dates.
+// The year boundaries below, and the labels asserted with them, are stated in
+// the filings quoted in research/filers/ (see the `changes` module for which
+// file says what). Day counts are calendar arithmetic on those dates. A label
+// that a filing gives only next to the dates, or in a tentative calendar, is
+// inferred and not asserted. Quarter and period counts and dates follow from
+// the illustrative subdivisions in `changes`, except Siemens' count of six
+// transition quarters, which its filing states.
 
-/// (year number, start, last day, days, quarters, periods, label) of each year.
+/// (year number, start, last day, days, quarters, periods, label) of each
+/// year; an empty label is not asserted.
 type YearRow = (i32, &'static str, &'static str, u32, u32, u32, &'static str);
 
 fn check_years(def: &serde_json::Value, rows: &[YearRow]) {
@@ -279,15 +284,18 @@ fn check_years(def: &serde_json::Value, rows: &[YearRow]) {
 fn pg_hygiene_nine_month_year_2024_25() {
     // research/filers/pg-hygiene.md: "Financial Year 2024-25 is a 9 month
     // period from July 1, 2024 to March 31, 2025"; 2025-26 runs from
-    // April 1, 2025 to March 31, 2026. The 2023-24 label is inferred there.
+    // April 1, 2025 to March 31, 2026. The 2023-24 label is inferred there,
+    // so it is not asserted.
     check_years(
         &changes::pg(),
         &[
-            (2023, "2023-07-01", "2024-06-30", 366, 4, 12, "2023-24"),
+            (2023, "2023-07-01", "2024-06-30", 366, 4, 12, ""),
             (2024, "2024-07-01", "2025-03-31", 274, 3, 9, "2024-25"),
             (2025, "2025-04-01", "2026-03-31", 365, 4, 12, "2025-26"),
         ],
     );
+    // Illustrative: the filing states no quarter dates for the transition.
+    // These follow from the three-month quarters of `changes::pg`.
     let c = cal(&changes::pg());
     let quarters: Vec<_> = c
         .children(&c.period(Level::Year, 2024, None).unwrap(), Level::Quarter)
@@ -326,6 +334,9 @@ fn siemens_eighteen_month_fy_2024_26_skips_2025() {
         (e.code, e.path.as_str()),
         (ErrorCode::PeriodNotFound, "year")
     );
+    // Illustrative: the filing states six quarters but not their dates. The
+    // sixth quarter's dates follow from the three-month quarters of
+    // `changes::siemens`.
     let q6 = c.period(Level::Quarter, 2024, Some(6)).unwrap();
     assert_eq!(
         (q6.start, q6.last_day()),
@@ -336,31 +347,49 @@ fn siemens_eighteen_month_fy_2024_26_skips_2025() {
 #[test]
 fn linde_fifteen_month_period_2022_23() {
     // research/filers/linde-india.md: the Annual Report 2022-23 covers the
-    // "15 months period from 1 January 2022 to 31 March 2023", and the
-    // tentative calendar labels April 2023 to March 2024 "2023-24".
+    // "15 months period from 1 January 2022 to 31 March 2023". Only a
+    // tentative calendar labels April 2023 to March 2024 "2023-24", so that
+    // label is inferred and not asserted.
     check_years(
         &changes::linde(),
         &[
             (2021, "2021-01-01", "2021-12-31", 365, 4, 12, ""),
             (2022, "2022-01-01", "2023-03-31", 455, 5, 15, "2022-23"),
-            (2023, "2023-04-01", "2024-03-31", 366, 4, 12, "2023-24"),
+            (2023, "2023-04-01", "2024-03-31", 366, 4, 12, ""),
         ],
     );
 }
 
 #[test]
-fn yy_end_agrees_with_yy_next_for_april_to_march_years() {
-    let mut def = changes::fixed(4, "start", "{yyyy}-{yy_end}");
-    def["naming"]["schemes"]["next"] = serde_json::json!({
-        "year_number": "start", "templates": {"year": "{yyyy}-{yy_next}"}
-    });
-    let c = cal(&def);
-    for y in c.years(1990, 2110).unwrap() {
-        assert_eq!(
-            c.format(&y, None).unwrap(),
-            c.format(&y, Some("next")).unwrap()
-        );
-    }
+fn yy_end_writes_the_last_two_digits_of_the_last_days_year() {
+    let labels = |def: &serde_json::Value, numbers: &[i32]| -> Vec<String> {
+        let c = cal(def);
+        numbers
+            .iter()
+            .map(|&n| {
+                let label = c.format(&c.period(Level::Year, n, None).unwrap(), None);
+                let label = label.unwrap();
+                assert_eq!(c.parse(&label).unwrap().year, n, "{label}");
+                label
+            })
+            .collect()
+    };
+    // April to March years end in the next calendar year, across centuries.
+    assert_eq!(
+        labels(
+            &changes::fixed(4, "start", "{yyyy}-{yy_end}"),
+            &[1998, 1999, 2000, 2024, 2099]
+        ),
+        ["1998-99", "1999-00", "2000-01", "2024-25", "2099-00"]
+    );
+    // January to December years end in the calendar year they start in.
+    assert_eq!(
+        labels(
+            &changes::fixed(1, "start", "{yyyy}-{yy_end}"),
+            &[1999, 2000, 2024]
+        ),
+        ["1999-99", "2000-00", "2024-24"]
+    );
 }
 
 #[test]
