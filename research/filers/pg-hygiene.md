@@ -2,9 +2,9 @@
 
 <!-- cspell:words vide Contentful Ashwin Solanki -->
 
-Procter & Gamble Hygiene and Health Care Limited's financial year ran 1 July to 30 June up to the year ended 30 June 2024, then changed by Board resolution to 1 April to 31 March through a nine-month year from 1 July 2024 to 31 March 2025, and spec version 1 can express each regime separately but not the change between them.
+Procter & Gamble Hygiene and Health Care Limited's financial year ran 1 July to 30 June up to the year ended 30 June 2024, then changed by Board resolution to 1 April to 31 March through a nine-month year from 1 July 2024 to 31 March 2025. From fiscalclock 0.2.0, one definition with `exceptions.history` expresses both regimes and the change between them.
 
-Last reviewed: 3 Nov 2026
+Last reviewed: 15 Nov 2026
 
 ## Document
 
@@ -134,9 +134,49 @@ None of the three annual reports prints the first or last day of a quarter (sear
 
 A typographical error in the 2024-25 Directors' Report reads "have been prepared for the nine months period from July 1, 2025 to March 31, 2025." (printed page 10). The start date there cannot be 2025, since the same section, the Managing Director's statement, the notes and the auditors' report all give 1 July 2024. Record it as the document's own error and do not use it.
 
-## Spec version 1 definition
+## Definition with the change (fiscalclock 0.2.0)
 
-Spec version 1 cannot express the change. A `fixed_date` year has one start date for every fiscal year, and per-year overrides and transitions (`exceptions`) are reserved for 0.2 and rejected today ([spec/definition-v1.md](../../spec/definition-v1.md), "Reserved for later releases"). A single definition therefore cannot give both 1 July 2023 to 30 June 2024 and 1 July 2024 to 31 March 2025. The nine-month year 2024-25 has no definition here. Each regime below is a separate calendar valid only for the years the document states.
+fiscalclock 0.2.0 adds `exceptions.history` to spec version 1 ([spec/definition-v1.md](../../spec/definition-v1.md#exceptions)): a history entry starts a new year rule on its `from` date, after an optional transition year. The spec uses this calendar as its worked example.
+
+```json
+{
+  "spec_version": 1,
+  "year": {"type": "fixed_date", "start": {"month": 7, "day": 1}},
+  "week": {"starts_on": "monday", "numbering": "contains_start"},
+  "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]},
+  "naming": {"default": "fy", "schemes": {"fy": {"year_number": "start", "templates": {"year": "{yyyy}-{yy_end}"}}}},
+  "exceptions": {
+    "history": [
+      {
+        "from": "2025-04-01",
+        "transition": {
+          "start": "2024-07-01",
+          "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3]}
+        },
+        "year": {"type": "fixed_date", "start": {"month": 4, "day": 1}},
+        "subdivision": {"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]}
+      }
+    ]
+  }
+}
+```
+
+| Field | Value | Basis |
+| --- | --- | --- |
+| `year.start` (top level) | 1 July | Stated by the filing ("The Company’s Financial Year is July 1st to June 30th.") |
+| `exceptions.history[0].transition.start` | 2024-07-01 | Stated by the filing ("2024-25, is a period of 9 months commencing on July 1, 2024, and ending on March 31, 2025") |
+| `exceptions.history[0].from`, `year.start` | 2025-04-01; 1 April | Stated by the filing ("Subsequent financial years of the Company shall commence on April 1 every year and end on March 31 of the succeeding year") |
+| `transition.subdivision` | calendar months, quarters 3, 3, 3 | Illustrative. No report prints a quarter end. |
+| `subdivision` (both regimes) | calendar months, quarters 3, 3, 3, 3 | Illustrative |
+| `week` | `monday`, `contains_start` | Illustrative. The reports do not number weeks and the field is required. |
+| `year_number` | `start` | Stated by the filing: "2024-25" for the year beginning 1 July 2024 and "2025-26" for the year beginning 1 April 2025 |
+| `templates.year` | `{yyyy}-{yy_end}` | Stated by the filing for the transition ("2024-25") and for 2025-26. `{yy_end}` writes the last two digits of the calendar year in which the fiscal year ends, which for the transition is 2025. The label "2023-24" that it gives the year before is inferred (see "How the company names its years"). |
+
+The transition has 274 days, by calendar arithmetic on the stated dates (`date(2025, 4, 1) - date(2024, 7, 1)` in Python); the reports say "9 months" and do not print a day count.
+
+## Spec version 1 definitions of each regime (before 0.2.0)
+
+Before fiscalclock 0.2.0, `exceptions` was reserved, and a `fixed_date` year has one start date for every fiscal year. Each regime below is a separate calendar valid only for the years the document states. The cited vectors for these two definitions predate 0.2.0 and are kept.
 
 ### From financial year 2025-26: April to March
 
@@ -181,12 +221,13 @@ This definition is wrong for the year numbered 2024, which it would run from 1 A
 
 ## Conformance vectors
 
-Two vectors from `conformance/generators/spec_cited_vectors.py`, one per calendar. They assert only the year 2025 and later under the April calendar, and the year 2023 under the July calendar.
+Three vectors from `conformance/generators/spec_cited_vectors.py`.
 
-- `conformance/vectors/cited/pghh-annual-report-2025-26.json` has 6 cases: validation, the start and last day of 2025-26, the last day of 2026-27, the label `2025-26`, and parsing `2025-26` and `2026-27`.
-- `conformance/vectors/cited/pghh-annual-report-2023-24.json` has 2 cases: validation and the start and last day of the year that began on 1 July 2023. It asserts no label, because the pairing of "2023-24" with those dates is inferred.
+- `conformance/vectors/cited/pghh-annual-report-2024-25-transition.json` has 8 cases on the 0.2.0 definition above: validation; the start, last day and 274 days of the transition 2024-25; its label `2024-25` and parsing it; the year that contains 30 June 2024 (1 July 2023 to 30 June 2024, located by date because its label is inferred); `shift` from the transition one year back to that year and one year on to 2025-26 (1 April 2025 to 31 March 2026); and the label `2025-26`.
+- `conformance/vectors/cited/pghh-annual-report-2025-26.json` has 6 cases on the April calendar alone: validation, the start and last day of 2025-26, the last day of 2026-27, the label `2025-26`, and parsing `2025-26` and `2026-27`.
+- `conformance/vectors/cited/pghh-annual-report-2023-24.json` has 2 cases on the July calendar alone: validation and the start and last day of the year that began on 1 July 2023. It asserts no label, because the pairing of "2023-24" with those dates is inferred.
 
-The nine-month year 2024-25 is a candidate for a 0.2 vector once `exceptions.transitions` exists.
+The spec's worked example (`conformance/vectors/spec/definition-exceptions-example.json`) and the oracle vector `conformance/vectors/oracle/history-jul-to-apr-9-month-transition.json` use the same dates with illustrative quarters and weeks.
 
 ## Still to check
 
@@ -194,4 +235,3 @@ The nine-month year 2024-25 is a candidate for a 0.2 vector once `exceptions.tra
 - The authority under which the change was made. The reports cite only the Board's resolution of 23 January 2025 and section 2(41) of the Companies Act, 2013. Read the section and any filing with the Registrar of Companies before stating that no further approval was needed.
 - A single sentence that pairs the label "2023-24" with 1 July 2023 to 30 June 2024.
 - Whether a pre-2024 report (for example 2022-23) names years the same way. Only 2023-24 was read.
-- A future spec version with `exceptions.transitions` could assert the nine-month year (1 July 2024 to 31 March 2025, 274 days by calendar arithmetic).
