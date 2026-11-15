@@ -1,0 +1,262 @@
+{
+  "name": "siemens-india-annual-report-2024-26-transition",
+  "description": "Siemens Limited Annual Report 2026: the eighteen-month FY 2024-26 between its October-September and April-March calendars, expressed with exceptions.history (fiscalclock 0.2.0). The filing states six quarters but not their dates, so the transition's split into six quarters of three calendar months, the other quarters before 2026 and the week block are illustrative; only fields the document states are asserted, and for the transition's quarters that is only that quarter 6 exists and quarter 7 does not.",
+  "source": {
+    "kind": "cited",
+    "citation": "\"Consequently, as a transitional measure, the last financial year of the Company i.e. FY 2024-26 was for a period of eighteen months from October 1, 2024 to March 31, 2026, while the previous financial year i.e. FY 2023-24 was for a period of twelve months from October 1, 2023 to September 30, 2024.\" (Directors' Report, p. 35) \"The Board of Directors at its meeting held on August 8, 2025 approved the change of financial year of the Company to uniform financial year commencing on April 1 of every year and ending on March 31 of the following year including observing a one-time transitional financial year from October 1, 2024 to March 31, 2026 (18 months).\" (p. 35) \"Consequently, as a transitional arrangement, the Company observed an eighteen-month financial year from October 2024 to 31 March 2026 which comprised of six quarters, while the immediately preceding financial year was for a period of twelve months from 1 October 2023 to 30 September 2024.\" (Secretarial Audit Report, p. 110) \"For the Financial Year 2026-27, Financial Results will be announced as per the following tentative schedule: 1st quarter ending June 30, 2026 Second week of August 2026 2nd quarter ending September 30, 2026 Second week of November 2026 3rd quarter ending December 31, 2026 Second week of February 2027 Year ending March 31, 2027 Fourth week of May 2027\" (Report on Corporate Governance, p. 74). Establishes the bounds and label of the eighteen-month FY 2024-26, that it has six quarters, the bounds and label of FY 2023-24 before it, and the 1 April start, label, first three quarter ends and year end of FY 2026-27 after it. The 547-day length is calendar arithmetic on the stated first and last days, not a figure the filing prints.",
+    "url": "https://assets.new.siemens.com/siemens/assets/api/uuid:6d32b927-bec4-43f3-bbee-d617b2888331/Annual-Report-Siemens-Limited-2024-26.pdf",
+    "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2026-04-01",
+          "transition": {
+            "start": "2024-10-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "618f31ced0c766ca",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2026-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-10-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"year\":\"FY {yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":10},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect_subset": {
+        "start": "2024-10-01",
+        "last_day": "2026-03-31",
+        "days": 547
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2024-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-26"
+      },
+      "expect_subset": {
+        "level": "year",
+        "year": 2024,
+        "start": "2024-10-01",
+        "last_day": "2026-03-31"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 6
+      },
+      "expect_subset": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 6
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 7
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect_subset": {
+        "start": "2023-10-01",
+        "last_day": "2024-09-30"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2023-24",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "n": -1
+      },
+      "expect_subset": {
+        "year": 2023,
+        "start": "2023-10-01",
+        "last_day": "2024-09-30"
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "n": 1
+      },
+      "expect_subset": {
+        "year": 2026,
+        "start": "2026-04-01",
+        "last_day": "2027-03-31"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2026,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2026-27",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2026,
+        "index": 1
+      },
+      "expect_subset": {
+        "last_day": "2026-06-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2026,
+        "index": 2
+      },
+      "expect_subset": {
+        "last_day": "2026-09-30"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2026,
+        "index": 3
+      },
+      "expect_subset": {
+        "last_day": "2026-12-31"
+      }
+    }
+  ]
+}
