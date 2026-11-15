@@ -53,6 +53,7 @@ mod explain;
 pub mod json;
 mod label;
 mod strict;
+mod timeline;
 
 pub use calendar::{FiscalCalendar, Level, Location, Period};
 pub use date::{Date, ParseDateError, Weekday};

@@ -1,3 +1,4 @@
+mod changes;
 mod common;
 
 use common::*;
@@ -684,4 +685,367 @@ fn duplicate_keys_are_rejected_not_resolved() {
     assert_ne!(nested, text);
     let out: Value = serde_json::from_str(&json::validate(&nested)).unwrap();
     assert_eq!(out["errors"][0]["code"], "INVALID_JSON", "{out}");
+}
+
+// ---- Calendars whose rule changes (0.2.0) ----
+
+fn ok(def: &Value, op: &str, args: Value) -> Value {
+    let out: Value = serde_json::from_str(&call(def, op, args.clone())).unwrap();
+    assert!(out.get("errors").is_none(), "{op} {args}: {out}");
+    out
+}
+
+fn coords(p: &Value) -> (i64, Option<i64>, String) {
+    (
+        p["year"].as_i64().unwrap(),
+        p["index"].as_i64(),
+        p["start"].as_str().unwrap().to_string(),
+    )
+}
+
+fn shifted(
+    def: &Value,
+    level: &str,
+    year: i32,
+    index: Option<u32>,
+    n: i64,
+) -> (i64, Option<i64>, String) {
+    coords(&ok(
+        def,
+        "shift",
+        json!({"period": {"level": level, "year": year, "index": index}, "n": n}),
+    ))
+}
+
+#[test]
+fn shift_walks_the_sequence_of_years_across_a_change_and_a_skipped_number() {
+    // Siemens (see `changes`): 2023 (October to September), 2024 (the
+    // eighteen-month transition, six quarters), then 2026 (April to March).
+    let s = changes::siemens();
+    let y = |n: i64| shifted(&s, "year", 2023, None, n);
+    assert_eq!(y(1), (2024, None, "2024-10-01".into()));
+    assert_eq!(y(2), (2026, None, "2026-04-01".into()));
+    assert_eq!(
+        shifted(&s, "year", 2026, None, -2),
+        (2023, None, "2023-10-01".into())
+    );
+
+    let q = |n: i64| shifted(&s, "quarter", 2023, Some(4), n);
+    assert_eq!(q(1), (2024, Some(1), "2024-10-01".into()));
+    assert_eq!(q(6), (2024, Some(6), "2026-01-01".into()));
+    assert_eq!(q(7), (2026, Some(1), "2026-04-01".into()));
+    assert_eq!(
+        shifted(&s, "quarter", 2026, Some(1), -7),
+        (2023, Some(4), "2024-07-01".into())
+    );
+
+    assert_eq!(
+        shifted(&s, "period", 2023, Some(12), 19),
+        (2026, Some(1), "2026-04-01".into())
+    );
+    assert_eq!(
+        shifted(&s, "period", 2026, Some(1), -19),
+        (2023, Some(12), "2024-09-01".into())
+    );
+
+    // Weeks start on Monday. FY 2023-24's last week is Monday 30 September
+    // 2024 alone; the transition's first week runs Tuesday 1 to Sunday 6
+    // October 2024.
+    let last = ok(&s, "locate", json!({"date": "2024-09-30"}))["week"].clone();
+    let first = ok(&s, "locate", json!({"date": "2024-10-01"}))["week"].clone();
+    assert_eq!(
+        (last["days"].as_i64(), first["days"].as_i64()),
+        (Some(1), Some(6))
+    );
+    assert_eq!(ok(&s, "shift", json!({"period": last, "n": 1})), first);
+    assert_eq!(ok(&s, "shift", json!({"period": first, "n": -1})), last);
+}
+
+#[test]
+fn shift_there_and_back_returns_the_same_period() {
+    for (name, def) in changes::all() {
+        for (level, index) in [("quarter", 1), ("period", 2), ("week", 3)] {
+            let start = ok(
+                &def,
+                "period",
+                json!({"level": level, "year": 2020, "index": index}),
+            );
+            for n in [1i64, 7, 13, 40, 53, 120, 600] {
+                let there = ok(&def, "shift", json!({"period": start, "n": n}));
+                let back = ok(&def, "shift", json!({"period": there, "n": -n}));
+                assert_eq!(back, start, "{name} {level} {n}");
+            }
+        }
+    }
+}
+
+#[test]
+fn shift_fails_fast_outside_the_range() {
+    for (_, def) in changes::all() {
+        for (level, index) in [
+            ("year", None),
+            ("quarter", Some(1)),
+            ("period", Some(1)),
+            ("week", Some(1)),
+        ] {
+            for n in [
+                i64::MAX,
+                i64::MIN,
+                1_000_000_000_000,
+                -1_000_000_000_000,
+                10_000_000,
+            ] {
+                assert_err(
+                    &def,
+                    "shift",
+                    json!({"period": {"level": level, "year": 2024, "index": index}, "n": n}),
+                    "OUT_OF_RANGE",
+                    "n",
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn a_skipped_year_number_is_not_found_but_not_out_of_range() {
+    let s = changes::siemens();
+    for (level, index) in [
+        ("year", None),
+        ("quarter", Some(1)),
+        ("period", Some(1)),
+        ("week", Some(1)),
+    ] {
+        assert_err(
+            &s,
+            "period",
+            json!({"level": level, "year": 2025, "index": index}),
+            "PERIOD_NOT_FOUND",
+            "year",
+        );
+        let p = json!({"level": level, "year": 2025, "index": index});
+        assert_err(
+            &s,
+            "shift",
+            json!({"period": p, "n": 1}),
+            "PERIOD_NOT_FOUND",
+            "period",
+        );
+        assert_err(
+            &s,
+            "parent",
+            json!({"period": p}),
+            "PERIOD_NOT_FOUND",
+            "period",
+        );
+        assert_err(
+            &s,
+            "format",
+            json!({"period": p}),
+            "PERIOD_NOT_FOUND",
+            "period",
+        );
+        assert_err(
+            &s,
+            "children",
+            json!({"period": p, "level": "week"}),
+            "PERIOD_NOT_FOUND",
+            "period",
+        );
+    }
+    let numbers = |from: i32, to: i32| -> Vec<i64> {
+        ok(&s, "years", json!({"from": from, "to": to}))
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|y| y["year"].as_i64().unwrap())
+            .collect()
+    };
+    assert_eq!(numbers(2023, 2026), [2023, 2024, 2026]);
+    assert_eq!(numbers(2025, 2025), Vec::<i64>::new());
+    assert_eq!(numbers(2025, 2026), [2026]);
+    assert_eq!(numbers(2024, 2025), [2024]);
+    // The bounds are still the first and last supported numbers.
+    assert_err(
+        &s,
+        "years",
+        json!({"from": 0, "to": 3}),
+        "OUT_OF_RANGE",
+        "from",
+    );
+    assert_err(
+        &s,
+        "years",
+        json!({"from": 9990, "to": 10_001}),
+        "OUT_OF_RANGE",
+        "to",
+    );
+    assert_err(
+        &s,
+        "years",
+        json!({"from": 2000, "to": 12_000}),
+        "INVALID_ARGUMENT",
+        "to",
+    );
+}
+
+#[test]
+fn parse_checks_yy_end_and_skips_skipped_numbers() {
+    let s = changes::siemens();
+    let p = ok(&s, "parse", json!({"label": "FY 2024-26"}));
+    assert_eq!(coords(&p), (2024, None, "2024-10-01".into()));
+    let q = ok(&s, "parse", json!({"label": "Q6 FY 2024-26"}));
+    assert_eq!(coords(&q), (2024, Some(6), "2026-01-01".into()));
+    for label in ["FY 2024-25", "FY 2025-26", "Q1 FY 2025-26", "Q5 FY 2023-24"] {
+        assert_err(
+            &s,
+            "parse",
+            json!({"label": label}),
+            "LABEL_NOT_RECOGNISED",
+            "label",
+        );
+    }
+    assert_err(
+        &s,
+        "parse",
+        json!({"label": "FY 9999-00"}),
+        "OUT_OF_RANGE",
+        "label",
+    );
+}
+
+#[test]
+fn index_100_or_more_is_written_in_full_and_not_parsed() {
+    // A 123-month transition from 1 January 2000 to 31 March 2010.
+    let mut def = changes::fixed(1, "start", "FY{yyyy}");
+    def["exceptions"] =
+        json!({"history": [changes::entry("2010-04-01", 4, Some(("2000-01-01", &[3; 41])))]});
+    let p = ok(
+        &def,
+        "period",
+        json!({"level": "period", "year": 2000, "index": 105}),
+    );
+    assert_eq!(p["start"], "2008-09-01");
+    let label = ok(&def, "format", json!({"period": p}));
+    assert_eq!(label["label"], "P105 FY2000");
+    assert_err(
+        &def,
+        "parse",
+        json!({"label": "P105 FY2000"}),
+        "LABEL_NOT_RECOGNISED",
+        "label",
+    );
+    assert_eq!(
+        ok(&def, "parse", json!({"label": "P99 FY2000"}))["index"],
+        99
+    );
+}
+
+/// Every operation agrees with `locate` for each day around the changes.
+#[test]
+fn locate_nests_and_every_operation_answers_around_the_changes() {
+    for (name, def) in changes::all() {
+        let c = cal(&def);
+        let mut date = d("2021-12-01");
+        while date < d("2027-06-01") {
+            let l = c.locate(date).unwrap();
+            for p in [&l.year, &l.quarter, &l.period, &l.week] {
+                assert!(
+                    p.start <= date && date < p.end_exclusive,
+                    "{name} {date} {p:?}"
+                );
+                assert_eq!(
+                    c.period(p.level, p.year, p.index).unwrap(),
+                    *p,
+                    "{name} {date}"
+                );
+            }
+            assert_eq!(c.parent(&l.period).unwrap(), l.quarter, "{name} {date}");
+            assert_eq!(c.parent(&l.quarter).unwrap(), l.year, "{name} {date}");
+            let week_parent = c.parent(&l.week).unwrap();
+            assert!(
+                week_parent == l.period || week_parent == l.year,
+                "{name} {date}"
+            );
+            assert!(
+                c.children(&l.year, fiscalclock::Level::Week)
+                    .unwrap()
+                    .contains(&l.week)
+            );
+            let label = c.format(&l.period, None).unwrap();
+            assert_eq!(c.parse(&label).unwrap(), l.period, "{name} {label}");
+            assert_eq!(c.explain(date).unwrap().steps.len(), 4);
+            date = date.checked_add_days(1).unwrap();
+        }
+        let rows = c.dimension(d("2022-01-01"), d("2027-01-01")).unwrap();
+        assert!(
+            rows.iter().all(|r| r.labels.iter().all(Option::is_some)),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn no_operation_panics_on_calendars_whose_rule_changes() {
+    let ops = [
+        "locate",
+        "period",
+        "shift",
+        "parent",
+        "children",
+        "years",
+        "format",
+        "parse",
+        "dimension",
+        "dimension_csv",
+        "explain",
+    ];
+    for (_, def) in changes::all() {
+        let text = def.to_string();
+        let c = FiscalCalendar::from_json(&text).unwrap();
+        for year in [
+            0,
+            1,
+            2,
+            1000,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026,
+            2027,
+            9998,
+            9999,
+            10_000,
+            i32::MIN,
+            i32::MAX,
+        ] {
+            for (level, index) in [
+                ("year", Value::Null),
+                ("quarter", json!(0)),
+                ("quarter", json!(6)),
+                ("quarter", json!(7)),
+                ("period", json!(18)),
+                ("period", json!(19)),
+                ("week", json!(1)),
+                ("week", json!(80)),
+                ("week", json!(4_294_967_295u64)),
+            ] {
+                let p = json!({"level": level, "year": year, "index": index});
+                for n in [0i64, 1, -1, 5, -5, 80, -80, i64::MAX, i64::MIN] {
+                    for op in ops {
+                        let args = json!({
+                            "date": "2024-10-01", "level": level, "year": year, "index": index,
+                            "period": p, "n": n, "from": year, "to": year.saturating_add(3),
+                            "label": format!("FY {year}-26"), "start": "2024-09-25",
+                            "end_exclusive": "2024-10-10",
+                        });
+                        let out = c.call_json(op, &args.to_string());
+                        assert!(serde_json::from_str::<Value>(&out).is_ok(), "{op} {args}");
+                    }
+                }
+            }
+        }
+    }
 }
