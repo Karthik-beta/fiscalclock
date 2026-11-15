@@ -120,10 +120,46 @@ fn months_between(walk: &Walk, start: Civil, end: Civil) -> u32 {
     (a..b).filter(|&j| walk.days[j].d == start.d).count() as u32
 }
 
-/// The cross-block checks of the 0.2.0 brief, as `(code, path)` pairs. The
-/// generated definitions must produce none; this does not model block-level
-/// validation.
+/// The errors `spec/definition-v1.md` "Cross-block checks" gives `h`, as
+/// `(code, path)` pairs sorted by path and then code. Of the block-level
+/// checks it models only the two on a transition's own fields that the
+/// generator could break: `transition.start` on or after `from`, and a
+/// `week_pattern` transition's `quarters` not summing to the number of its
+/// `periods`. Any block-level error suppresses every cross-block check, as
+/// the spec says. The generated definitions must produce no error at all.
 pub fn problems(walk: &Walk, h: &History) -> Vec<(&'static str, String)> {
+    let mut out = block_problems(h);
+    if out.is_empty() {
+        out = cross_block_problems(walk, h);
+    }
+    out.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(b.0)));
+    out
+}
+
+fn block_problems(h: &History) -> Vec<(&'static str, String)> {
+    let mut out = Vec::new();
+    for (i, e) in h.entries.iter().enumerate() {
+        let Some(t) = &e.transition else { continue };
+        if t.start >= e.from {
+            out.push((
+                "INVALID_VALUE",
+                format!("exceptions.history[{i}].transition.start"),
+            ));
+        }
+        if let TransitionSub::Weeks { periods, quarters } = &t.sub {
+            if !periods.is_empty() && quarters.iter().sum::<u32>() as usize != periods.len() {
+                out.push((
+                    "QUARTERS_SUM_MISMATCH",
+                    format!("exceptions.history[{i}].transition.subdivision.quarters"),
+                ));
+            }
+        }
+    }
+    out
+}
+
+/// The rows of the spec's cross-block table, for every history entry.
+fn cross_block_problems(walk: &Walk, h: &History) -> Vec<(&'static str, String)> {
     let flags = regime_flags(walk, h);
     let starts_on = h.starts_on();
     let mut out = Vec::new();
@@ -138,7 +174,7 @@ pub fn problems(walk: &Walk, h: &History) -> Vec<(&'static str, String)> {
             out.push(("EXCEPTIONS_OVERLAP", c_path.clone()));
         }
         if !flags[i].0[walk.at[&c]] {
-            out.push(("CHANGE_NOT_ON_BOUNDARY", c_path.clone()));
+            out.push(("CHANGE_NOT_ON_BOUNDARY", c_path));
         }
         if !flags[i + 1].0[walk.at[&e.from]] {
             out.push((
@@ -148,10 +184,6 @@ pub fn problems(walk: &Walk, h: &History) -> Vec<(&'static str, String)> {
         }
         let Some(t) = &e.transition else { continue };
         let sub = format!("exceptions.history[{i}].transition.subdivision");
-        if t.start >= e.from {
-            out.push(("INVALID_VALUE", c_path));
-            continue;
-        }
         match &t.sub {
             TransitionSub::Months { day, quarters } => {
                 if *day != t.start.d || *day != e.from.d {
@@ -163,22 +195,24 @@ pub fn problems(walk: &Walk, h: &History) -> Vec<(&'static str, String)> {
                     out.push(("QUARTERS_SUM_MISMATCH", format!("{sub}.quarters")));
                 }
             }
-            TransitionSub::Weeks { periods, quarters } => {
+            TransitionSub::Weeks { periods, .. } => {
                 let days = walk.at[&e.from] - walk.at[&t.start];
                 if walk.weekday[walk.at[&t.start]] != starts_on || days % 7 != 0 {
                     out.push(("SUBDIVISION_YEAR_MISMATCH", format!("{sub}.type")));
-                } else if periods.iter().sum::<u32>() as usize != days / 7 {
+                }
+                // Checked whenever the length is whole weeks, even when the
+                // start is on the wrong weekday.
+                if days % 7 == 0 && periods.iter().sum::<u32>() as usize != days / 7 {
                     out.push(("WEEKS_SUM_MISMATCH", format!("{sub}.periods")));
                 }
-                assert_eq!(quarters.iter().sum::<u32>() as usize, periods.len());
             }
         }
     }
     out
 }
 
-/// Every complete fiscal year in the walk, in date order. Panics if the
-/// history fails a cross-block check.
+/// Every complete fiscal year in the walk, in date order. Panics if
+/// [`problems`] finds an error in the history.
 pub fn timeline(walk: &Walk, h: &History) -> Vec<Span> {
     let found = problems(walk, h);
     assert!(found.is_empty(), "{found:?}");
@@ -331,6 +365,27 @@ pub fn numbers(walk: &Walk, h: &History, numbering: Numbering) -> Result<Vec<Ref
     let spans = timeline(walk, h);
     let numbers = number_spans(walk, &spans, numbering).map_err(|(why, _)| why)?;
     Ok(years_from(walk, &spans, &numbers))
+}
+
+/// Whether every year in `listed` lies outside the reference's window, given
+/// its numbered `years` (which it found no fault with). The crate checks the
+/// numbering over its whole supported range, so it can refuse a numbering
+/// because of years beyond the walk; then the years it lists (see
+/// [`number_spans`] for what they are) must be at or beyond the edges of the
+/// window. The edges are included because a fault between the first or last
+/// year in the window and its neighbour outside names the edge year's number
+/// (a repeat, or a skip after it) or the calendar year in which the
+/// neighbour starts, which can equal the edge year's.
+pub fn beyond_window(years: &[RefYear], why: Refused, listed: &[i64]) -> bool {
+    let (first, last) = (years[0], years[years.len() - 1]);
+    let (lo, hi) = match why {
+        Refused::Collision => (first.number, last.number),
+        Refused::Tie => (first.start.y, last.start.y),
+    };
+    !listed.is_empty()
+        && listed
+            .iter()
+            .all(|&y| y <= i64::from(lo) || y >= i64::from(hi))
 }
 
 /// A fiscal year's subdivision: its quarters, and either a week pattern
