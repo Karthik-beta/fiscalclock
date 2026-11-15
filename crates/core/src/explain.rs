@@ -7,7 +7,7 @@ use crate::calendar::{FiscalCalendar, Level, Period};
 use crate::date::{Date, month_name};
 use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure, YearNumber};
 use crate::error::Error;
-use crate::timeline::{Division, FiscalYear, Source};
+use crate::timeline::{Division, FiscalYear, Source, nth_size};
 
 /// The rule trace behind [`FiscalCalendar::locate`] for one date.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -122,11 +122,11 @@ impl FiscalCalendar {
                 )
             }
             Division::Weeks {
-                periods,
+                week_totals,
                 extra_period,
                 has_extra,
             } => {
-                let base = periods[(k - 1) as usize];
+                let base = nth_size(week_totals, k);
                 let extra = match (extra_period == Some(k), has_extra) {
                     (true, true) => " plus the extra week as its last week",
                     (true, false) => ", and gains the extra week in a 53-week year",

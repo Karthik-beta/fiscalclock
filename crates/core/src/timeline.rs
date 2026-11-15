@@ -130,6 +130,57 @@ enum Shape {
     Transition(TransitionSubdivision),
 }
 
+impl Shape {
+    /// The running totals of the subdivision shared by every year of the shape.
+    fn totals(&self) -> Totals {
+        let (quarters, periods): (&[u32], &[u32]) = match self {
+            Shape::Rule {
+                rule: Structure::FixedDate(f),
+                ..
+            } => (&f.quarters, &[]),
+            Shape::Rule {
+                rule: Structure::WeekBased(w),
+                ..
+            } => (&w.quarters, &w.periods),
+            Shape::Transition(TransitionSubdivision::CalendarMonths { quarters, .. }) => {
+                (quarters, &[])
+            }
+            Shape::Transition(TransitionSubdivision::WeekPattern { periods, quarters }) => {
+                (quarters, periods)
+            }
+        };
+        Totals {
+            quarters: running_totals(quarters),
+            weeks: running_totals(periods),
+        }
+    }
+}
+
+/// Running totals of a subdivision, worked out once per segment so that
+/// finding a quarter's periods or a period's weeks costs one lookup, and
+/// finding the quarter of a period or the period of a week a binary search,
+/// however many quarters or periods a transition has.
+#[derive(Clone, Debug)]
+struct Totals {
+    /// Entry `q` is the number of periods in quarters 1 to `q`.
+    quarters: Vec<u32>,
+    /// For runs of weeks, entry `k` is the number of weeks in periods 1 to
+    /// `k`, without the extra week; just `[0]` for fiscal months.
+    weeks: Vec<u32>,
+}
+
+/// `[0, a, a + b, …]` for sizes `[a, b, …]`: entry `n` is the sum of the
+/// first `n` sizes. Validation makes every sum a number of periods or weeks
+/// of one fiscal year, so none overflows.
+fn running_totals(sizes: &[u32]) -> Vec<u32> {
+    core::iter::once(0)
+        .chain(sizes.iter().scan(0, |total, &n| {
+            *total += n;
+            Some(*total)
+        }))
+        .collect()
+}
+
 /// A run of consecutive fiscal years from one source.
 #[derive(Clone, Debug)]
 pub(crate) struct Segment {
@@ -141,6 +192,7 @@ pub(crate) struct Segment {
     /// The day after the last day of the last year.
     pub end: Date,
     shape: Shape,
+    totals: Totals,
 }
 
 /// The supported fiscal years of a calendar, as segments in date order that
@@ -230,6 +282,7 @@ impl Timeline {
             last,
             start,
             end,
+            totals: shape.totals(),
             shape,
         });
         Key(last.0 + 1)
@@ -295,73 +348,48 @@ impl Timeline {
             .sum()
     }
 
-    /// Fiscal year `key` of segment `i`.
+    /// Fiscal year `key` of segment `i`; `key` must lie in that segment.
     fn year_in(&self, i: usize, key: Key) -> FiscalYear<'_> {
         let seg = &self.segments[i];
         let position = key.0 - seg.first.0;
-        let (start, end, quarters, division) = match &seg.shape {
+        let week_totals = &seg.totals.weeks[..];
+        let (start, end, division) = match &seg.shape {
             Shape::Rule {
                 rule,
                 first_rule_key,
             } => {
                 let y = first_rule_key + position;
                 let (start, end) = rule.bounds(self.week_start, y);
-                match rule {
-                    Structure::FixedDate(f) => (
-                        start,
-                        end,
-                        &f.quarters[..],
-                        Division::Months {
-                            first: month_index(y, f.month),
-                            day: f.day,
-                            short_month: f.short_month,
-                            count: 12,
-                        },
-                    ),
-                    Structure::WeekBased(w) => (
-                        start,
-                        end,
-                        &w.quarters[..],
-                        Division::Weeks {
-                            periods: &w.periods,
-                            extra_period: Some(w.extra_period),
-                            has_extra: start.days_until(end) == 371,
-                        },
-                    ),
-                }
+                let division = match rule {
+                    Structure::FixedDate(f) => Division::Months {
+                        first: month_index(y, f.month),
+                        day: f.day,
+                        short_month: f.short_month,
+                    },
+                    Structure::WeekBased(w) => Division::Weeks {
+                        week_totals,
+                        extra_period: Some(w.extra_period),
+                        has_extra: start.days_until(end) == 371,
+                    },
+                };
+                (start, end, division)
             }
             Shape::Transition(sub) => {
-                let (start, end) = (seg.start, seg.end);
-                match sub {
+                let division = match sub {
                     TransitionSubdivision::CalendarMonths {
-                        month_start_day,
-                        quarters,
-                    } => {
-                        let first = month_index(start.year(), start.month());
-                        let months = month_index(end.year(), end.month()) - first;
-                        (
-                            start,
-                            end,
-                            &quarters[..],
-                            Division::Months {
-                                first,
-                                day: *month_start_day,
-                                short_month: None,
-                                count: u32::try_from(months).unwrap_or(0),
-                            },
-                        )
-                    }
-                    TransitionSubdivision::WeekPattern { periods, quarters } => (
-                        start,
-                        end,
-                        &quarters[..],
-                        Division::Weeks {
-                            periods,
-                            extra_period: None,
-                            has_extra: false,
-                        },
-                    ),
-                }
+                        month_start_day, ..
+                    } => Division::Months {
+                        first: month_index(seg.start.year(), seg.start.month()),
+                        day: *month_start_day,
+                        short_month: None,
+                    },
+                    TransitionSubdivision::WeekPattern { .. } => Division::Weeks {
+                        week_totals,
+                        extra_period: None,
+                        has_extra: false,
+                    },
+                };
+                (seg.start, seg.end, division)
             }
         };
         let back = (start.weekday().index() as i32 - self.week_start.index() as i32).rem_euclid(7);
@@ -373,7 +401,7 @@ impl Timeline {
             start,
             end,
             origin: start.add(-back),
-            quarters,
+            quarter_totals: &seg.totals.quarters,
             division,
         }
     }
@@ -388,16 +416,23 @@ pub(crate) enum Division<'a> {
         first: i32,
         day: u32,
         short_month: Option<ShortMonth>,
-        count: u32,
     },
     /// Runs of whole weeks from the year's first day.
     Weeks {
-        periods: &'a [u32],
+        /// Entry `k` is the number of weeks the pattern gives periods 1 to
+        /// `k`, without the extra week (see [`running_totals`]).
+        week_totals: &'a [u32],
         /// The rule's `extra_week.period`; `None` in a transition.
         extra_period: Option<u32>,
         /// Whether this year is a 371-day year of a `week_based` rule.
         has_extra: bool,
     },
+}
+
+/// Size `k` (from 1) of the sizes whose running totals are `totals` (see
+/// [`running_totals`]).
+pub(crate) fn nth_size(totals: &[u32], k: u32) -> u32 {
+    totals[k as usize] - totals[k as usize - 1]
 }
 
 /// One fiscal year with everything needed to subdivide it.
@@ -414,7 +449,9 @@ pub(crate) struct FiscalYear<'a> {
     /// The `week.starts_on` day on or before `start`: week `w` ends the day
     /// before `origin + 7w`.
     origin: Date,
-    pub quarters: &'a [u32],
+    /// Entry `q` is the number of periods in quarters 1 to `q` (see
+    /// [`running_totals`]).
+    quarter_totals: &'a [u32],
     pub division: Division<'a>,
 }
 
@@ -443,40 +480,39 @@ impl FiscalYear<'_> {
 
     /// The number of quarters, periods or weeks; 1 for the year itself.
     pub(crate) fn count(&self, level: Level) -> u32 {
+        // `running_totals` starts with 0, so the list is never empty.
+        let quarters = self.quarter_totals.len() - 1;
         match level {
             Level::Year => 1,
-            Level::Quarter => self.quarters.len() as u32,
-            Level::Period => match self.division {
-                Division::Months { count, .. } => count,
-                Division::Weeks { periods, .. } => periods.len() as u32,
-            },
+            Level::Quarter => quarters as u32,
+            // Validation checks that the quarters partition the periods, so the
+            // last quarter ends with the last period.
+            Level::Period => self.quarter_totals[quarters],
             Level::Week => (self.origin.days_until(self.end) as u32).div_ceil(7),
         }
     }
 
     /// First and last period of quarter `q`.
     pub(crate) fn quarter_periods(&self, q: u32) -> (u32, u32) {
-        let first = self.quarters[..(q - 1) as usize].iter().sum::<u32>() + 1;
-        (first, first + self.quarters[(q - 1) as usize] - 1)
+        let q = q as usize;
+        (self.quarter_totals[q - 1] + 1, self.quarter_totals[q])
     }
 
+    /// The quarter holding period `k`: the first whose periods reach `k`.
     pub(crate) fn quarter_of_period(&self, k: u32) -> u32 {
-        let mut last = 0;
-        for (i, n) in self.quarters.iter().enumerate() {
-            last += n;
-            if k <= last {
-                return i as u32 + 1;
-            }
-        }
-        self.quarters.len() as u32
+        self.quarter_totals.partition_point(|&total| total < k) as u32
     }
 
-    /// Weeks before period `k` and weeks in it, in a `week_pattern` year.
-    fn pattern_weeks(periods: &[u32], extra: Option<u32>, k: u32) -> (u32, u32) {
-        let before: u32 = periods[..(k - 1) as usize].iter().sum();
-        let before = before + u32::from(extra.is_some_and(|e| k > e));
-        let own = periods[(k - 1) as usize] + u32::from(extra == Some(k));
-        (before, own)
+    /// The number of weeks in periods 1 to `k` of a year of runs of weeks,
+    /// including the extra week when one of those periods holds it; 0 for
+    /// fiscal months. Every week count of such a year comes from here.
+    fn weeks_through(&self, k: u32) -> u32 {
+        match self.division {
+            Division::Weeks { week_totals, .. } => {
+                week_totals[k as usize] + u32::from(self.extra_period().is_some_and(|e| e <= k))
+            }
+            Division::Months { .. } => 0,
+        }
     }
 
     pub(crate) fn period_bounds(&self, k: u32) -> (Date, Date) {
@@ -485,17 +521,20 @@ impl FiscalYear<'_> {
                 first,
                 day,
                 short_month,
-                count,
             } => {
                 let at = |i: u32| month_start(day, short_month, first + i as i32);
-                let end = if k >= count { self.end } else { at(k) };
+                let end = if k >= self.count(Level::Period) {
+                    self.end
+                } else {
+                    at(k)
+                };
                 (at(k - 1), end)
             }
-            Division::Weeks { periods, .. } => {
-                let (before, own) = Self::pattern_weeks(periods, self.extra_period(), k);
+            Division::Weeks { .. } => {
+                let after_weeks = |n: u32| self.start.add(7 * n as i32);
                 (
-                    self.start.add(7 * before as i32),
-                    self.start.add(7 * (before + own) as i32),
+                    after_weeks(self.weeks_through(k - 1)),
+                    after_weeks(self.weeks_through(k)),
                 )
             }
         }
@@ -503,12 +542,12 @@ impl FiscalYear<'_> {
 
     /// The period containing `date`, which must lie in the year.
     pub(crate) fn period_of(&self, date: Date) -> u32 {
+        let periods = self.count(Level::Period);
         match self.division {
             Division::Months {
                 first,
                 day,
                 short_month,
-                count,
             } => {
                 // The fiscal month that starts in the date's own month begins
                 // on or after that month's first day, and the one before it on
@@ -519,20 +558,22 @@ impl FiscalYear<'_> {
                 } else {
                     m
                 };
-                k.clamp(1, count as i32) as u32
+                k.clamp(1, periods as i32) as u32
             }
-            Division::Weeks { periods, .. } => {
+            Division::Weeks { .. } => {
+                // A binary search for the first period whose weeks run past
+                // the date's week, counted from 0.
                 let week = self.start.days_until(date) as u32 / 7;
-                let extra = self.extra_period();
-                let mut ends = 0;
-                for (i, &n) in periods.iter().enumerate() {
-                    let k = i as u32 + 1;
-                    ends += n + u32::from(extra == Some(k));
-                    if week < ends {
-                        return k;
+                let (mut lo, mut hi) = (1, periods);
+                while lo < hi {
+                    let mid = lo + (hi - lo) / 2;
+                    if self.weeks_through(mid) > week {
+                        hi = mid;
+                    } else {
+                        lo = mid + 1;
                     }
                 }
-                periods.len() as u32
+                lo
             }
         }
     }
@@ -549,14 +590,10 @@ impl FiscalYear<'_> {
         (self.origin.days_until(date) / 7 + 1) as u32
     }
 
-    /// The number of the extra week, if the year has one.
+    /// The number of the extra week, if the year has one: the last week of
+    /// the period that holds it.
     pub(crate) fn extra_week(&self) -> Option<u32> {
-        let p = self.extra_period()?;
-        let Division::Weeks { periods, .. } = self.division else {
-            return None;
-        };
-        let (before, own) = Self::pattern_weeks(periods, Some(p), p);
-        Some(before + own)
+        self.extra_period().map(|p| self.weeks_through(p))
     }
 }
 
