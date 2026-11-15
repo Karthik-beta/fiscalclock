@@ -148,6 +148,8 @@ def naming_error_vectors() -> list[dict]:
     out = []
     for name, defn, code, path, why in rows:
         c = case(Calendar(defn), "validate", {})
+        # These files predate the spec's rule for details.years (0.2.0) and keep asserting code and path only.
+        c["expect_error"].pop("details", None)
         assert c.get("expect_error") == {"code": code, "path": path}, (name, c)
         desc = f"Invalid definition. {why} Only code and path are asserted; details.years is not, because the spec only says it lists the first affected years."
         out.append(vector(f"definition-{name}", desc, src, defn, [c]))
@@ -396,20 +398,23 @@ HISTORY_CROSS = [
      "The week_pattern transition from 2024-02-04 to 2024-12-29 is 47 weeks, but its periods sum to 46"),
 ]
 
-# Year numbering across a change: (name, definition, code, explanation). Computed by the oracle's scan (asserted).
+# Year numbering across a change: (name, definition, code, details.years, explanation). Computed by the oracle's scan (asserted).
 HISTORY_NAMING = [
     ("year-number-collision-across-change",
      hv.with_history(fixed_date(1, 1, "monday", named("start")), hv.entry("2024-07-01", *hv.fixed_rule(7, 1), start="2024-01-01", transition_sub=hv.months(1, [3, 3]))),
-     "YEAR_NUMBER_COLLISION",
-     "Calendar years change to 1 July years through a six-month transition, 2024-01-01 to 2024-06-30. Numbered by 'start', the transition and the year from 1 July 2024 both get 2024, so the number does not increase across the change"),
+     "YEAR_NUMBER_COLLISION", [2024],
+     "Calendar years change to 1 July years through a six-month transition, 2024-01-01 to 2024-06-30. Numbered by 'start', the transition and the year from 1 July 2024 both get 2024, so the number does not increase across the change. "
+     "That pair is across a change, so details.years names the later year's number, 2024; no other pair breaks the rules"),
     ("majority-tie-transition",
      hv.with_history(fixed_date(12, 1, "monday", named("majority")), hv.entry("2025-02-01", *hv.fixed_rule(2, 1), start="2024-12-01", transition_sub=hv.months(1, [2]))),
-     "MAJORITY_TIE",
-     "1 December years change to 1 February years through a two-month transition, 2024-12-01 to 2025-01-31, with 31 days in 2024 and 31 in 2025, so no calendar year holds more than half"),
+     "MAJORITY_TIE", [2024],
+     "1 December years change to 1 February years through a two-month transition, 2024-12-01 to 2025-01-31, with 31 days in 2024 and 31 in 2025, so no calendar year holds more than half. "
+     "Every 1 December year and every 1 February year has a majority, so details.years lists only the calendar year in which the transition starts, 2024"),
     ("majority-tie-three-calendar-years",
      hv.with_history(fixed_date(7, 1, "monday", named("majority")), hv.entry("2026-07-01", *hv.fixed_rule(7, 1, (4, 4, 4)), start="2024-07-01", transition_sub=hv.months(1, [3] * 8))),
-     "MAJORITY_TIE",
-     "A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half"),
+     "MAJORITY_TIE", [2024],
+     "A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half. "
+     "Every 1 July year has 184 days in its first calendar year, so details.years lists only the calendar year in which the transition starts, 2024"),
 ]
 
 
@@ -436,14 +441,14 @@ def history_error_vectors() -> list[dict]:
         )
         src = source("errors", HISTORY_SPEC, CROSS_CHECKED, DEFINITION_URL + "#cross-block-checks")
         out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": as_list(expected)}]))
-    for name, defn, code, why in HISTORY_NAMING:
+    for name, defn, code, years, why in HISTORY_NAMING:
         cal = Calendar(defn)
         assert not cal.change_errors(), name
-        got = [{"code": e.code, "path": e.path} for e in cal.naming_errors()]
-        assert got == [{"code": code, "path": "naming.schemes.fy.year_number"}], (name, got)
+        got = [e.expect_error() for e in cal.naming_errors()]
+        assert got == [{"code": code, "path": "naming.schemes.fy.year_number", "details": {"years": years}}], (name, got)
         c = {"op": "validate", "args": {}, "expect_error": got}
         desc = (
-            f"Invalid definition (fiscalclock 0.2.0). {why}. The complete error list is asserted (code and path); details.years is not."
+            f"Invalid definition (fiscalclock 0.2.0). {why}. The complete error list is asserted (code, path and details)."
         )
         src = source(
             "errors",

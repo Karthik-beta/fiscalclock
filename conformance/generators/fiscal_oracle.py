@@ -351,20 +351,36 @@ class Calendar:
         Within a run of years made by one regime's rule the numbers must be consecutive. Across a change
         (a regime's last year, the transition if any, the next regime's first year) each number must be
         greater than the one before, so a number may be skipped there and nowhere else.
+
+        details.years follows definition-v1.md, Year numbers must be unique: for MAJORITY_TIE the calendar year in which
+        each of the first five tied fiscal years starts, without offset; for YEAR_NUMBER_COLLISION the first five distinct
+        affected numbers in date order, offset included, where a pair in one run affects the repeated number, or else the
+        first skipped number (earlier + 1), and a pair across a change affects the later year's number.
         """
         errors = []
         for name in sorted(self.schemes):
             path = f"naming.schemes.{name}.year_number"
             numbers = [self.scheme_number(k, name) for k in range(len(self.seq))]
             if None in numbers:
-                errors.append(FiscalError("MAJORITY_TIE", path))
+                tied = [civil_year(self.seq[k].start) for k, n in enumerate(numbers) if n is None]
+                errors.append(FiscalError("MAJORITY_TIE", path, {"years": tied[:5]}))
                 continue
+            affected = []
             for k in range(len(self.seq) - 1):
                 a, b = numbers[k], numbers[k + 1]
                 same_run = self.seq[k].regime is not None and self.seq[k].regime == self.seq[k + 1].regime
-                if (b != a + 1) if same_run else (b <= a):
-                    errors.append(FiscalError("YEAR_NUMBER_COLLISION", path))
-                    break
+                if same_run and b != a + 1:
+                    year = a if b == a else a + 1
+                elif not same_run and b <= a:
+                    year = b
+                else:
+                    continue
+                if year not in affected:
+                    affected.append(year)
+                    if len(affected) == 5:
+                        break
+            if affected:
+                errors.append(FiscalError("YEAR_NUMBER_COLLISION", path, {"years": affected}))
         return sorted(errors, key=lambda err: (err.path, err.code))
 
     # Structure ---------------------------------------------------------

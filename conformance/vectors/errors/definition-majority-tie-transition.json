@@ -1,6 +1,6 @@
 {
   "name": "definition-majority-tie-transition",
-  "description": "Invalid definition (fiscalclock 0.2.0). 1 December years change to 1 February years through a two-month transition, 2024-12-01 to 2025-01-31, with 31 days in 2024 and 31 in 2025, so no calendar year holds more than half. The complete error list is asserted (code and path); details.years is not.",
+  "description": "Invalid definition (fiscalclock 0.2.0). 1 December years change to 1 February years through a two-month transition, 2024-12-01 to 2025-01-31, with 31 days in 2024 and 31 in 2025, so no calendar year holds more than half. Every 1 December year and every 1 February year has a majority, so details.years lists only the calendar year in which the transition starts, 2024. The complete error list is asserted (code, path and details).",
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",
@@ -83,7 +83,12 @@
       "expect_error": [
         {
           "code": "MAJORITY_TIE",
-          "path": "naming.schemes.fy.year_number"
+          "path": "naming.schemes.fy.year_number",
+          "details": {
+            "years": [
+              2024
+            ]
+          }
         }
       ]
     }
