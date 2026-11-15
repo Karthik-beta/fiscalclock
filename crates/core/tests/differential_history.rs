@@ -11,6 +11,8 @@
 
 mod reference;
 
+use std::collections::HashSet;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use fiscalclock::{Date, Details, ErrorCode, FiscalCalendar, Level, Period};
@@ -194,8 +196,10 @@ fn filed_change(old: u32, new: u32, start: Civil, from: Civil, quarters: Vec<u32
     }
 }
 
-/// The transitions in the 0.2.0 brief, from `research/filers/pg-hygiene.md`,
-/// `siemens-india.md` and `linde-india.md`: dates, lengths and labels.
+/// The transitions quoted in `research/filers/pg-hygiene.md`,
+/// `siemens-india.md` and `linde-india.md`: dates, lengths and labels. The
+/// first is also the example in `spec/definition-v1.md`, "Example: a change
+/// from July to June years to April to March years".
 #[test]
 fn history_reference_reproduces_the_filed_transitions() {
     let walk = Walk::new();
@@ -256,6 +260,191 @@ fn history_reference_reproduces_the_filed_transitions() {
     }
 }
 
+/// An illustrative week-based change: years ending on the Saturday nearest
+/// 31 January, a 34-week transition from Sunday 4 February 2024, then years
+/// ending on the Saturday nearest 30 September from Sunday 29 September 2024.
+fn retail_change(start: Civil, from: Civil, periods: Vec<u32>, quarters: Vec<u32>) -> History {
+    let week = |month, periods: &[u32]| Shape::Week {
+        starts_on: "sunday",
+        edge_end: true,
+        month,
+        day: None,
+        rule: "nearest",
+        periods: periods.to_vec(),
+        quarters: vec![3, 3, 3, 3],
+        extra: 12,
+    };
+    History {
+        base: week(1, &[4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4]),
+        entries: vec![Entry {
+            from,
+            transition: Some(Transition {
+                start,
+                sub: TransitionSub::Weeks { periods, quarters },
+            }),
+            shape: week(9, &[4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5]),
+        }],
+    }
+}
+
+/// The `(code, path)` pairs a definition is expected to fail with.
+type Expected = Vec<(&'static str, String)>;
+
+/// The reference's validation (`history::problems`) against the crate's, on
+/// definitions that break the checks of `spec/definition-v1.md`, "Cross-block
+/// checks", and the block-level check of `transition.start`. Each case names
+/// the errors it is built to produce; both must report exactly those.
+#[test]
+fn history_reference_validation_matches_the_crate() {
+    let walk = Walk::new();
+    let periods = || vec![4, 5, 4, 4, 5, 4, 4, 4];
+    let (feb4, sep29) = (ymd(2024, 2, 4), ymd(2024, 9, 29));
+    let at = |i: usize, field: &str| format!("exceptions.history[{i}].{field}");
+    let mut overlapping = filed_change(7, 4, ymd(2024, 7, 1), ymd(2025, 4, 1), vec![3, 3, 3]);
+    overlapping.entries.push(Entry {
+        from: ymd(2025, 4, 1),
+        transition: None,
+        shape: first_of(4),
+    });
+    let mut suppressed = retail_change(ymd(2024, 10, 6), sep29, periods(), vec![3, 3, 2]);
+    suppressed.entries.push(Entry {
+        // Not a year start of either rule: reported only if the cross-block
+        // checks ran.
+        from: ymd(2030, 1, 1),
+        transition: None,
+        shape: first_of(4),
+    });
+    let direct = History {
+        base: first_of(7),
+        entries: vec![Entry {
+            from: ymd(2025, 5, 1),
+            transition: None,
+            shape: first_of(4),
+        }],
+    };
+    let cases: Vec<(&str, History, Expected)> = vec![
+        (
+            "valid week_pattern transition",
+            retail_change(feb4, sep29, periods(), vec![3, 3, 2]),
+            vec![],
+        ),
+        (
+            "periods sum to 35 of 34 weeks",
+            retail_change(feb4, sep29, vec![4, 5, 4, 4, 5, 4, 4, 5], vec![3, 3, 2]),
+            vec![(
+                "WEEKS_SUM_MISMATCH",
+                at(0, "transition.subdivision.periods"),
+            )],
+        ),
+        (
+            // Whole weeks from a Monday: both the weekday error and the sum.
+            "whole weeks from the wrong weekday, periods off",
+            retail_change(
+                ymd(2024, 2, 5),
+                ymd(2024, 9, 30),
+                vec![4, 5, 4, 4, 5, 4, 4, 5],
+                vec![3, 3, 2],
+            ),
+            vec![
+                ("CHANGE_NOT_ON_BOUNDARY", at(0, "from")),
+                ("CHANGE_NOT_ON_BOUNDARY", at(0, "transition.start")),
+                (
+                    "WEEKS_SUM_MISMATCH",
+                    at(0, "transition.subdivision.periods"),
+                ),
+                (
+                    "SUBDIVISION_YEAR_MISMATCH",
+                    at(0, "transition.subdivision.type"),
+                ),
+            ],
+        ),
+        (
+            // Not whole weeks: no sum check, whatever the periods.
+            "not whole weeks",
+            retail_change(ymd(2024, 2, 5), sep29, vec![1], vec![1]),
+            vec![
+                ("CHANGE_NOT_ON_BOUNDARY", at(0, "transition.start")),
+                (
+                    "SUBDIVISION_YEAR_MISMATCH",
+                    at(0, "transition.subdivision.type"),
+                ),
+            ],
+        ),
+        (
+            "transition quarters do not sum to its periods",
+            retail_change(feb4, sep29, periods(), vec![3, 3, 3]),
+            vec![(
+                "QUARTERS_SUM_MISMATCH",
+                at(0, "transition.subdivision.quarters"),
+            )],
+        ),
+        (
+            "transition.start after from, with a later cross-block fault",
+            suppressed,
+            vec![("INVALID_VALUE", at(0, "transition.start"))],
+        ),
+        (
+            "calendar_months transition quarters sum to 6 of 9 months",
+            filed_change(7, 4, ymd(2024, 7, 1), ymd(2025, 4, 1), vec![3, 3]),
+            vec![(
+                "QUARTERS_SUM_MISMATCH",
+                at(0, "transition.subdivision.quarters"),
+            )],
+        ),
+        (
+            "month_start_day 2 for dates on the 1st",
+            {
+                let mut h = filed_change(7, 4, ymd(2024, 7, 1), ymd(2025, 4, 1), vec![3, 3, 3]);
+                if let Some(Transition {
+                    sub: TransitionSub::Months { day, .. },
+                    ..
+                }) = &mut h.entries[0].transition
+                {
+                    *day = 2;
+                }
+                h
+            },
+            vec![(
+                "SUBDIVISION_YEAR_MISMATCH",
+                at(0, "transition.subdivision.month_start_day"),
+            )],
+        ),
+        (
+            "direct change on a year start of neither rule",
+            direct,
+            vec![
+                ("CHANGE_NOT_ON_BOUNDARY", at(0, "from")),
+                ("CHANGE_NOT_ON_BOUNDARY", at(0, "from")),
+            ],
+        ),
+        (
+            "second change on the first change's from",
+            overlapping,
+            vec![("EXCEPTIONS_OVERLAP", at(1, "from"))],
+        ),
+    ];
+    for (name, h, want) in cases {
+        let want: Vec<(&str, &str)> = want.iter().map(|(c, p)| (*c, p.as_str())).collect();
+        let reference = history::problems(&walk, &h);
+        let reference: Vec<(&str, &str)> =
+            reference.iter().map(|(c, p)| (*c, p.as_str())).collect();
+        assert_eq!(reference, want, "reference: {name}");
+        // "majority" numbers the valid definition; the others never reach
+        // year numbering.
+        let definition = cases::definition(&h, "majority", false);
+        let found: Vec<(&str, String)> = match FiscalCalendar::from_json(&definition.to_string()) {
+            Ok(_) => Vec::new(),
+            Err(errors) => errors
+                .into_vec()
+                .into_iter()
+                .map(|e| (e.code.as_str(), e.path))
+                .collect(),
+        };
+        let found: Vec<(&str, &str)> = found.iter().map(|(c, p)| (*c, p.as_str())).collect();
+        assert_eq!(found, want, "crate: {name}\n{definition}");
+    }
+}
+
 // ---------------------------------------------------------------------------
 // The crate against the reference.
 // ---------------------------------------------------------------------------
@@ -268,6 +457,9 @@ struct Tally {
     refused_beyond_window: AtomicUsize,
     unnumberable: AtomicUsize,
     skipped_numbers: AtomicUsize,
+    /// The (family, kind of change) of every change in a definition that was
+    /// compared day by day.
+    categories: Mutex<HashSet<(Family, Mode)>>,
 }
 
 fn compare_days(cal: &FiscalCalendar, expected: &[RefDay], definition: &Value) {
@@ -346,6 +538,7 @@ fn compare_years(cal: &FiscalCalendar, years: &[RefYear], definition: &Value, ta
         .collect();
     assert_eq!(got, want, "years({first}, {last}) under {definition}");
     // Numbers skipped across a change name no fiscal year.
+    let mut plain: Option<FiscalCalendar> = None;
     for n in first..=last {
         if window.iter().any(|y| y.number == n) {
             continue;
@@ -361,14 +554,19 @@ fn compare_years(cal: &FiscalCalendar, years: &[RefYear], definition: &Value, ta
             Vec::new(),
             "{n} under {definition}"
         );
-        // A label naming it matches no fiscal year, and a period argument
-        // naming it is not found.
-        let e = cal.parse(&format!("FY{n:04}-{:02}", n % 100)).unwrap_err();
+        // A label naming it matches no fiscal year. The year template has no
+        // `{yy_end}` here, so the year lookup alone decides; the label of an
+        // existing year, written the same way, parses.
+        let plain = plain.get_or_insert_with(|| plain_year_template(definition));
+        let e = plain.parse(&format!("FY{n:04}")).unwrap_err();
         assert_eq!(
-            e.code,
-            ErrorCode::LabelNotRecognised,
+            (e.code, e.path.as_str()),
+            (ErrorCode::LabelNotRecognised, "label"),
             "{n} under {definition}"
         );
+        let near = periods[0];
+        assert_eq!(plain.parse(&format!("FY{:04}", near.year)).unwrap(), near);
+        // A period argument naming it is not found.
         let ghost = Period {
             year: n,
             ..periods[0]
@@ -388,6 +586,13 @@ fn compare_years(cal: &FiscalCalendar, years: &[RefYear], definition: &Value, ta
     }
 }
 
+/// The calendar of `definition` with the year template `FY{yyyy}`.
+fn plain_year_template(definition: &Value) -> FiscalCalendar {
+    let mut d = definition.clone();
+    d["naming"]["schemes"]["fy"]["templates"]["year"] = json!("FY{yyyy}");
+    FiscalCalendar::from_json(&d.to_string()).unwrap_or_else(|e| panic!("{e}\n{d}"))
+}
+
 fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
     let mut compared = false;
     let mut accepted = 0;
@@ -402,6 +607,11 @@ fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
                     let (_, days) = history::compute(walk, &case.history, rule).unwrap();
                     compare_days(&cal, &days, &definition);
                     tally.compared.fetch_add(1, Ordering::Relaxed);
+                    tally
+                        .categories
+                        .lock()
+                        .unwrap()
+                        .extend(case.changes.iter().copied());
                     compared = true;
                 } else {
                     tally.numbering_only.fetch_add(1, Ordering::Relaxed);
@@ -438,16 +648,12 @@ fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
                 }
                 tally.refused_alike.fetch_add(1, Ordering::Relaxed);
             }
-            (Ok(_), Err(errors)) => {
+            (Ok(years), Err(errors)) => {
                 // The crate checks the whole supported range; the reference
-                // only the years that open between 1892 and 2209.
-                let code = errors.as_slice()[0].code;
+                // only the years that open between 1892 and 2209. Every year
+                // the crate lists must then lie outside the reference's window.
                 assert!(
-                    errors.as_slice().len() == 1
-                        && matches!(
-                            code,
-                            ErrorCode::YearNumberCollision | ErrorCode::MajorityTie
-                        ),
+                    refused_beyond(&years, &errors),
                     "{errors} under {definition}"
                 );
                 tally.refused_beyond_window.fetch_add(1, Ordering::Relaxed);
@@ -460,6 +666,23 @@ fn check(walk: &Walk, case: &HistoryCase, tally: &Tally) {
     if accepted == 0 {
         tally.unnumberable.fetch_add(1, Ordering::Relaxed);
     }
+}
+
+/// Whether `errors` is one numbering refusal whose `details.years` all lie
+/// outside the window of the reference's numbered `years`.
+fn refused_beyond(years: &[RefYear], errors: &fiscalclock::Errors) -> bool {
+    let [e] = errors.as_slice() else {
+        return false;
+    };
+    let why = match e.code {
+        ErrorCode::YearNumberCollision => Refused::Collision,
+        ErrorCode::MajorityTie => Refused::Tie,
+        _ => return false,
+    };
+    let Some(Details::Years(listed)) = &e.details else {
+        return false;
+    };
+    e.path == "naming.schemes.fy.year_number" && history::beyond_window(years, why, listed)
 }
 
 #[test]
@@ -524,6 +747,24 @@ fn calendars_that_change_match_the_day_walking_reference_1900_to_2200() {
         compared * 2 >= selected.len(),
         "fewer than half of the definitions can be numbered"
     );
+    assert!(
+        tally.skipped_numbers.load(Ordering::Relaxed) > 0,
+        "no skipped year number was checked"
+    );
+    let categories = tally.categories.lock().unwrap();
+    for family in [
+        Family::FixedToFixed,
+        Family::WeekToWeek,
+        Family::FixedToWeek,
+        Family::WeekToFixed,
+    ] {
+        for mode in [Mode::Direct, Mode::Months, Mode::Weeks] {
+            assert!(
+                categories.contains(&(family, mode)),
+                "no {family:?} change of kind {mode:?} was compared day by day"
+            );
+        }
+    }
 }
 
 /// The canonical form of a definition with `"transition": null` equals the

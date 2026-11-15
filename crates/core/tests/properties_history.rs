@@ -11,10 +11,10 @@
 #[allow(dead_code)]
 mod reference;
 
-use fiscalclock::{Date, ErrorCode, FiscalCalendar, Level, Period};
+use fiscalclock::{Date, Details, ErrorCode, Errors, FiscalCalendar, Level, Period};
 use proptest::prelude::*;
 use proptest::test_runner::{Config, TestCaseError, TestRunner};
-use reference::{Civil, Walk, cases, history};
+use reference::{Civil, Refused, Walk, cases, history};
 use serde_json::json;
 
 struct Built {
@@ -34,22 +34,18 @@ fn to_date(c: Civil) -> Date {
 fn build(walk: &Walk, seed: u64) -> Result<Built, TestCaseError> {
     let case = cases::history_case(walk, seed, None, None, None)
         .ok_or_else(|| TestCaseError::reject("no valid change near the drawn dates"))?;
-    let rule = ["start", "end", "majority"]
+    let (rule, years) = ["start", "end", "majority"]
         .into_iter()
-        .find(|r| history::numbers(walk, &case.history, r).is_ok())
+        .find_map(|r| Some((r, history::numbers(walk, &case.history, r).ok()?)))
         .ok_or_else(|| TestCaseError::reject("no numbering rule numbers these years"))?;
     let mut definition = case.definition.clone();
     definition["naming"]["schemes"]["fy"]["year_number"] = json!(rule);
     let cal = match FiscalCalendar::from_json(&definition.to_string()) {
         Ok(cal) => cal,
-        Err(errors)
-            if errors.as_slice().iter().all(|e| {
-                matches!(
-                    e.code,
-                    ErrorCode::YearNumberCollision | ErrorCode::MajorityTie
-                )
-            }) =>
-        {
+        // The crate checks the numbering over its whole supported range; the
+        // reference only within its window. A refusal is allowed only when
+        // every year it lists lies outside that window.
+        Err(errors) if refused_beyond(&years, &errors) => {
             return Err(TestCaseError::reject(
                 "numbering refused beyond the reference's window",
             ));
@@ -66,6 +62,23 @@ fn build(walk: &Walk, seed: u64) -> Result<Built, TestCaseError> {
         changes.push(to_date(e.from));
     }
     Ok(Built { cal, changes })
+}
+
+/// Whether `errors` is one numbering refusal whose `details.years` all lie
+/// outside the window of the reference's numbered `years`.
+fn refused_beyond(years: &[history::RefYear], errors: &Errors) -> bool {
+    let [e] = errors.as_slice() else {
+        return false;
+    };
+    let why = match e.code {
+        ErrorCode::YearNumberCollision => Refused::Collision,
+        ErrorCode::MajorityTie => Refused::Tie,
+        _ => return false,
+    };
+    let Some(Details::Years(listed)) = &e.details else {
+        return false;
+    };
+    e.path == "naming.schemes.fy.year_number" && history::beyond_window(years, why, listed)
 }
 
 /// A date: near a change (within 1,000 days) or anywhere in 1900-2200.
