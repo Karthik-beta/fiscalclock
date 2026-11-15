@@ -32,7 +32,7 @@ All three packages are built from the same Rust core and return the same JSON fo
 | Python package | `pip install fiscalclock` | CPython 3.10 and later, and free-threaded 3.14; wheels for Linux, macOS and Windows | [`bindings/python`](bindings/python/README.md) |
 | npm package | `npm install fiscalclock` | Node.js 22 and later, and browsers (WebAssembly) | [`bindings/js`](bindings/js/README.md) |
 
-A command-line interface and an MCP server are planned for 0.4.0.
+A command-line interface and an MCP server are planned for 0.6.0 ([Roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap#phase-6-v06)).
 
 The [Roadmap](https://github.com/Karthik-beta/fiscalclock/wiki/Roadmap) lists what each release contains and the correctness gate it must pass.
 
