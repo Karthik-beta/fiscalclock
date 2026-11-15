@@ -4,7 +4,8 @@
 //! every calendar year `Y`, its *rule key*. Without `exceptions` one rule
 //! produces every fiscal year. With `exceptions` the years form segments in
 //! date order: a run of years of one regime's rule, or a single transition
-//! year. A fiscal year's identity, [`Key`], is its position in that sequence.
+//! year. A fiscal year's identity is its [`Key`], an ordinal that increases by
+//! one from each fiscal year to the next.
 
 use alloc::vec::Vec;
 
@@ -14,9 +15,10 @@ use crate::definition::{
     AnchorDay, Definition, Edge, Rule, ShortMonth, Structure, TransitionSubdivision, WeekBased,
 };
 
-/// The internal identity of a fiscal year: its position in the calendar's
-/// sequence of fiscal years. Kept distinct from year numbers, which depend on
-/// the naming scheme and can skip at a change of rule.
+/// The internal identity of a fiscal year: an ordinal that increases by one
+/// per fiscal year along the calendar's sequence of fiscal years. Kept
+/// distinct from year numbers, which depend on the naming scheme and can skip
+/// at a change of rule.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Key(pub i32);
 
@@ -349,7 +351,7 @@ impl Timeline {
     }
 
     /// Fiscal year `key` of segment `i`; `key` must lie in that segment.
-    fn year_in(&self, i: usize, key: Key) -> FiscalYear<'_> {
+    pub(crate) fn year_in(&self, i: usize, key: Key) -> FiscalYear<'_> {
         let seg = &self.segments[i];
         let position = key.0 - seg.first.0;
         let week_totals = &seg.totals.weeks[..];
