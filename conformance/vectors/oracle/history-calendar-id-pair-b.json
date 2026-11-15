@@ -1,0 +1,85 @@
+{
+  "name": "history-calendar-id-pair-b",
+  "description": "Second of a pair of definitions with exceptions.history that differ only in key order, $schema, and the history entry's transition and short_month written as null or left out. Both have calendar_id 51ecd96f1400ce5e. The canonical string is typed into history_vectors.CANONICAL_HISTORY by hand: exceptions sorts with the other top-level keys, the entry keeps 'transition': null and 'short_month': null, and calendar_id is SHA-256 of its UTF-8 bytes, first 16 hex digits.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "Canonical string typed by hand in history_vectors.CANONICAL_HISTORY; fiscal_oracle.canonical agrees (asserted)"
+  },
+  "definition": {
+    "exceptions": {
+      "history": [
+        {
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "day": 1,
+              "month": 1
+            },
+            "short_month": null
+          },
+          "transition": null,
+          "subdivision": {
+            "type": "calendar_months",
+            "quarters": [
+              4,
+              4,
+              4
+            ],
+            "month_start_day": 1
+          },
+          "from": "2025-01-01"
+        }
+      ]
+    },
+    "naming": {
+      "schemes": {
+        "fy": {
+          "templates": {
+            "quarter": "FY{yyyy} Q{q}",
+            "year": "FY{yyyy}"
+          },
+          "offset": 0,
+          "year_number": "start",
+          "century_pivot": null
+        }
+      },
+      "default": "fy"
+    },
+    "$schema": "https://example.invalid/fiscalclock/definition-v1.json",
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "spec_version": 1
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "51ecd96f1400ce5e",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2025-01-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[4,4,4],\"type\":\"calendar_months\"},\"transition\":null,\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"quarter\":\"FY{yyyy} Q{q}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    }
+  ]
+}

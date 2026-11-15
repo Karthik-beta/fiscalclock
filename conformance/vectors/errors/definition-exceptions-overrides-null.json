@@ -1,0 +1,95 @@
+{
+  "name": "definition-exceptions-overrides-null",
+  "description": "Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: overrides is reserved: any value, null included, is UNSUPPORTED_FEATURE. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#exceptions",
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}",
+            "quarter": "Q{q} {yyyy}-{yy_end}",
+            "period": "P{pp} {yyyy}-{yy_end}",
+            "week": "W{ww} {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ],
+      "overrides": null
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "UNSUPPORTED_FEATURE",
+        "path": "exceptions.overrides"
+      }
+    }
+  ]
+}

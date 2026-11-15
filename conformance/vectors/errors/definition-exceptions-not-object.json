@@ -1,0 +1,77 @@
+{
+  "name": "definition-exceptions-not-object",
+  "description": "Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: exceptions is an object or null. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md",
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "end",
+        "month": 1,
+        "day": "last",
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 12
+      }
+    },
+    "naming": {
+      "default": "nrf",
+      "schemes": {
+        "nrf": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    },
+    "exceptions": []
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "INVALID_TYPE",
+        "path": "exceptions"
+      }
+    }
+  ]
+}

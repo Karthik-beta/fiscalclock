@@ -1,0 +1,109 @@
+{
+  "name": "definition-transition-week-pattern-wrong-weekday-and-length",
+  "description": "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the definition has no block-level error. A week_pattern transition from Monday 2024-07-01 (weeks start on Sunday) to 2024-12-29 is 181 days: it fails both the week-start and the whole-weeks condition, which is one error, and its periods are not compared with a length that is not whole weeks. Only code and path are asserted.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#cross-block-checks",
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "majority",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2024-12-29",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "week_pattern",
+              "periods": [
+                26
+              ],
+              "quarters": [
+                1
+              ]
+            }
+          },
+          "year": {
+            "type": "week_based",
+            "anchor": {
+              "edge": "end",
+              "month": 12,
+              "day": "last",
+              "rule": "last"
+            }
+          },
+          "subdivision": {
+            "type": "week_pattern",
+            "periods": [
+              4,
+              4,
+              5,
+              4,
+              4,
+              5,
+              4,
+              4,
+              5,
+              4,
+              4,
+              5
+            ],
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ],
+            "extra_week": {
+              "period": 12
+            }
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "SUBDIVISION_YEAR_MISMATCH",
+        "path": "exceptions.history[0].transition.subdivision.type"
+      }
+    }
+  ]
+}

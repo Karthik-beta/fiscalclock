@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from datetime import date
 
+import history_vectors as hv
 from fiscal_oracle import Calendar, iso
 from oracle_vectors import iso_definition, nrf_definition
 from vectorlib import case, coords, fixed_date, naming, scheme, source, validate_case, vector, week_based, year_args
@@ -31,12 +32,17 @@ def edit(base: dict, fn) -> dict:
     return d
 
 
+def _key(container, key: str):
+    """A dotted-path segment: a list index when the container is a list, otherwise an object key."""
+    return int(key) if isinstance(container, list) else key
+
+
 def setp(path: str, value):
     def fn(d):
         *head, last = path.split(".")
         for key in head:
-            d = d[key]
-        d[last] = value
+            d = d[_key(d, key)]
+        d[_key(d, last)] = value
     return fn
 
 
@@ -44,8 +50,8 @@ def delp(path: str):
     def fn(d):
         *head, last = path.split(".")
         for key in head:
-            d = d[key]
-        del d[last]
+            d = d[_key(d, key)]
+        del d[_key(d, last)]
     return fn
 
 
@@ -216,8 +222,7 @@ def runtime_vectors() -> list[dict]:
     out.append(vector("runtime-fixed-jan-1", desc, src, jan, cases))
 
     cal = Calendar(nrf)
-    first = next(k for k in range(1, 10) if cal.in_range(k))
-    last = next(k for k in range(10000, 9990, -1) if cal.in_range(k))
+    first, last = 0, cal.last_key()
     s_first, _ = cal.key_bounds(first)
     _, e_last = cal.key_bounds(last)
     cases = [validate_case(nrf)]
@@ -240,5 +245,190 @@ def runtime_vectors() -> list[dict]:
     return out
 
 
+# 0.2.0: exceptions.history ---------------------------------------------------------------------------------
+
+HISTORY_SPEC = "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors"
+HISTORY_CHECKED = "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15"
+CROSS_CHECKED = HISTORY_CHECKED + "; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+H0, H1 = "exceptions.history[0]", "exceptions.history[1]"
+T0 = H0 + ".transition"
+TS0 = T0 + ".subdivision"
+WEEK_BASED_DECEMBER = {"type": "week_based", "anchor": {"edge": "end", "month": 12, "day": "last", "rule": "last"}}
+PATTERN_4_4_5 = {"type": "week_pattern", "periods": [4, 4, 5] * 4, "quarters": [3, 3, 3, 3], "extra_week": {"period": 12}}
+
+
+def hset(path: str, value):
+    """setp on history entry 0: hset("transition.start", ...) sets exceptions.history[0].transition.start."""
+    return setp("exceptions.history.0." + path, value)
+
+
+def hdel(path: str):
+    return delp("exceptions.history.0." + path)
+
+
+def jul_to_apr() -> dict:
+    return hv.jul_to_apr_definition()
+
+
+def week_pattern_transition() -> dict:
+    return hv.nrf_to_december_definition()
+
+
+def jan_to(frm: str) -> dict:
+    """1 January years changing to 1 April years on frm, without a transition."""
+    return hv.with_history(fixed_base(), hv.entry(frm, *hv.fixed_rule(4, 1)))
+
+
+def jul_to_apr_then(second: dict) -> dict:
+    d = jul_to_apr()
+    d["exceptions"]["history"].append(second)
+    return d
+
+
+def named(year_number: str) -> dict:
+    return naming({"fy": scheme(year_number, {"year": "FY{yyyy}"})})
+
+
+# (name, definition, expected error(s), section anchor in definition-v1.md, paraphrase of the spec rule)
+HISTORY_BLOCK = [
+    ("exceptions-empty-object", edit(nrf, setp("exceptions", {})), {"code": "MISSING_FIELD", "path": "exceptions.history"}, "exceptions", "history is required inside exceptions"),
+    ("exceptions-history-empty", edit(jul_to_apr(), setp("exceptions.history", [])), {"code": "INVALID_VALUE", "path": "exceptions.history"}, "exceptions", "An empty history array is INVALID_VALUE at exceptions.history"),
+    ("exceptions-history-null", edit(jul_to_apr(), setp("exceptions.history", None)), {"code": "INVALID_TYPE", "path": "exceptions.history"}, "exceptions", "history is an array of history entries, so null is the wrong type"),
+    ("exceptions-not-object", edit(nrf, setp("exceptions", [])), {"code": "INVALID_TYPE", "path": "exceptions"}, "top-level", "exceptions is an object or null"),
+    ("exceptions-overrides", edit(jul_to_apr(), setp("exceptions.overrides", [])), {"code": "UNSUPPORTED_FEATURE", "path": "exceptions.overrides"}, "exceptions", "overrides is reserved: any value is UNSUPPORTED_FEATURE"),
+    ("exceptions-overrides-null", edit(jul_to_apr(), setp("exceptions.overrides", None)), {"code": "UNSUPPORTED_FEATURE", "path": "exceptions.overrides"}, "exceptions", "overrides is reserved: any value, null included, is UNSUPPORTED_FEATURE"),
+    ("exceptions-transitions-unknown", edit(jul_to_apr(), setp("exceptions.transitions", [])), {"code": "UNKNOWN_FIELD", "path": "exceptions.transitions"}, "exceptions", "exceptions has the fields history and overrides; transitions is an unknown field"),
+    ("history-missing-from", edit(jul_to_apr(), hdel("from")), {"code": "MISSING_FIELD", "path": H0 + ".from"}, "history-entries", "from is required in a history entry"),
+    ("history-missing-year", edit(jul_to_apr(), hdel("year")), {"code": "MISSING_FIELD", "path": H0 + ".year"}, "history-entries", "year is required in a history entry"),
+    ("history-missing-subdivision", edit(jul_to_apr(), hdel("subdivision")), {"code": "MISSING_FIELD", "path": H0 + ".subdivision"}, "history-entries", "subdivision is required in a history entry"),
+    ("history-unknown-field", edit(jul_to_apr(), hset("note", "x")), {"code": "UNKNOWN_FIELD", "path": H0 + ".note"}, "history-entries", "Each entry has exactly the fields from, year, subdivision and transition"),
+    ("history-week-field", edit(jul_to_apr(), hset("week", {"starts_on": "monday", "numbering": "contains_start"})), {"code": "UNKNOWN_FIELD", "path": H0 + ".week"}, "history-entries", "week is global: a history entry has no week field (UNKNOWN_FIELD)"),
+    ("history-naming-field", edit(jul_to_apr(), hset("naming", named("start"))), {"code": "UNKNOWN_FIELD", "path": H0 + ".naming"}, "history-entries", "naming is global: a history entry has no naming field (UNKNOWN_FIELD)"),
+    ("history-from-not-string", edit(jul_to_apr(), hset("from", 20250401)), {"code": "INVALID_TYPE", "path": H0 + ".from"}, "history-entries", "A date in exceptions that is not a string is INVALID_TYPE"),
+    ("history-from-not-a-date", edit(jul_to_apr(), hset("from", "2025-02-29")), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A string that is not a valid YYYY-MM-DD date is INVALID_VALUE; INVALID_DATE is only for operation arguments"),
+    ("history-from-not-iso", edit(jul_to_apr(), hset("from", "2025-4-1")), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date must be written YYYY-MM-DD; any other string is INVALID_VALUE"),
+    ("history-from-before-range", edit(jul_to_apr(), both(hset("from", "0001-12-31"), hset("transition", None))), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date before 0002-01-01 is INVALID_VALUE"),
+    ("history-from-after-range", edit(jul_to_apr(), hset("from", "9999-01-01")), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date after 9998-12-31 is INVALID_VALUE"),
+    ("history-year-reserved", edit(jul_to_apr(), hset("year", {"type": "table"})), {"code": "UNSUPPORTED_FEATURE", "path": H0 + ".year.type"}, "history-entries", "An entry's year is validated as the top-level year, so year.type table is reserved (UNSUPPORTED_FEATURE) at the prefixed path"),
+    ("history-subdivision-stub", edit(jul_to_apr(), hset("subdivision.stub", {})), {"code": "UNSUPPORTED_FEATURE", "path": H0 + ".subdivision.stub"}, "reserved-for-later-releases", "A reserved field inside a history entry is rejected at the prefixed path, for example exceptions.history[0].subdivision.stub"),
+    ("history-unsupported-combination", edit(jul_to_apr(), hset("subdivision", copy.deepcopy(week_pattern_in_fixed))), {"code": "UNSUPPORTED_COMBINATION", "path": H0 + ".subdivision.type"}, "history-entries", "week_pattern inside an entry's fixed_date year is UNSUPPORTED_COMBINATION at the prefixed path"),
+    ("history-subdivision-year-mismatch", edit(jul_to_apr(), hset("subdivision.month_start_day", 2)), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": H0 + ".subdivision.month_start_day"}, "history-entries", "An entry's month_start_day must equal the entry's own year.start.day"),
+    ("history-short-month-policy-missing", edit(jul_to_apr(), both(hset("year.start.day", 30), hset("subdivision.month_start_day", 30))), {"code": "SHORT_MONTH_POLICY_MISSING", "path": H0 + ".year.short_month"}, "history-entries", "An entry's fixed_date year with start.day 29-31 needs short_month"),
+    ("history-weeks-sum-mismatch", edit(week_pattern_transition(), hset("subdivision.periods", [4, 4, 5] * 3 + [4, 4, 4])), {"code": "WEEKS_SUM_MISMATCH", "path": H0 + ".subdivision.periods"}, "history-entries", "An entry's week_pattern periods must sum to 52"),
+    ("transition-start-equals-from", edit(jul_to_apr(), hset("transition.start", "2025-04-01")), {"code": "INVALID_VALUE", "path": T0 + ".start"}, "transitions", "transition.start on or after from is INVALID_VALUE at transition.start, a block-level check"),
+    ("transition-start-after-from", edit(jul_to_apr(), hset("transition.start", "2025-07-01")), {"code": "INVALID_VALUE", "path": T0 + ".start"}, "transitions", "transition.start on or after from is INVALID_VALUE at transition.start, a block-level check"),
+    ("transition-start-before-range", edit(jul_to_apr(), hset("transition.start", "0001-07-01")), {"code": "INVALID_VALUE", "path": T0 + ".start"}, "history-entries", "A date before 0002-01-01 is INVALID_VALUE"),
+    ("transition-start-not-string", edit(jul_to_apr(), hset("transition.start", None)), {"code": "INVALID_TYPE", "path": T0 + ".start"}, "history-entries", "A date in exceptions that is not a string is INVALID_TYPE"),
+    ("transition-missing-start", edit(jul_to_apr(), hdel("transition.start")), {"code": "MISSING_FIELD", "path": T0 + ".start"}, "transitions", "start is required in a transition"),
+    ("transition-missing-subdivision", edit(jul_to_apr(), hdel("transition.subdivision")), {"code": "MISSING_FIELD", "path": TS0}, "transitions", "subdivision is required in a transition"),
+    ("transition-unknown-field", edit(jul_to_apr(), hset("transition.year", {"type": "fixed_date", "start": {"month": 7, "day": 1}})), {"code": "UNKNOWN_FIELD", "path": T0 + ".year"}, "transitions", "A transition has the fields start and subdivision; it has no year block"),
+    ("transition-week-pattern-extra-week", edit(week_pattern_transition(), hset("transition.subdivision.extra_week", {"period": 11})), {"code": "UNKNOWN_FIELD", "path": TS0 + ".extra_week"}, "transitions", "A transition week_pattern has no extra_week; the field is UNKNOWN_FIELD there"),
+    ("transition-week-pattern-periods-empty", edit(week_pattern_transition(), hset("transition.subdivision.periods", [])), {"code": "INVALID_VALUE", "path": TS0 + ".periods"}, "transitions", "An empty transition periods array is INVALID_VALUE (block-level); quarters are then not compared with it"),
+    ("transition-week-pattern-quarters-sum", edit(week_pattern_transition(), hset("transition.subdivision.quarters", [3, 3, 3, 3])), {"code": "QUARTERS_SUM_MISMATCH", "path": TS0 + ".quarters"}, "transitions", "A transition week_pattern's quarters must sum to the length of its periods (block-level)"),
+    ("transition-month-start-day-29", edit(jul_to_apr(), hset("transition.subdivision.month_start_day", 29)), {"code": "INVALID_VALUE", "path": TS0 + ".month_start_day"}, "transitions", "A transition's month_start_day is 1-28; outside is INVALID_VALUE"),
+    ("transition-subdivision-stub", edit(jul_to_apr(), hset("transition.subdivision.stub", {})), {"code": "UNSUPPORTED_FEATURE", "path": TS0 + ".stub"}, "transitions", "The field stub is reserved in a transition subdivision, as at the top level"),
+    ("transition-subdivision-special-periods", edit(jul_to_apr(), hset("transition.subdivision.special_periods", [])), {"code": "UNSUPPORTED_FEATURE", "path": TS0 + ".special_periods"}, "transitions", "The field special_periods is reserved in a transition subdivision, as at the top level"),
+    ("transition-type-anchored", edit(jul_to_apr(), hset("transition.subdivision.type", "anchored")), {"code": "UNSUPPORTED_FEATURE", "path": TS0 + ".type"}, "transitions", "Transition subdivision type anchored is reserved (UNSUPPORTED_FEATURE), as at the top level"),
+    ("transition-type-table", edit(jul_to_apr(), hset("transition.subdivision.type", "table")), {"code": "INVALID_VALUE", "path": TS0 + ".type"}, "transitions", "Any other unknown transition subdivision type, including table, is INVALID_VALUE"),
+    ("invalid-template-yy-end-alone", edit(fixed, setp("naming.schemes.fy.templates.year", "FY{yy_end}")), {"code": "INVALID_TEMPLATE", "path": "naming.schemes.fy.templates.year"}, "templates", "Every template must contain {yyyy} or {yy}; {yy_end} alone is not enough"),
+    ("invalid-template-yy-next-and-yy-end", edit(fixed, setp("naming.schemes.fy.templates.year", "FY{yy_next}-{yy_end}")), {"code": "INVALID_TEMPLATE", "path": "naming.schemes.fy.templates.year"}, "templates", "{yy_next} and {yy_end} together are not enough without {yyyy} or {yy}"),
+]
+
+# Cross-block checks: (name, definition, expected error(s), paraphrase). fiscal_oracle.py computes each (asserted).
+HISTORY_CROSS = [
+    ("change-not-on-boundary-transition-start", edit(jul_to_apr(), both(hset("transition.start", "2024-08-01"), hset("transition.subdivision.quarters", [3, 3, 2]))),
+     {"code": "CHANGE_NOT_ON_BOUNDARY", "path": T0 + ".start"},
+     "The change point, transition.start 2024-08-01, is not the first day of a 1 July year under the previous (top-level) rule"),
+    ("change-not-on-boundary-from-own-rule", edit(jul_to_apr(), both(hset("from", "2025-05-01"), hset("transition.subdivision.quarters", [3, 3, 4]))),
+     {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"},
+     "from 2025-05-01 is not the first day of a 1 April year under the entry's own rule"),
+    ("change-not-on-boundary-from-previous-rule", jan_to("2025-04-01"),
+     {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"},
+     "Without a transition the change point is from, and 2025-04-01 is not the first day of a 1 January year under the previous (top-level) rule"),
+    ("change-not-on-boundary-from-both-rules", jan_to("2025-05-01"),
+     [{"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"}, {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"}],
+     "from 2025-05-01, with no transition, is a year start under neither the previous rule (1 January) nor the entry's own rule (1 April), so both errors are reported at from, the previous regime's first"),
+    ("exceptions-overlap-from", jul_to_apr_then(hv.entry("2025-04-01", *hv.fixed_rule(4, 1, (4, 4, 4)))),
+     {"code": "EXCEPTIONS_OVERLAP", "path": H1 + ".from"},
+     "Entry 1's change point, its from 2025-04-01, is on entry 0's from, so entry 0's regime would have no fiscal year"),
+    ("exceptions-overlap-transition-start", jul_to_apr_then(hv.entry("2026-04-01", *hv.fixed_rule(4, 1, (4, 4, 4)), start="2025-04-01", transition_sub=hv.months(1, [3, 3, 3, 3]))),
+     {"code": "EXCEPTIONS_OVERLAP", "path": H1 + ".transition.start"},
+     "Entry 1's change point, its transition.start 2025-04-01, is on entry 0's from"),
+    ("exceptions-overlap-and-not-on-boundary", jul_to_apr_then(hv.entry("2024-10-01", *hv.fixed_rule(10, 1))),
+     [{"code": "CHANGE_NOT_ON_BOUNDARY", "path": H1 + ".from"}, {"code": "EXCEPTIONS_OVERLAP", "path": H1 + ".from"}],
+     "Entry 1's from 2024-10-01 is before entry 0's from and is not the first day of a 1 April year under entry 0's rule; the checks run independently and the errors are sorted by path, then code"),
+    ("transition-month-start-day-mismatch", edit(jul_to_apr(), hset("transition.subdivision.month_start_day", 15)),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".month_start_day"},
+     "A calendar_months transition's month_start_day (15) differs from the day of transition.start and of from (1)"),
+    ("transition-month-start-day-mismatch-skips-quarters", edit(jul_to_apr(), both(hset("transition.subdivision.month_start_day", 15), hset("transition.subdivision.quarters", [3, 3]))),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".month_start_day"},
+     "When a calendar_months transition's month_start_day check fails, its quarters are not compared with its number of months, so quarters summing to 6 are not also reported"),
+    ("transition-quarters-sum-mismatch", edit(jul_to_apr(), hset("transition.subdivision.quarters", [3, 3])),
+     {"code": "QUARTERS_SUM_MISMATCH", "path": TS0 + ".quarters"},
+     "The transition from 2024-07-01 to 2025-04-01 has (12 x 2025 + 4) - (12 x 2024 + 7) = 9 months, but its quarters sum to 6"),
+    ("transition-week-pattern-wrong-weekday-and-length",
+     hv.with_history(fixed_date(7, 1, "sunday", named("majority")), hv.entry("2024-12-29", WEEK_BASED_DECEMBER, PATTERN_4_4_5, start="2024-07-01", transition_sub=hv.weeks([26], [1]))),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".type"},
+     "A week_pattern transition from Monday 2024-07-01 (weeks start on Sunday) to 2024-12-29 is 181 days: it fails both the week-start and the whole-weeks condition, which is one error, and its periods are not compared with a length that is not whole weeks"),
+    ("transition-week-pattern-wrong-weekday",
+     hv.with_history(fixed_date(7, 1, "sunday", named("start")), hv.entry("2025-03-24", *hv.fixed_rule(3, 24), start="2024-07-01", transition_sub=hv.weeks([37], [1]))),
+     [{"code": "WEEKS_SUM_MISMATCH", "path": TS0 + ".periods"}, {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".type"}],
+     "A week_pattern transition from Monday 2024-07-01 (weeks start on Sunday) to 2025-03-24 lasts 266 days, 38 whole weeks, but does not start on a week start. Because the length is whole weeks, periods are still compared with it, and they sum to 37. Sorted by path, periods comes before type"),
+    ("transition-week-pattern-not-whole-weeks",
+     hv.with_history(week_based("end", 9, "last", "last", "sunday", [4, 4, 5] * 4, [3, 3, 3, 3], 1, named("start")),
+                     hv.entry("2024-01-01", *hv.fixed_rule(1, 1), start="2023-10-01", transition_sub=hv.weeks([13], [1]))),
+     {"code": "SUBDIVISION_YEAR_MISMATCH", "path": TS0 + ".type"},
+     "A week_pattern transition from Sunday 2023-10-01, a week start, to 2024-01-01 lasts 92 days, not a whole number of weeks"),
+    ("transition-weeks-sum-mismatch", hv.nrf_to_december_definition(periods=(4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 3)),
+     {"code": "WEEKS_SUM_MISMATCH", "path": TS0 + ".periods"},
+     "The week_pattern transition from 2024-02-04 to 2024-12-29 is 47 weeks, but its periods sum to 46"),
+]
+
+# Year numbering across a change: (name, definition, code, explanation). Computed by the oracle's scan (asserted).
+HISTORY_NAMING = [
+    ("year-number-collision-across-change",
+     hv.with_history(fixed_date(1, 1, "monday", named("start")), hv.entry("2024-07-01", *hv.fixed_rule(7, 1), start="2024-01-01", transition_sub=hv.months(1, [3, 3]))),
+     "YEAR_NUMBER_COLLISION",
+     "Calendar years change to 1 July years through a six-month transition, 2024-01-01 to 2024-06-30. Numbered by 'start', the transition and the year from 1 July 2024 both get 2024, so the number does not increase across the change"),
+    ("majority-tie-transition",
+     hv.with_history(fixed_date(12, 1, "monday", named("majority")), hv.entry("2025-02-01", *hv.fixed_rule(2, 1), start="2024-12-01", transition_sub=hv.months(1, [2]))),
+     "MAJORITY_TIE",
+     "1 December years change to 1 February years through a two-month transition, 2024-12-01 to 2025-01-31, with 31 days in 2024 and 31 in 2025, so no calendar year holds more than half"),
+    ("majority-tie-three-calendar-years",
+     hv.with_history(fixed_date(7, 1, "monday", named("majority")), hv.entry("2026-07-01", *hv.fixed_rule(7, 1, (4, 4, 4)), start="2024-07-01", transition_sub=hv.months(1, [3] * 8))),
+     "MAJORITY_TIE",
+     "A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half"),
+]
+
+
+def history_error_vectors() -> list[dict]:
+    out = []
+    for name, defn, expected, anchor, rule in HISTORY_BLOCK:
+        url = DEFINITION_URL if anchor == "top-level" else f"{DEFINITION_URL}#{anchor}"
+        desc = f"Invalid definition (fiscalclock 0.2.0). Spec rule, paraphrased: {rule}. Only code and path are asserted."
+        out.append(vector(f"definition-{name}", desc, source("errors", HISTORY_SPEC, HISTORY_CHECKED, url), defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
+    for name, defn, expected, rule in HISTORY_CROSS:
+        got = [e.expect_error() for e in Calendar(defn).change_errors()]
+        assert got == (expected if isinstance(expected, list) else [expected]), (name, got)
+        desc = (
+            "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the "
+            f"definition has no block-level error. {rule}. Only code and path are asserted."
+        )
+        src = source("errors", HISTORY_SPEC, CROSS_CHECKED, DEFINITION_URL + "#cross-block-checks")
+        out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": expected}]))
+    for name, defn, code, why in HISTORY_NAMING:
+        c = case(Calendar(defn), "validate", {})
+        assert c.get("expect_error") == {"code": code, "path": "naming.schemes.fy.year_number"}, (name, c)
+        desc = f"Invalid definition (fiscalclock 0.2.0). {why}. Only code and path are asserted; details.years is not."
+        src = source(
+            "errors",
+            "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",
+            HISTORY_CHECKED + "; fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range (asserted)",
+            YEAR_NUMBERS_URL,
+        )
+        out.append(vector(f"definition-{name}", desc, src, defn, [c]))
+    return out
+
+
 def build() -> list[dict]:
-    return invalid_definition_vectors() + naming_error_vectors() + runtime_vectors()
+    return invalid_definition_vectors() + naming_error_vectors() + runtime_vectors() + history_error_vectors()

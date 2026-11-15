@@ -1,13 +1,21 @@
 """Independent implementation of spec/definition-v1.md and spec/api-v1.md.
 
-Standard library only. Written from the spec text without reference to the
-fiscalclock sources, so that its answers can serve as expected results.
+Standard library only. Written from the spec text, and for `exceptions.history`
+from the accepted 0.2.0 design (ADR-0032), without reference to the fiscalclock
+sources, so that its answers can serve as expected results.
 Dates are handled as proleptic Gregorian ordinals (date.toordinal()), which
 lets boundary arithmetic run past 0001-01-01 and 9999-12-31 without overflow.
+
+A calendar is a list of regimes: the top-level `year` and `subdivision`, then one
+per history entry. `Calendar.seq` lists every fiscal year in the supported range
+in date order: each regime's years, with each entry's transition year between
+the previous regime's last year and the entry's first. Every operation works on
+positions in that list.
 """
 
 from __future__ import annotations
 
+import bisect
 import calendar as _cal
 import copy
 import hashlib
@@ -96,36 +104,29 @@ class Span:
     extra: bool
 
 
-class Calendar:
-    def __init__(self, definition: dict):
-        self.definition = definition
-        y = definition["year"]
-        self.week_start = WEEKDAYS.index(definition["week"]["starts_on"])
-        self.kind = y["type"]
-        sub = definition["subdivision"]
+class Rule:
+    """One year rule with its subdivision: the top-level `year` and `subdivision`, or those of one history entry."""
+
+    def __init__(self, year: dict, sub: dict, week_start: int):
+        self.kind = year["type"]
         self.quarters = list(sub["quarters"])
         if self.kind == "week_based":
-            a = y["anchor"]
+            a = year["anchor"]
             self.edge = a["edge"]
             self.month = a["month"]
             self.day = a["day"]
             self.rule = a["rule"]
-            self.qual = self.week_start if self.edge == "start" else (self.week_start - 1) % 7
+            self.qual = week_start if self.edge == "start" else (week_start - 1) % 7
             self.period_weeks = list(sub["periods"])
             self.extra_period = sub["extra_week"]["period"]
             assert sub["type"] == "week_pattern" and sum(self.period_weeks) == 52
         else:
-            self.month = y["start"]["month"]
-            self.day = y["start"]["day"]
-            self.short_month = y.get("short_month")
+            self.month = year["start"]["month"]
+            self.day = year["start"]["day"]
+            self.short_month = year.get("short_month")
             assert sub["type"] == "calendar_months" and sub["month_start_day"] == self.day
         assert sum(self.quarters) == self.n_periods()
-        naming = definition["naming"]
-        self.default_scheme = naming["default"]
-        self.schemes = naming["schemes"]
         self._bounds: dict[int, tuple[int, int]] = {}
-
-    # Year bounds -------------------------------------------------------
 
     def n_periods(self) -> int:
         return len(self.period_weeks) if self.kind == "week_based" else 12
@@ -141,7 +142,7 @@ class Calendar:
             return after
         return before if t - before <= 3 else after
 
-    def _adjusted(self, y: int, m: int, d: int) -> int:
+    def adjusted(self, y: int, m: int, d: int) -> int:
         dim = days_in_month(y, m)
         if d <= dim:
             return ymd_ord(y, m, d)
@@ -150,10 +151,11 @@ class Calendar:
         assert self.short_month == "next"
         return ymd_ord(y, m, dim) + 1
 
-    def key_bounds(self, k: int) -> tuple[int, int]:
+    def bounds(self, k: int) -> tuple[int, int]:
+        """First day and end_exclusive of the year with key k: its start year (fixed_date) or anchor year (week_based)."""
         if k not in self._bounds:
             if self.kind == "fixed_date":
-                b = self._adjusted(k, self.month, self.day), self._adjusted(k + 1, self.month, self.day)
+                b = self.adjusted(k, self.month, self.day), self.adjusted(k + 1, self.month, self.day)
             elif self.edge == "end":
                 b = self._boundary(k - 1) + 1, self._boundary(k) + 1
             else:
@@ -164,17 +166,151 @@ class Calendar:
     def key_of(self, o: int) -> int:
         y = civil_year(o)
         for k in (y - 1, y, y + 1, y - 2, y + 2):
-            s, e = self.key_bounds(k)
+            s, e = self.bounds(k)
             if s <= o < e:
                 return k
         raise AssertionError("no fiscal year contains ordinal %d" % o)
 
+    def starts_year(self, o: int) -> bool:
+        return self.bounds(self.key_of(o))[0] == o
+
+
+@dataclass(frozen=True)
+class Change:
+    """One exceptions.history entry: the new regime starts on `frm`, after an optional transition year from `start`."""
+
+    frm: int
+    start: int | None
+    sub: dict | None
+
+
+@dataclass(frozen=True)
+class FiscalYear:
+    """One fiscal year of the timeline: a year of regime `regime` (its rule's key `key`), or a transition (regime None)."""
+
+    start: int
+    end: int
+    regime: int | None
+    key: int | None
+    transition: dict | None
+
+
+class Calendar:
+    def __init__(self, definition: dict):
+        self.definition = definition
+        self.week_start = WEEKDAYS.index(definition["week"]["starts_on"])
+        # Regime 0 is the top-level year and subdivision; history entry i is regime i + 1.
+        self.rules = [Rule(definition["year"], definition["subdivision"], self.week_start)]
+        self.history: list[Change] = []
+        exceptions = definition.get("exceptions")
+        if exceptions is not None:
+            for entry in exceptions["history"]:
+                self.rules.append(Rule(entry["year"], entry["subdivision"], self.week_start))
+                t = entry.get("transition")
+                self.history.append(Change(parse_iso(entry["from"]), None if t is None else parse_iso(t["start"]), None if t is None else t["subdivision"]))
+        naming = definition["naming"]
+        self.default_scheme = naming["default"]
+        self.schemes = naming["schemes"]
+        self._seq: list[FiscalYear] | None = None
+        self._starts: list[int] | None = None
+        self._numbers: dict[str, dict[int, list[int]]] = {}
+        self._spans: dict[tuple[int, str], list[Span]] = {}
+
+    # Validation that needs dates ------------------------------------------
+
+    def change_errors(self) -> list[FiscalError]:
+        """The cross-block checks on exceptions.history, which the spec runs once every block is otherwise valid."""
+        errors = []
+        for i, ch in enumerate(self.history):
+            base = f"exceptions.history[{i}]"
+            prev, own = self.rules[i], self.rules[i + 1]
+            c, c_path = (ch.frm, base + ".from") if ch.start is None else (ch.start, base + ".transition.start")
+            if i >= 1 and c <= self.history[i - 1].frm:
+                errors.append(FiscalError("EXCEPTIONS_OVERLAP", c_path))
+            if not prev.starts_year(c):
+                errors.append(FiscalError("CHANGE_NOT_ON_BOUNDARY", c_path))
+            if not own.starts_year(ch.frm):
+                errors.append(FiscalError("CHANGE_NOT_ON_BOUNDARY", base + ".from"))
+            if ch.sub is None:
+                continue
+            sub_path = base + ".transition.subdivision"
+            first, after = date.fromordinal(ch.start), date.fromordinal(ch.frm)
+            if ch.sub["type"] == "calendar_months":
+                if ch.sub["month_start_day"] != first.day or ch.sub["month_start_day"] != after.day:
+                    errors.append(FiscalError("SUBDIVISION_YEAR_MISMATCH", sub_path + ".month_start_day"))
+                elif sum(ch.sub["quarters"]) != (after.year - first.year) * 12 + after.month - first.month:
+                    errors.append(FiscalError("QUARTERS_SUM_MISMATCH", sub_path + ".quarters"))
+            else:
+                assert ch.sub["type"] == "week_pattern"
+                whole_weeks = (ch.frm - ch.start) % 7 == 0
+                if weekday_of(ch.start) != self.week_start or not whole_weeks:
+                    errors.append(FiscalError("SUBDIVISION_YEAR_MISMATCH", sub_path + ".type"))
+                if whole_weeks and sum(ch.sub["periods"]) != (ch.frm - ch.start) // 7:
+                    errors.append(FiscalError("WEEKS_SUM_MISMATCH", sub_path + ".periods"))
+        # A stable sort: two CHANGE_NOT_ON_BOUNDARY errors at one `from` keep the previous regime's first.
+        return sorted(errors, key=lambda err: (err.path, err.code))
+
+    def validation_errors(self) -> list[FiscalError]:
+        """Cross-block errors if there are any, otherwise the year-number checks (which run only after them)."""
+        return self.change_errors() or self.naming_errors()
+
+    # The sequence of fiscal years ------------------------------------------
+
+    @property
+    def seq(self) -> list[FiscalYear]:
+        """Every fiscal year that lies wholly in the supported range, in date order."""
+        if self._seq is None:
+            assert not self.change_errors(), self.change_errors()
+            years: list[FiscalYear] = []
+            lower = None
+            for r, rule in enumerate(self.rules):
+                ch = self.history[r] if r < len(self.history) else None
+                upper = None if ch is None else (ch.frm if ch.start is None else ch.start)
+                a = MIN_ORD if lower is None else max(lower, MIN_ORD)
+                b = MAX_ORD if upper is None else min(upper - 1, MAX_ORD)
+                if a <= b:
+                    for k in range(rule.key_of(a), rule.key_of(b) + 1):
+                        s, e = rule.bounds(k)
+                        if (lower is None or s >= lower) and (upper is None or e <= upper):
+                            years.append(FiscalYear(s, e, r, k, None))
+                if ch is not None:
+                    if ch.start is not None:
+                        years.append(FiscalYear(ch.start, ch.frm, None, None, ch.sub))
+                    lower = ch.frm
+            self._seq = [y for y in years if y.start >= MIN_ORD and y.end - 1 <= MAX_ORD]
+            assert all(a.end == b.start for a, b in zip(self._seq, self._seq[1:])), "fiscal years must tile"
+        return self._seq
+
+    def key_bounds(self, k: int) -> tuple[int, int]:
+        fy = self.seq[k]
+        return fy.start, fy.end
+
     def in_range(self, k: int) -> bool:
-        s, e = self.key_bounds(k)
-        return s >= MIN_ORD and e - 1 <= MAX_ORD
+        return 0 <= k < len(self.seq)
+
+    def last_key(self) -> int:
+        return len(self.seq) - 1
+
+    def find(self, o: int) -> int | None:
+        """The key of the supported fiscal year that contains ordinal o, or None."""
+        if self._starts is None:
+            self._starts = [fy.start for fy in self.seq]
+        k = bisect.bisect_right(self._starts, o) - 1
+        if k < 0 or o >= self.seq[k].end:
+            return None
+        return k
+
+    def week_pattern(self, k: int) -> bool:
+        """Whether fiscal year k is divided into whole weeks (a week_based regime year or a week_pattern transition)."""
+        fy = self.seq[k]
+        if fy.regime is None:
+            return fy.transition["type"] == "week_pattern"
+        return self.rules[fy.regime].kind == "week_based"
+
+    # Year numbers -------------------------------------------------------
 
     def scheme_number(self, k: int, scheme: str) -> int | None:
-        """The year number of fiscal year k, or None under "majority" when the year is split evenly."""
+        """The year number of fiscal year k, or None under "majority" when no calendar year holds more than half its days."""
         sc = self.schemes[scheme]
         s, e = self.key_bounds(k)
         rule = sc["year_number"]
@@ -184,66 +320,109 @@ class Calendar:
             y = civil_year(e - 1)
         else:
             assert rule == "majority"
-            first = civil_year(s)
-            in_first = min(e, ymd_ord(first + 1, 1, 1)) - s
-            if 2 * in_first == e - s:
+            winners = []
+            for cy in range(civil_year(s), civil_year(e - 1) + 1):
+                days = min(e, ymd_ord(cy + 1, 1, 1)) - max(s, ymd_ord(cy, 1, 1))
+                if 2 * days > e - s:
+                    winners.append(cy)
+            if not winners:
                 return None
-            y = first if 2 * in_first > e - s else first + 1
+            (y,) = winners
         return y + sc.get("offset", 0)
 
     def number(self, k: int) -> int:
         return self.scheme_number(k, self.default_scheme)
 
     def key_for_scheme_number(self, n: int, scheme: str) -> int | None:
-        found = None
-        approx = n - self.schemes[scheme].get("offset", 0)
-        for k in range(approx - 2, approx + 3):
-            if self.scheme_number(k, scheme) == n:
-                assert found is None, "year number %d names two fiscal years" % n
-                found = k
-        return found
+        if scheme not in self._numbers:
+            table: dict[int, list[int]] = {}
+            for k in range(len(self.seq)):
+                table.setdefault(self.scheme_number(k, scheme), []).append(k)
+            self._numbers[scheme] = table
+        keys = self._numbers[scheme].get(n)
+        if keys is None:
+            return None
+        assert len(keys) == 1, "year number %d names two fiscal years" % n
+        return keys[0]
 
     def naming_errors(self) -> list[FiscalError]:
-        """MAJORITY_TIE or YEAR_NUMBER_COLLISION per scheme, over every fiscal year in the supported range."""
-        keys = [k for k in range(0, 10001) if self.in_range(k)]
+        """MAJORITY_TIE or YEAR_NUMBER_COLLISION per scheme, over every fiscal year in the supported range.
+
+        Within a run of years made by one regime's rule the numbers must be consecutive. Across a change
+        (a regime's last year, the transition if any, the next regime's first year) each number must be
+        greater than the one before, so a number may be skipped there and nowhere else.
+        """
         errors = []
         for name in sorted(self.schemes):
             path = f"naming.schemes.{name}.year_number"
-            numbers = [self.scheme_number(k, name) for k in keys]
+            numbers = [self.scheme_number(k, name) for k in range(len(self.seq))]
             if None in numbers:
                 errors.append(FiscalError("MAJORITY_TIE", path))
-            elif any(b != a + 1 for a, b in zip(numbers, numbers[1:])):
-                errors.append(FiscalError("YEAR_NUMBER_COLLISION", path))
+                continue
+            for k in range(len(self.seq) - 1):
+                a, b = numbers[k], numbers[k + 1]
+                same_run = self.seq[k].regime is not None and self.seq[k].regime == self.seq[k + 1].regime
+                if (b != a + 1) if same_run else (b <= a):
+                    errors.append(FiscalError("YEAR_NUMBER_COLLISION", path))
+                    break
         return sorted(errors, key=lambda err: (err.path, err.code))
 
     # Structure ---------------------------------------------------------
 
     def spans(self, k: int, level: str) -> list[Span]:
-        s, e = self.key_bounds(k)
+        if (k, level) not in self._spans:
+            self._spans[(k, level)] = self._make_spans(k, level)
+        return self._spans[(k, level)]
+
+    def _make_spans(self, k: int, level: str) -> list[Span]:
+        fy = self.seq[k]
+        s, e = fy.start, fy.end
+        pattern = self.week_pattern(k)
         if level == "year":
-            if self.kind == "week_based":
-                w = (e - s) // 7
-                return [Span("year", None, s, e, w, w == 53)]
-            return [Span("year", None, s, e, None, False)]
+            long_year = fy.regime is not None and self.rules[fy.regime].kind == "week_based" and (e - s) // 7 == 53
+            return [Span("year", None, s, e, (e - s) // 7 if pattern else None, long_year)]
         if level == "week":
-            return self._week_spans(k, s, e)
-        periods = self._period_spans(k, s, e)
+            return self._week_spans(k)
+        periods = self._period_spans(k)
         if level == "period":
             return periods
+        quarters = self.rules[fy.regime].quarters if fy.regime is not None else fy.transition["quarters"]
         out, i = [], 0
-        for q, n in enumerate(self.quarters, start=1):
+        for q, n in enumerate(quarters, start=1):
             group = periods[i : i + n]
             i += n
-            weeks = sum(p.weeks for p in group) if self.kind == "week_based" else None
+            weeks = sum(p.weeks for p in group) if pattern else None
             out.append(Span("quarter", q, group[0].start, group[-1].end, weeks, any(p.extra for p in group)))
+        assert i == len(periods)
         return out
 
-    def _period_spans(self, k: int, s: int, e: int) -> list[Span]:
-        if self.kind == "week_based":
+    def _period_spans(self, k: int) -> list[Span]:
+        fy = self.seq[k]
+        s, e = fy.start, fy.end
+        if fy.regime is None:
+            t = fy.transition
+            if t["type"] == "week_pattern":
+                out, cur = [], s
+                for i, w in enumerate(t["periods"], start=1):
+                    out.append(Span("period", i, cur, cur + 7 * w, w, False))
+                    cur += 7 * w
+                assert cur == e
+                return out
+            first, after = date.fromordinal(s), date.fromordinal(e)
+            months = (after.year - first.year) * 12 + after.month - first.month
+            starts = []
+            for i in range(months):
+                m0 = first.month - 1 + i
+                starts.append(ymd_ord(first.year + m0 // 12, m0 % 12 + 1, t["month_start_day"]))
+            starts.append(e)
+            assert starts[0] == s
+            return [Span("period", i + 1, starts[i], starts[i + 1], None, False) for i in range(months)]
+        rule = self.rules[fy.regime]
+        if rule.kind == "week_based":
             long_year = (e - s) // 7 == 53
             out, cur = [], s
-            for i, w in enumerate(self.period_weeks, start=1):
-                extra = long_year and i == self.extra_period
+            for i, w in enumerate(rule.period_weeks, start=1):
+                extra = long_year and i == rule.extra_period
                 w += 1 if extra else 0
                 out.append(Span("period", i, cur, cur + 7 * w, w, extra))
                 cur += 7 * w
@@ -251,24 +430,31 @@ class Calendar:
             return out
         starts = []
         for i in range(12):
-            m0 = self.month - 1 + i
-            starts.append(self._adjusted(k + m0 // 12, m0 % 12 + 1, self.day))
+            m0 = rule.month - 1 + i
+            starts.append(rule.adjusted(fy.key + m0 // 12, m0 % 12 + 1, rule.day))
         starts.append(e)
         assert starts[0] == s
         return [Span("period", i + 1, starts[i], starts[i + 1], None, False) for i in range(12)]
 
-    def _week_spans(self, k: int, s: int, e: int) -> list[Span]:
-        if self.kind == "week_based":
-            n = (e - s) // 7
-            extra_idx = sum(self.period_weeks[: self.extra_period]) + 1 if n == 53 else None
-            return [Span("week", i, s + 7 * (i - 1), s + 7 * i, 1, i == extra_idx) for i in range(1, n + 1)]
+    def _week_spans(self, k: int) -> list[Span]:
+        """Week 1 runs from the year's first day to the day before the next week start; the last week ends with the year."""
+        fy = self.seq[k]
+        s, e = fy.start, fy.end
+        pattern = self.week_pattern(k)
+        rule = self.rules[fy.regime] if fy.regime is not None else None
+        extra_idx = None
+        if rule is not None and rule.kind == "week_based" and (e - s) // 7 == 53:
+            extra_idx = sum(rule.period_weeks[: rule.extra_period]) + 1
         out, cur, i = [], s, 1
         while cur < e:
             step = (self.week_start - weekday_of(cur)) % 7 or 7
             nxt = min(cur + step, e)
-            out.append(Span("week", i, cur, nxt, None, False))
+            out.append(Span("week", i, cur, nxt, (nxt - cur) // 7 if pattern else None, i == extra_idx))
             cur, i = nxt, i + 1
-        assert 53 <= len(out) <= 54
+        if pattern:
+            assert all(w.end - w.start == 7 for w in out)
+        if rule is not None and rule.kind == "fixed_date":
+            assert 53 <= len(out) <= 54
         return out
 
     def period_value(self, k: int, sp: Span) -> dict:
@@ -290,8 +476,9 @@ class Calendar:
         if level not in LEVELS:
             raise FiscalError("INVALID_ARGUMENT", "level")
         k = self.key_for_scheme_number(year, self.default_scheme)
-        if k is None or not self.in_range(k):
-            raise FiscalError("OUT_OF_RANGE", path_year)
+        if k is None:
+            skipped = self.number(0) <= year <= self.number(self.last_key())
+            raise FiscalError("PERIOD_NOT_FOUND" if skipped else "OUT_OF_RANGE", path_year)
         spans = self.spans(k, level)
         if level == "year":
             return k, spans[0]
@@ -311,8 +498,8 @@ class Calendar:
 
     def locate(self, d: str) -> dict:
         o = parse_iso(d)
-        k = self.key_of(o)
-        if not self.in_range(k):
+        k = self.find(o)
+        if k is None:
             raise FiscalError("OUT_OF_RANGE", "date")
         found = {}
         for level in LEVELS:
@@ -331,24 +518,25 @@ class Calendar:
         return len(self.spans(k, level))
 
     def shift(self, p: dict, n: int) -> dict:
+        """Steps through the sequence of fiscal years, and through each year's own quarters, periods or weeks."""
         k, sp = self._arg_period(p)
         if not isinstance(n, int) or isinstance(n, bool):
             raise FiscalError("INVALID_ARGUMENT", "n")
-        year = self.number(k)
         if sp.level == "year":
-            target = self.key_for_scheme_number(year + n, self.default_scheme)
-            if target is None or not self.in_range(target):
+            if not self.in_range(k + n):
                 raise FiscalError("OUT_OF_RANGE", "n")
-            return self.period_value(target, self.spans(target, "year")[0])
+            return self.period_value(k + n, self.spans(k + n, "year")[0])
         idx = sp.index + n
         while idx > self.count(k, sp.level):
             idx -= self.count(k, sp.level)
             k += 1
+            if not self.in_range(k):
+                raise FiscalError("OUT_OF_RANGE", "n")
         while idx < 1:
             k -= 1
+            if not self.in_range(k):
+                raise FiscalError("OUT_OF_RANGE", "n")
             idx += self.count(k, sp.level)
-        if not self.in_range(k):
-            raise FiscalError("OUT_OF_RANGE", "n")
         return self.period_value(k, self.spans(k, sp.level)[idx - 1])
 
     def parent(self, p: dict) -> dict:
@@ -356,7 +544,7 @@ class Calendar:
         up = {
             "quarter": "year",
             "period": "quarter",
-            "week": "period" if self.kind == "week_based" else "year",
+            "week": "period" if self.week_pattern(k) else "year",
         }.get(sp.level)
         if up is None:
             raise FiscalError("INVALID_ARGUMENT", "period")
@@ -367,23 +555,33 @@ class Calendar:
         k, sp = self._arg_period(p)
         if level not in LEVELS:
             raise FiscalError("INVALID_ARGUMENT", "level")
-        if self.kind == "fixed_date" and level == "week" and sp.level in ("quarter", "period"):
+        if not self.week_pattern(k) and level == "week" and sp.level in ("quarter", "period"):
             raise FiscalError("LEVEL_NOT_NESTED", "level")
         assert LEVELS.index(level) > LEVELS.index(sp.level)
         return [self.period_value(k, x) for x in self.spans(k, level) if sp.start <= x.start < sp.end]
 
     def years(self, first: int, last: int) -> list[dict]:
-        return [self.period("year", y) for y in range(first, last + 1)]
+        """Every fiscal year whose number lies in [first, last]; empty only where numbers are skipped."""
+        if last < first or last - first + 1 > 10000:
+            raise FiscalError("INVALID_ARGUMENT", "to")
+        lowest, highest = self.number(0), self.number(self.last_key())
+        if not lowest <= first <= highest:
+            raise FiscalError("OUT_OF_RANGE", "from")
+        if not lowest <= last <= highest:
+            raise FiscalError("OUT_OF_RANGE", "to")
+        keys = [self.key_for_scheme_number(n, self.default_scheme) for n in range(first, last + 1)]
+        return [self.period_value(k, self.spans(k, "year")[0]) for k in keys if k is not None]
 
     # Labels --------------------------------------------------------------
 
-    def _fill(self, template: str, number: int, sp: Span) -> str:
+    def _fill(self, template: str, number: int, k: int, sp: Span) -> str:
         if "{yyyy}" in template and not 1 <= number <= 9999:
             raise FiscalError("OUT_OF_RANGE", "period")
         values = {
             "yyyy": "%04d" % number,
             "yy": "%02d" % (number % 100),
             "yy_next": "%02d" % ((number + 1) % 100),
+            "yy_end": "%02d" % (civil_year(self.seq[k].end - 1) % 100),
             "q": str(sp.index),
             "pp": "%02d" % (sp.index or 0),
             "ww": "%02d" % (sp.index or 0),
@@ -398,11 +596,11 @@ class Calendar:
         template = self.schemes[name]["templates"].get(sp.level)
         if template is None:
             raise FiscalError("TEMPLATE_MISSING", "period")
-        return {"label": self._fill(template, self.scheme_number(k, name), sp), "scheme": name}
+        return {"label": self._fill(template, self.scheme_number(k, name), k, sp), "scheme": name}
 
     @staticmethod
     def _compile(template: str) -> re.Pattern:
-        widths = {"yyyy": "[0-9]{4}", "yy": "[0-9]{2}", "yy_next": "[0-9]{2}", "q": "[1-9][0-9]?", "pp": "[0-9]{2}", "ww": "[0-9]{2}"}
+        widths = {"yyyy": "[0-9]{4}", "yy": "[0-9]{2}", "yy_next": "[0-9]{2}", "yy_end": "[0-9]{2}", "q": "[1-9][0-9]?", "pp": "[0-9]{2}", "ww": "[0-9]{2}"}
         out, pos = [], 0
         for m in re.finditer(r"\{([a-z_]+)\}", template):
             out.append(re.escape(template[pos : m.start()]))
@@ -433,7 +631,9 @@ class Calendar:
                 if "yy_next" in g and int(g["yy_next"]) != (number + 1) % 100:
                     continue
                 k = self.key_for_scheme_number(number, name)
-                if k is None or not self.in_range(k):
+                if k is None:
+                    continue
+                if "yy_end" in g and int(g["yy_end"]) != civil_year(self.seq[k].end - 1) % 100:
                     continue
                 spans = self.spans(k, level)
                 if level == "year":
@@ -471,9 +671,9 @@ class Calendar:
             raise FiscalError("INVALID_ARGUMENT", "end_exclusive")
         if s == e:
             return []
-        if not self.in_range(self.key_of(s)):
+        if self.find(s) is None:
             raise FiscalError("OUT_OF_RANGE", "start")
-        if not self.in_range(self.key_of(e - 1)):
+        if self.find(e - 1) is None:
             raise FiscalError("OUT_OF_RANGE", "end_exclusive")
         cid = calendar_id(self.definition)
         rows = []
@@ -568,10 +768,18 @@ def _serialise(v) -> str:
 
 
 def canonical(definition: dict) -> str:
+    """Absent or null `exceptions` is left out, so a definition without exceptions keeps its 0.1.0 canonical form."""
     d = copy.deepcopy(definition)
     d.pop("$schema", None)
     if d["year"]["type"] == "fixed_date":
         d["year"].setdefault("short_month", None)
+    if d.get("exceptions") is None:
+        d.pop("exceptions", None)
+    else:
+        for entry in d["exceptions"]["history"]:
+            if entry["year"]["type"] == "fixed_date":
+                entry["year"].setdefault("short_month", None)
+            entry.setdefault("transition", None)
     for sc in d["naming"]["schemes"].values():
         sc.setdefault("offset", 0)
         sc.setdefault("century_pivot", None)

@@ -1,0 +1,90 @@
+{
+  "name": "definition-year-number-collision-across-change",
+  "description": "Invalid definition (fiscalclock 0.2.0). Calendar years change to 1 July years through a six-month transition, 2024-01-01 to 2024-06-30. Numbered by 'start', the transition and the year from 1 July 2024 both get 2024, so the number does not increase across the change. Only code and path are asserted; details.years is not.",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#year-numbers-must-be-unique",
+    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15; fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2024-07-01",
+          "transition": {
+            "start": "2024-01-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 7,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": {
+        "code": "YEAR_NUMBER_COLLISION",
+        "path": "naming.schemes.fy.year_number"
+      }
+    }
+  ]
+}

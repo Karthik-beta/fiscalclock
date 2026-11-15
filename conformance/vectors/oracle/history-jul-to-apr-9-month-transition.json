@@ -1,0 +1,2217 @@
+{
+  "name": "history-jul-to-apr-9-month-transition",
+  "description": "A fixed-date calendar that changes from 1 July to 1 April years through a nine-month transition year, 2024-07-01 to 2025-03-31, split into three quarters of three calendar months (exceptions.history with a calendar_months transition). The dates are those of research/filers/pg-hygiene.md; the quarter split, weeks and the period and week templates are illustrative. Numbered by 'start', the years run 2023, 2024 (the transition), 2025 with no skip, and {yy_end} gives '2024-25' for the transition. Covers the transition's quarters, periods and 40 weeks (week 40 is 2025-03-31 alone), LEVEL_NOT_NESTED for weeks of a calendar_months transition quarter, shift across both changes, out-of-range indexes inside the transition, labels and parse (a {yy_end} that disagrees with the year's last day is LABEL_NOT_RECOGNISED), and dimension rows across the end of the transition.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq built from the regimes and transitions; change_errors and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 7,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "{yyyy}-{yy_end}",
+            "quarter": "Q{q} {yyyy}-{yy_end}",
+            "period": "P{pp} {yyyy}-{yy_end}",
+            "week": "W{ww} {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2025-04-01",
+          "transition": {
+            "start": "2024-07-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "de106360913d52ec",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2025-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-07-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"P{pp} {yyyy}-{yy_end}\",\"quarter\":\"Q{q} {yyyy}-{yy_end}\",\"week\":\"W{ww} {yyyy}-{yy_end}\",\"year\":\"{yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":7},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 2022,
+        "to": 2027
+      },
+      "expect": [
+        {
+          "level": "year",
+          "year": 2022,
+          "index": null,
+          "start": "2022-07-01",
+          "end_exclusive": "2023-07-01",
+          "last_day": "2023-06-30",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2023,
+          "index": null,
+          "start": "2023-07-01",
+          "end_exclusive": "2024-07-01",
+          "last_day": "2024-06-30",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2024-07-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 274,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2025,
+          "index": null,
+          "start": "2025-04-01",
+          "end_exclusive": "2026-04-01",
+          "last_day": "2026-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2026,
+          "index": null,
+          "start": "2026-04-01",
+          "end_exclusive": "2027-04-01",
+          "last_day": "2027-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2027,
+          "index": null,
+          "start": "2027-04-01",
+          "end_exclusive": "2028-04-01",
+          "last_day": "2028-03-31",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2022
+      },
+      "expect": {
+        "level": "year",
+        "year": 2022,
+        "index": null,
+        "start": "2022-07-01",
+        "end_exclusive": "2023-07-01",
+        "last_day": "2023-06-30",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2023
+      },
+      "expect": {
+        "level": "year",
+        "year": 2023,
+        "index": null,
+        "start": "2023-07-01",
+        "end_exclusive": "2024-07-01",
+        "last_day": "2024-06-30",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2024-07-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 274,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2025
+      },
+      "expect": {
+        "level": "year",
+        "year": 2025,
+        "index": null,
+        "start": "2025-04-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2026
+      },
+      "expect": {
+        "level": "year",
+        "year": 2026,
+        "index": null,
+        "start": "2026-04-01",
+        "end_exclusive": "2027-04-01",
+        "last_day": "2027-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2027
+      },
+      "expect": {
+        "level": "year",
+        "year": 2027,
+        "index": null,
+        "start": "2027-04-01",
+        "end_exclusive": "2028-04-01",
+        "last_day": "2028-03-31",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 1
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 1,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 2
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 2,
+        "start": "2024-10-01",
+        "end_exclusive": "2025-01-01",
+        "last_day": "2024-12-31",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3,
+        "start": "2025-01-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 1
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 1,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-08-01",
+        "last_day": "2024-07-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 2
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 2,
+        "start": "2024-08-01",
+        "end_exclusive": "2024-09-01",
+        "last_day": "2024-08-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 3
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 3,
+        "start": "2024-09-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 30,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 4
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 4,
+        "start": "2024-10-01",
+        "end_exclusive": "2024-11-01",
+        "last_day": "2024-10-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 5
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 5,
+        "start": "2024-11-01",
+        "end_exclusive": "2024-12-01",
+        "last_day": "2024-11-30",
+        "days": 30,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 6
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 6,
+        "start": "2024-12-01",
+        "end_exclusive": "2025-01-01",
+        "last_day": "2024-12-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 7
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 7,
+        "start": "2025-01-01",
+        "end_exclusive": "2025-02-01",
+        "last_day": "2025-01-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 8
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 8,
+        "start": "2025-02-01",
+        "end_exclusive": "2025-03-01",
+        "last_day": "2025-02-28",
+        "days": 28,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 9
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 9,
+        "start": "2025-03-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2024-06-30"
+      },
+      "expect": {
+        "date": "2024-06-30",
+        "year": {
+          "level": "year",
+          "year": 2023,
+          "index": null,
+          "start": "2023-07-01",
+          "end_exclusive": "2024-07-01",
+          "last_day": "2024-06-30",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2023,
+          "index": 4,
+          "start": "2024-04-01",
+          "end_exclusive": "2024-07-01",
+          "last_day": "2024-06-30",
+          "days": 91,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2023,
+          "index": 12,
+          "start": "2024-06-01",
+          "end_exclusive": "2024-07-01",
+          "last_day": "2024-06-30",
+          "days": 30,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2023,
+          "index": 53,
+          "start": "2024-06-24",
+          "end_exclusive": "2024-07-01",
+          "last_day": "2024-06-30",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 366,
+        "day_of_quarter": 91,
+        "day_of_period": 30,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2024-07-01"
+      },
+      "expect": {
+        "date": "2024-07-01",
+        "year": {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2024-07-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 274,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 1,
+          "start": "2024-07-01",
+          "end_exclusive": "2024-10-01",
+          "last_day": "2024-09-30",
+          "days": 92,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 1,
+          "start": "2024-07-01",
+          "end_exclusive": "2024-08-01",
+          "last_day": "2024-07-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2024,
+          "index": 1,
+          "start": "2024-07-01",
+          "end_exclusive": "2024-07-08",
+          "last_day": "2024-07-07",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2024-11-15"
+      },
+      "expect": {
+        "date": "2024-11-15",
+        "year": {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2024-07-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 274,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 2,
+          "start": "2024-10-01",
+          "end_exclusive": "2025-01-01",
+          "last_day": "2024-12-31",
+          "days": 92,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 5,
+          "start": "2024-11-01",
+          "end_exclusive": "2024-12-01",
+          "last_day": "2024-11-30",
+          "days": 30,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2024,
+          "index": 20,
+          "start": "2024-11-11",
+          "end_exclusive": "2024-11-18",
+          "last_day": "2024-11-17",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 138,
+        "day_of_quarter": 46,
+        "day_of_period": 15,
+        "day_of_week": 5
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2025-03-30"
+      },
+      "expect": {
+        "date": "2025-03-30",
+        "year": {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2024-07-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 274,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3,
+          "start": "2025-01-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 9,
+          "start": "2025-03-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2024,
+          "index": 39,
+          "start": "2025-03-24",
+          "end_exclusive": "2025-03-31",
+          "last_day": "2025-03-30",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 273,
+        "day_of_quarter": 89,
+        "day_of_period": 30,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2025-03-31"
+      },
+      "expect": {
+        "date": "2025-03-31",
+        "year": {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2024-07-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 274,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3,
+          "start": "2025-01-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 9,
+          "start": "2025-03-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2024,
+          "index": 40,
+          "start": "2025-03-31",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 1,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 274,
+        "day_of_quarter": 90,
+        "day_of_period": 31,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2025-04-01"
+      },
+      "expect": {
+        "date": "2025-04-01",
+        "year": {
+          "level": "year",
+          "year": 2025,
+          "index": null,
+          "start": "2025-04-01",
+          "end_exclusive": "2026-04-01",
+          "last_day": "2026-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2025,
+          "index": 1,
+          "start": "2025-04-01",
+          "end_exclusive": "2025-07-01",
+          "last_day": "2025-06-30",
+          "days": 91,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2025,
+          "index": 1,
+          "start": "2025-04-01",
+          "end_exclusive": "2025-05-01",
+          "last_day": "2025-04-30",
+          "days": 30,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2025,
+          "index": 1,
+          "start": "2025-04-01",
+          "end_exclusive": "2025-04-07",
+          "last_day": "2025-04-06",
+          "days": 6,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 2
+      }
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "level": "week"
+      },
+      "expect": [
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 1,
+          "start": "2024-07-01",
+          "end_exclusive": "2024-07-08",
+          "last_day": "2024-07-07",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 2,
+          "start": "2024-07-08",
+          "end_exclusive": "2024-07-15",
+          "last_day": "2024-07-14",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 3,
+          "start": "2024-07-15",
+          "end_exclusive": "2024-07-22",
+          "last_day": "2024-07-21",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 4,
+          "start": "2024-07-22",
+          "end_exclusive": "2024-07-29",
+          "last_day": "2024-07-28",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 5,
+          "start": "2024-07-29",
+          "end_exclusive": "2024-08-05",
+          "last_day": "2024-08-04",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 6,
+          "start": "2024-08-05",
+          "end_exclusive": "2024-08-12",
+          "last_day": "2024-08-11",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 7,
+          "start": "2024-08-12",
+          "end_exclusive": "2024-08-19",
+          "last_day": "2024-08-18",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 8,
+          "start": "2024-08-19",
+          "end_exclusive": "2024-08-26",
+          "last_day": "2024-08-25",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 9,
+          "start": "2024-08-26",
+          "end_exclusive": "2024-09-02",
+          "last_day": "2024-09-01",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 10,
+          "start": "2024-09-02",
+          "end_exclusive": "2024-09-09",
+          "last_day": "2024-09-08",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 11,
+          "start": "2024-09-09",
+          "end_exclusive": "2024-09-16",
+          "last_day": "2024-09-15",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 12,
+          "start": "2024-09-16",
+          "end_exclusive": "2024-09-23",
+          "last_day": "2024-09-22",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 13,
+          "start": "2024-09-23",
+          "end_exclusive": "2024-09-30",
+          "last_day": "2024-09-29",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 14,
+          "start": "2024-09-30",
+          "end_exclusive": "2024-10-07",
+          "last_day": "2024-10-06",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 15,
+          "start": "2024-10-07",
+          "end_exclusive": "2024-10-14",
+          "last_day": "2024-10-13",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 16,
+          "start": "2024-10-14",
+          "end_exclusive": "2024-10-21",
+          "last_day": "2024-10-20",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 17,
+          "start": "2024-10-21",
+          "end_exclusive": "2024-10-28",
+          "last_day": "2024-10-27",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 18,
+          "start": "2024-10-28",
+          "end_exclusive": "2024-11-04",
+          "last_day": "2024-11-03",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 19,
+          "start": "2024-11-04",
+          "end_exclusive": "2024-11-11",
+          "last_day": "2024-11-10",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 20,
+          "start": "2024-11-11",
+          "end_exclusive": "2024-11-18",
+          "last_day": "2024-11-17",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 21,
+          "start": "2024-11-18",
+          "end_exclusive": "2024-11-25",
+          "last_day": "2024-11-24",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 22,
+          "start": "2024-11-25",
+          "end_exclusive": "2024-12-02",
+          "last_day": "2024-12-01",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 23,
+          "start": "2024-12-02",
+          "end_exclusive": "2024-12-09",
+          "last_day": "2024-12-08",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 24,
+          "start": "2024-12-09",
+          "end_exclusive": "2024-12-16",
+          "last_day": "2024-12-15",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 25,
+          "start": "2024-12-16",
+          "end_exclusive": "2024-12-23",
+          "last_day": "2024-12-22",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 26,
+          "start": "2024-12-23",
+          "end_exclusive": "2024-12-30",
+          "last_day": "2024-12-29",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 27,
+          "start": "2024-12-30",
+          "end_exclusive": "2025-01-06",
+          "last_day": "2025-01-05",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 28,
+          "start": "2025-01-06",
+          "end_exclusive": "2025-01-13",
+          "last_day": "2025-01-12",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 29,
+          "start": "2025-01-13",
+          "end_exclusive": "2025-01-20",
+          "last_day": "2025-01-19",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 30,
+          "start": "2025-01-20",
+          "end_exclusive": "2025-01-27",
+          "last_day": "2025-01-26",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 31,
+          "start": "2025-01-27",
+          "end_exclusive": "2025-02-03",
+          "last_day": "2025-02-02",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 32,
+          "start": "2025-02-03",
+          "end_exclusive": "2025-02-10",
+          "last_day": "2025-02-09",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 33,
+          "start": "2025-02-10",
+          "end_exclusive": "2025-02-17",
+          "last_day": "2025-02-16",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 34,
+          "start": "2025-02-17",
+          "end_exclusive": "2025-02-24",
+          "last_day": "2025-02-23",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 35,
+          "start": "2025-02-24",
+          "end_exclusive": "2025-03-03",
+          "last_day": "2025-03-02",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 36,
+          "start": "2025-03-03",
+          "end_exclusive": "2025-03-10",
+          "last_day": "2025-03-09",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 37,
+          "start": "2025-03-10",
+          "end_exclusive": "2025-03-17",
+          "last_day": "2025-03-16",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 38,
+          "start": "2025-03-17",
+          "end_exclusive": "2025-03-24",
+          "last_day": "2025-03-23",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 39,
+          "start": "2025-03-24",
+          "end_exclusive": "2025-03-31",
+          "last_day": "2025-03-30",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "week",
+          "year": 2024,
+          "index": 40,
+          "start": "2025-03-31",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 1,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        },
+        "level": "quarter"
+      },
+      "expect": [
+        {
+          "level": "quarter",
+          "year": 2024,
+          "index": 1,
+          "start": "2024-07-01",
+          "end_exclusive": "2024-10-01",
+          "last_day": "2024-09-30",
+          "days": 92,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "quarter",
+          "year": 2024,
+          "index": 2,
+          "start": "2024-10-01",
+          "end_exclusive": "2025-01-01",
+          "last_day": "2024-12-31",
+          "days": 92,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3,
+          "start": "2025-01-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 90,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3
+        },
+        "level": "period"
+      },
+      "expect": [
+        {
+          "level": "period",
+          "year": 2024,
+          "index": 7,
+          "start": "2025-01-01",
+          "end_exclusive": "2025-02-01",
+          "last_day": "2025-01-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "period",
+          "year": 2024,
+          "index": 8,
+          "start": "2025-02-01",
+          "end_exclusive": "2025-03-01",
+          "last_day": "2025-02-28",
+          "days": 28,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "period",
+          "year": 2024,
+          "index": 9,
+          "start": "2025-03-01",
+          "end_exclusive": "2025-04-01",
+          "last_day": "2025-03-31",
+          "days": 31,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "children",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 1
+        },
+        "level": "week"
+      },
+      "expect_error": {
+        "code": "LEVEL_NOT_NESTED",
+        "path": "level"
+      }
+    },
+    {
+      "op": "parent",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 40
+        }
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2024-07-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 274,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parent",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 9
+        }
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3,
+        "start": "2025-01-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parent",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3
+        }
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2024-07-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 274,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2023,
+          "index": 4
+        },
+        "n": 1
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 1,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3
+        },
+        "n": 1
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 1,
+        "start": "2025-04-01",
+        "end_exclusive": "2025-07-01",
+        "last_day": "2025-06-30",
+        "days": 91,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2025,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3,
+        "start": "2025-01-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2023,
+          "index": 1
+        },
+        "n": 8
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 2,
+        "start": "2025-07-01",
+        "end_exclusive": "2025-10-01",
+        "last_day": "2025-09-30",
+        "days": 92,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 9
+        },
+        "n": 1
+      },
+      "expect": {
+        "level": "period",
+        "year": 2025,
+        "index": 1,
+        "start": "2025-04-01",
+        "end_exclusive": "2025-05-01",
+        "last_day": "2025-04-30",
+        "days": 30,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect": {
+        "level": "period",
+        "year": 2023,
+        "index": 12,
+        "start": "2024-06-01",
+        "end_exclusive": "2024-07-01",
+        "last_day": "2024-06-30",
+        "days": 30,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2023,
+          "index": 12
+        },
+        "n": 10
+      },
+      "expect": {
+        "level": "period",
+        "year": 2025,
+        "index": 1,
+        "start": "2025-04-01",
+        "end_exclusive": "2025-05-01",
+        "last_day": "2025-04-30",
+        "days": 30,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 40
+        },
+        "n": 1
+      },
+      "expect": {
+        "level": "week",
+        "year": 2025,
+        "index": 1,
+        "start": "2025-04-01",
+        "end_exclusive": "2025-04-07",
+        "last_day": "2025-04-06",
+        "days": 6,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2025,
+          "index": 1
+        },
+        "n": -1
+      },
+      "expect": {
+        "level": "week",
+        "year": 2024,
+        "index": 40,
+        "start": "2025-03-31",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 1,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2023,
+          "index": 53
+        },
+        "n": 1
+      },
+      "expect": {
+        "level": "week",
+        "year": 2024,
+        "index": 1,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-07-08",
+        "last_day": "2024-07-07",
+        "days": 7,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        },
+        "n": 2
+      },
+      "expect": {
+        "level": "year",
+        "year": 2025,
+        "index": null,
+        "start": "2025-04-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "shift",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2026,
+          "index": null
+        },
+        "n": -3
+      },
+      "expect": {
+        "level": "year",
+        "year": 2023,
+        "index": null,
+        "start": "2023-07-01",
+        "end_exclusive": "2024-07-01",
+        "last_day": "2024-06-30",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 4
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "period",
+        "year": 2024,
+        "index": 10
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "week",
+        "year": 2024,
+        "index": 41
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "index"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2023,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2023-24",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2023-24"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2023,
+        "index": null,
+        "start": "2023-07-01",
+        "end_exclusive": "2024-07-01",
+        "last_day": "2024-06-30",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2024-25"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2024-07-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 274,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-26"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2025,
+        "index": null,
+        "start": "2025-04-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2024,
+          "index": 3
+        }
+      },
+      "expect": {
+        "label": "Q3 2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q3 2024-25"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2024,
+        "index": 3,
+        "start": "2025-01-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2024,
+          "index": 9
+        }
+      },
+      "expect": {
+        "label": "P09 2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "P09 2024-25"
+      },
+      "expect": {
+        "level": "period",
+        "year": 2024,
+        "index": 9,
+        "start": "2025-03-01",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 31,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 40
+        }
+      },
+      "expect": {
+        "label": "W40 2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "W40 2024-25"
+      },
+      "expect": {
+        "level": "week",
+        "year": 2024,
+        "index": 40,
+        "start": "2025-03-31",
+        "end_exclusive": "2025-04-01",
+        "last_day": "2025-03-31",
+        "days": 1,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "week",
+          "year": 2024,
+          "index": 1
+        }
+      },
+      "expect": {
+        "label": "W01 2024-25",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "W01 2024-25"
+      },
+      "expect": {
+        "level": "week",
+        "year": 2024,
+        "index": 1,
+        "start": "2024-07-01",
+        "end_exclusive": "2024-07-08",
+        "last_day": "2024-07-07",
+        "days": 7,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2024-24"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2024-26"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q4 2024-25"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "P10 2024-25"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "2025-25"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "dimension",
+      "args": {
+        "start": "2025-03-28",
+        "end_exclusive": "2025-04-03"
+      },
+      "expect": [
+        {
+          "date": "2025-03-28",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2024,
+          "quarter": 3,
+          "period": 9,
+          "week": 39,
+          "day_of_year": 271,
+          "day_of_quarter": 87,
+          "day_of_period": 28,
+          "day_of_week": 5,
+          "year_start": "2024-07-01",
+          "year_last_day": "2025-03-31",
+          "quarter_start": "2025-01-01",
+          "quarter_last_day": "2025-03-31",
+          "period_start": "2025-03-01",
+          "period_last_day": "2025-03-31",
+          "week_start": "2025-03-24",
+          "week_last_day": "2025-03-30",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2024-25",
+          "label_fy_quarter": "Q3 2024-25",
+          "label_fy_period": "P09 2024-25",
+          "label_fy_week": "W39 2024-25"
+        },
+        {
+          "date": "2025-03-29",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2024,
+          "quarter": 3,
+          "period": 9,
+          "week": 39,
+          "day_of_year": 272,
+          "day_of_quarter": 88,
+          "day_of_period": 29,
+          "day_of_week": 6,
+          "year_start": "2024-07-01",
+          "year_last_day": "2025-03-31",
+          "quarter_start": "2025-01-01",
+          "quarter_last_day": "2025-03-31",
+          "period_start": "2025-03-01",
+          "period_last_day": "2025-03-31",
+          "week_start": "2025-03-24",
+          "week_last_day": "2025-03-30",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2024-25",
+          "label_fy_quarter": "Q3 2024-25",
+          "label_fy_period": "P09 2024-25",
+          "label_fy_week": "W39 2024-25"
+        },
+        {
+          "date": "2025-03-30",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2024,
+          "quarter": 3,
+          "period": 9,
+          "week": 39,
+          "day_of_year": 273,
+          "day_of_quarter": 89,
+          "day_of_period": 30,
+          "day_of_week": 7,
+          "year_start": "2024-07-01",
+          "year_last_day": "2025-03-31",
+          "quarter_start": "2025-01-01",
+          "quarter_last_day": "2025-03-31",
+          "period_start": "2025-03-01",
+          "period_last_day": "2025-03-31",
+          "week_start": "2025-03-24",
+          "week_last_day": "2025-03-30",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2024-25",
+          "label_fy_quarter": "Q3 2024-25",
+          "label_fy_period": "P09 2024-25",
+          "label_fy_week": "W39 2024-25"
+        },
+        {
+          "date": "2025-03-31",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2024,
+          "quarter": 3,
+          "period": 9,
+          "week": 40,
+          "day_of_year": 274,
+          "day_of_quarter": 90,
+          "day_of_period": 31,
+          "day_of_week": 1,
+          "year_start": "2024-07-01",
+          "year_last_day": "2025-03-31",
+          "quarter_start": "2025-01-01",
+          "quarter_last_day": "2025-03-31",
+          "period_start": "2025-03-01",
+          "period_last_day": "2025-03-31",
+          "week_start": "2025-03-31",
+          "week_last_day": "2025-03-31",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2024-25",
+          "label_fy_quarter": "Q3 2024-25",
+          "label_fy_period": "P09 2024-25",
+          "label_fy_week": "W40 2024-25"
+        },
+        {
+          "date": "2025-04-01",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2025,
+          "quarter": 1,
+          "period": 1,
+          "week": 1,
+          "day_of_year": 1,
+          "day_of_quarter": 1,
+          "day_of_period": 1,
+          "day_of_week": 2,
+          "year_start": "2025-04-01",
+          "year_last_day": "2026-03-31",
+          "quarter_start": "2025-04-01",
+          "quarter_last_day": "2025-06-30",
+          "period_start": "2025-04-01",
+          "period_last_day": "2025-04-30",
+          "week_start": "2025-04-01",
+          "week_last_day": "2025-04-06",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2025-26",
+          "label_fy_quarter": "Q1 2025-26",
+          "label_fy_period": "P01 2025-26",
+          "label_fy_week": "W01 2025-26"
+        },
+        {
+          "date": "2025-04-02",
+          "calendar_id": "de106360913d52ec",
+          "fiscal_year": 2025,
+          "quarter": 1,
+          "period": 1,
+          "week": 1,
+          "day_of_year": 2,
+          "day_of_quarter": 2,
+          "day_of_period": 2,
+          "day_of_week": 3,
+          "year_start": "2025-04-01",
+          "year_last_day": "2026-03-31",
+          "quarter_start": "2025-04-01",
+          "quarter_last_day": "2025-06-30",
+          "period_start": "2025-04-01",
+          "period_last_day": "2025-04-30",
+          "week_start": "2025-04-01",
+          "week_last_day": "2025-04-06",
+          "year_has_extra_week": false,
+          "period_has_extra_week": false,
+          "week_is_extra_week": false,
+          "label_fy_year": "2025-26",
+          "label_fy_quarter": "Q1 2025-26",
+          "label_fy_period": "P01 2025-26",
+          "label_fy_week": "W01 2025-26"
+        }
+      ]
+    },
+    {
+      "op": "dimension_csv",
+      "args": {
+        "start": "2025-03-28",
+        "end_exclusive": "2025-04-03"
+      },
+      "expect": "date,calendar_id,fiscal_year,quarter,period,week,day_of_year,day_of_quarter,day_of_period,day_of_week,year_start,year_last_day,quarter_start,quarter_last_day,period_start,period_last_day,week_start,week_last_day,year_has_extra_week,period_has_extra_week,week_is_extra_week,label_fy_year,label_fy_quarter,label_fy_period,label_fy_week\n2025-03-28,de106360913d52ec,2024,3,9,39,271,87,28,5,2024-07-01,2025-03-31,2025-01-01,2025-03-31,2025-03-01,2025-03-31,2025-03-24,2025-03-30,false,false,false,2024-25,Q3 2024-25,P09 2024-25,W39 2024-25\n2025-03-29,de106360913d52ec,2024,3,9,39,272,88,29,6,2024-07-01,2025-03-31,2025-01-01,2025-03-31,2025-03-01,2025-03-31,2025-03-24,2025-03-30,false,false,false,2024-25,Q3 2024-25,P09 2024-25,W39 2024-25\n2025-03-30,de106360913d52ec,2024,3,9,39,273,89,30,7,2024-07-01,2025-03-31,2025-01-01,2025-03-31,2025-03-01,2025-03-31,2025-03-24,2025-03-30,false,false,false,2024-25,Q3 2024-25,P09 2024-25,W39 2024-25\n2025-03-31,de106360913d52ec,2024,3,9,40,274,90,31,1,2024-07-01,2025-03-31,2025-01-01,2025-03-31,2025-03-01,2025-03-31,2025-03-31,2025-03-31,false,false,false,2024-25,Q3 2024-25,P09 2024-25,W40 2024-25\n2025-04-01,de106360913d52ec,2025,1,1,1,1,1,1,2,2025-04-01,2026-03-31,2025-04-01,2025-06-30,2025-04-01,2025-04-30,2025-04-01,2025-04-06,false,false,false,2025-26,Q1 2025-26,P01 2025-26,W01 2025-26\n2025-04-02,de106360913d52ec,2025,1,1,1,2,2,2,3,2025-04-01,2026-03-31,2025-04-01,2025-06-30,2025-04-01,2025-04-30,2025-04-01,2025-04-06,false,false,false,2025-26,Q1 2025-26,P01 2025-26,W01 2025-26\n"
+    }
+  ]
+}
