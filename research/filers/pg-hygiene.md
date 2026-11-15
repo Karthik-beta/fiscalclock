@@ -169,7 +169,7 @@ fiscalclock 0.2.0 adds `exceptions.history` to spec version 1 ([spec/definition-
 | `transition.subdivision` | calendar months, quarters 3, 3, 3 | Illustrative. No report prints a quarter end. |
 | `subdivision` (both regimes) | calendar months, quarters 3, 3, 3, 3 | Illustrative |
 | `week` | `monday`, `contains_start` | Illustrative. The reports do not number weeks and the field is required. |
-| `year_number` | `start` | Stated by the filing: "2024-25" for the year beginning 1 July 2024 and "2025-26" for the year beginning 1 April 2025 |
+| `year_number` | `start` | Consistent with the filing, not stated by it: the labels "2024-25" (1 July 2024 to 31 March 2025) and "2025-26" (1 April 2025 to 31 March 2026) begin with the calendar year of each year's first day. `majority` gives the same numbers for the years the filing states (the transition has 184 of its 274 days in 2024, and 2025-26 has 275 of its 365 days in 2025), so the filing does not single out `start`. |
 | `templates.year` | `{yyyy}-{yy_end}` | Stated by the filing for the transition ("2024-25") and for 2025-26. `{yy_end}` writes the last two digits of the calendar year in which the fiscal year ends, which for the transition is 2025. The label "2023-24" that it gives the year before is inferred (see "How the company names its years"). |
 
 The transition has 274 days, by calendar arithmetic on the stated dates (`date(2025, 4, 1) - date(2024, 7, 1)` in Python); the reports say "9 months" and do not print a day count.
@@ -196,7 +196,7 @@ Before fiscalclock 0.2.0, `exceptions` was reserved, and a `fixed_date` year has
 | `subdivision.type`, `month_start_day` | `calendar_months`, day 1 | Illustrative. The reports state no month or period structure; calendar months follow from a 1 April start. |
 | `subdivision.quarters` | 3, 3, 3, 3 | Illustrative. No annual report prints a quarter end (see "Still to check"). |
 | `week.starts_on`, `numbering` | `monday`, `contains_start` | Illustrative. The reports do not number weeks and the field is required. |
-| `year_number` | `start` | Stated by the filing: "2025-26" for the year beginning 1 April 2025 and "2024-25" for the year beginning 1 July 2024 |
+| `year_number` | `start` | Consistent with the filing, not stated by it: "2025-26" for the year beginning 1 April 2025 begins with the calendar year of its first day. `majority` gives the same number (275 of its 365 days fall in 2025). |
 | `templates.year` | `{yyyy}-{yy_next}` | Stated by the filing: the label is printed as "2025-26" |
 
 This definition is wrong for the year numbered 2024, which it would run from 1 April 2024 to 31 March 2025. The document says that year ran from 1 July 2024. No case below asserts the year 2024.
@@ -221,9 +221,10 @@ This definition is wrong for the year numbered 2024, which it would run from 1 A
 
 ## Conformance vectors
 
-Three vectors from `conformance/generators/spec_cited_vectors.py`.
+Four vectors from `conformance/generators/spec_cited_vectors.py`. The two on the 0.2.0 definition above are split by report, so that each case is traceable to the document its citation quotes and links.
 
-- `conformance/vectors/cited/pghh-annual-report-2024-25-transition.json` has 8 cases on the 0.2.0 definition above: validation; the start, last day and 274 days of the transition 2024-25; its label `2024-25` and parsing it; the year that contains 30 June 2024 (1 July 2023 to 30 June 2024, located by date because its label is inferred); `shift` from the transition one year back to that year and one year on to 2025-26 (1 April 2025 to 31 March 2026); and the label `2025-26`.
+- `conformance/vectors/cited/pghh-annual-report-2024-25-transition.json` has 7 cases from the 2024-25 report: validation; the start, last day and 274 days of the transition 2024-25; its label `2024-25` and parsing it; the year that contains 30 June 2024 (1 July 2023 to 30 June 2024, located by date because its label is inferred); and `shift` from the transition one year back to that year and one year on to the year from 1 April 2025 to 31 March 2026 (the first year of the stated rule "Subsequent financial years of the Company shall commence on April 1 every year and end on March 31 of the succeeding year"; this report does not label it).
+- `conformance/vectors/cited/pghh-annual-report-2025-26-transition.json` has 7 cases from the 2025-26 report: validation; the start and last day of 2025-26, its label `2025-26` and parsing it; `shift` from 2025-26 one year back to the transition (1 July 2024 to 31 March 2025); and the label `2024-25` and parsing it ("Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025").
 - `conformance/vectors/cited/pghh-annual-report-2025-26.json` has 6 cases on the April calendar alone: validation, the start and last day of 2025-26, the last day of 2026-27, the label `2025-26`, and parsing `2025-26` and `2026-27`.
 - `conformance/vectors/cited/pghh-annual-report-2023-24.json` has 2 cases on the July calendar alone: validation and the start and last day of the year that began on 1 July 2023. It asserts no label, because the pairing of "2023-24" with those dates is inferred.
 
