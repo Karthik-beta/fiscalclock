@@ -1,11 +1,11 @@
 {
   "name": "definition-majority-tie-three-calendar-years",
-  "description": "Invalid definition (fiscalclock 0.2.0). A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half. Only code and path are asserted; details.years is not.",
+  "description": "Invalid definition (fiscalclock 0.2.0). A 24-month transition, 2024-07-01 to 2026-06-30, has 184 days in 2024, 365 in 2025 and 181 in 2026; 365 of 730 is exactly half, so no calendar year holds more than half. The complete error list is asserted (code and path); details.years is not.",
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md, Year numbers must be unique (fiscalclock 0.2.0); path from spec/api-v1.md, Paths for common errors",
     "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#year-numbers-must-be-unique",
-    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15; fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range (asserted)"
+    "checked_by": "Manual reading of the 0.2.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#exceptions and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error (Paths for common errors), 2026-11-15; fiscal_oracle.py Calendar.naming_errors scans every fiscal year in the supported range (asserted)"
   },
   "definition": {
     "spec_version": 1,
@@ -86,10 +86,12 @@
     {
       "op": "validate",
       "args": {},
-      "expect_error": {
-        "code": "MAJORITY_TIE",
-        "path": "naming.schemes.fy.year_number"
-      }
+      "expect_error": [
+        {
+          "code": "MAJORITY_TIE",
+          "path": "naming.schemes.fy.year_number"
+        }
+      ]
     }
   ]
 }

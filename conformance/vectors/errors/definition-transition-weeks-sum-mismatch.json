@@ -1,11 +1,11 @@
 {
   "name": "definition-transition-weeks-sum-mismatch",
-  "description": "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the definition has no block-level error. The week_pattern transition from 2024-02-04 to 2024-12-29 is 47 weeks, but its periods sum to 46. Only code and path are asserted.",
+  "description": "Invalid definition (fiscalclock 0.2.0), rejected by the cross-block checks on exceptions.history, which run only when the definition has no block-level error. The week_pattern transition from 2024-02-04 to 2024-12-29 is 47 weeks, but its periods sum to 46. The complete error list is asserted (code and path of each error, sorted by path, then code).",
   "source": {
     "kind": "errors",
     "citation": "spec/definition-v1.md, exceptions (fiscalclock 0.2.0, ADR-0032), and spec/api-v1.md, Paths for common errors",
     "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#cross-block-checks",
-    "checked_by": "Manual reading of spec/definition-v1.md and spec/api-v1.md at commit ee978f1 (the 0.2.0 text), 2026-11-15; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+    "checked_by": "Manual reading of the 0.2.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#exceptions and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error (Paths for common errors), 2026-11-15; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
   },
   "definition": {
     "spec_version": 1,
@@ -133,10 +133,12 @@
     {
       "op": "validate",
       "args": {},
-      "expect_error": {
-        "code": "WEEKS_SUM_MISMATCH",
-        "path": "exceptions.history[0].transition.subdivision.periods"
-      }
+      "expect_error": [
+        {
+          "code": "WEEKS_SUM_MISMATCH",
+          "path": "exceptions.history[0].transition.subdivision.periods"
+        }
+      ]
     }
   ]
 }

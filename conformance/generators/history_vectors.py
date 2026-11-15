@@ -11,7 +11,7 @@ import copy
 import hashlib
 from datetime import date
 
-from fiscal_oracle import Calendar, calendar_id
+from fiscal_oracle import WEEKDAYS, Calendar, calendar_id, iso
 from oracle_vectors import calendar_id_vectors, label_cases, locate_cases, nrf_definition, oracle_source, structure_cases, year_cases
 from vectorlib import case, coords, fixed_date, naming, scheme, validate_case, vector, week_based, year_args
 
@@ -501,6 +501,229 @@ def canonical_vectors() -> list[dict]:
     ]
 
 
+# 10. Three history entries --------------------------------------------------------------------------------
+
+
+def three_changes_vector() -> dict:
+    base = fixed_date(1, 1, "monday", naming({"fy": scheme("start", {"year": "FY{yyyy}", "quarter": "FY{yyyy} Q{q}"})}))
+    defn = with_history(
+        base,
+        entry("2023-04-01", *fixed_rule(4, 1), start="2022-01-01", transition_sub=months(1, [3] * 5)),
+        entry("2026-04-01", *fixed_rule(4, 1, (4, 4, 4))),
+        entry("2029-01-01", *fixed_rule(1, 1), start="2028-04-01", transition_sub=months(1, [3, 3, 3])),
+    )
+    cal = checked_calendar(defn)
+    cases = [validate_case(defn), case(cal, "years", {"from": 2020, "to": 2030})]
+    cases += structure_cases(cal, (2022, 2025, 2026, 2028), ("quarter",))
+    cases.append(case(cal, "period", {"level": "quarter", "year": 2026, "index": 4}))
+    cases += locate_cases(cal, ["2021-12-31", "2022-01-01", "2023-04-01", "2026-03-31", "2026-04-01", "2028-03-31", "2028-04-01", "2029-01-01"])
+    nav = [
+        ("shift", {"period": coords("year", 2021), "n": 8}),
+        ("shift", {"period": coords("year", 2030), "n": -9}),
+        ("shift", {"period": coords("quarter", 2025, 4), "n": 1}),
+        ("shift", {"period": coords("quarter", 2026, 1), "n": -1}),
+        ("shift", {"period": coords("quarter", 2021, 4), "n": 20}),
+        ("shift", {"period": coords("quarter", 2029, 1), "n": -20}),
+        ("shift", {"period": coords("period", 2025, 12), "n": 1}),
+        ("children", {"period": coords("quarter", 2027, 3), "level": "period"}),
+        ("parent", {"period": coords("period", 2027, 12)}),
+    ]
+    cases += [case(cal, op, args) for op, args in nav]
+    cases += label_cases(cal, [coords("year", 2022), coords("year", 2026), coords("year", 2028), coords("quarter", 2026, 3), coords("quarter", 2028, 3)])
+    cases.append(case(cal, "parse", {"label": "FY2026 Q4"}))
+    cases.append(case(cal, "dimension", {"start": "2026-03-30", "end_exclusive": "2026-04-02"}))
+    desc = (
+        "Three history entries: calendar years until 2021, a fifteen-month transition 2022-01-01 to 2023-03-31, 1 April years with "
+        "quarters of 3 months from 2023, the same 1 April years with three quarters of 4 months from 2026-04-01 (an entry without a "
+        "transition), a nine-month transition 2028-04-01 to 2028-12-31, then calendar years from 2029. Numbered by 'start', every "
+        "number from 2020 to 2030 names one fiscal year. shift crosses all three changes, counting each year's own quarters. Illustrative."
+    )
+    return vector("history-three-entries", desc, oracle_source(CHECKED), defn, cases)
+
+
+# 11. {yy_end} with an offset --------------------------------------------------------------------------------
+
+
+def yy_end_offset_vector() -> dict:
+    base = fixed_date(10, 1, "monday", naming({"fy": scheme("start", {"year": "FY {yyyy}-{yy_end}", "quarter": "Q{q} FY {yyyy}-{yy_end}"}, offset=1)}))
+    defn = with_history(base, entry("2026-04-01", *fixed_rule(4, 1), start="2024-10-01", transition_sub=months(1, [3] * 6)))
+    cal = checked_calendar(defn)
+    t = number_of(cal, "2024-10-01")
+    assert (number_of(cal, "2024-09-30"), t, number_of(cal, "2026-04-01")) == (2024, 2025, 2027)
+    assert cal.number(0) == 2
+    cases = [validate_case(defn), case(cal, "years", {"from": 2023, "to": 2028})]
+    cases += year_cases(cal, (2024, 2025, 2026, 2027))
+    cases += label_cases(cal, [coords("year", 2024), coords("year", 2025), coords("year", 2027), coords("quarter", 2025, 6)])
+    for label in ("FY 2024-26", "FY 2025-25", "FY 2026-27", "FY 0001-02", "FY 0002-03", "FY 0002-02"):
+        cases.append(case(cal, "parse", {"label": label}))
+    cases.append(case(cal, "format", {"period": coords("year", cal.number(0))}))
+    desc = (
+        "The eighteen-month transition of research/filers/siemens-india.md (2024-10-01 to 2026-03-31, after 1 October years and before 1 April years), "
+        "numbered by 'start' with offset 1, so the years around the change are 2024, 2025 (the transition) and 2027. {yy_end} does not depend on the "
+        "offset: it gives 'FY 2025-26' for the transition and 'FY 2024-24' for the year from 1 October 2023 to 30 September 2024. parse removes the "
+        "offset before looking the year up: 'FY 2024-26' names the year 2024, whose last day is in 2024, so it is LABEL_NOT_RECOGNISED, and 'FY 2026-27' "
+        "names the skipped number 2026. The first supported year (1 October 0001 to 30 September 0002) is numbered 2, so 'FY 0001-02' names a number "
+        "below the supported range and is OUT_OF_RANGE. Illustrative."
+    )
+    return vector("history-yy-end-with-offset", desc, oracle_source(CHECKED), defn, cases)
+
+
+# 12. Labels that name years outside the supported range (api-v1.md, parse) ------------------------------------
+
+
+def parse_range_vectors() -> list[dict]:
+    defn = jul_to_apr_definition()
+    cal = checked_calendar(defn)
+    first, last = cal.number(0), cal.number(cal.last_key())
+    assert (first, last) == (1, 9998)
+    cases = [validate_case(defn)]
+    for label in ("0001-02", "0000-01", "0000-00", "9998-99", "9999-00", "Q1 0000-01", "Q1 0001-02", "Q5 0001-02"):
+        cases.append(case(cal, "parse", {"label": label}))
+    desc = (
+        "parse at the edges of the supported range, on the calendar of history-jul-to-apr-9-month-transition. The first supported fiscal year is "
+        "1 July 0001 to 30 June 0002 (number 1, '0001-02') and the last is 1 April 9998 to 31 March 9999 (number 9998, '9998-99'). A label whose only "
+        "matching template names a number below the first or above the last is OUT_OF_RANGE at label ('0000-01', '0000-00', '9999-00', 'Q1 0000-01'), "
+        "whether or not its other placeholders agree; a label whose number is in range but whose quarter index is not ('Q5 0001-02') is "
+        "LABEL_NOT_RECOGNISED."
+    )
+    single = vector("history-parse-out-of-range", desc, oracle_source(CHECKED), defn, cases)
+
+    two = oct_to_apr_definition("start", {"late": scheme("start", {"year": "FY {yyyy}-{yy_end}"}, offset=8000)})
+    cal = checked_calendar(two)
+    assert cal.key_for_scheme_number(2025, "fy") is None and cal.scheme_number(0, "late") == 8001
+    cases = [validate_case(two)]
+    for label in ("FY 2025-26", "FY 2024-25", "FY 0000-01", "FY 2024-26"):
+        cases.append(case(cal, "parse", {"label": label}))
+    desc = (
+        "parse with two schemes whose year templates are the same, 'FY {yyyy}-{yy_end}', on the calendar of history-oct-to-apr-18-month-transition-start: "
+        "'fy' (the default, offset 0, numbers 1 to 9998 with 2025 skipped at the change) and 'late' (offset 8000, numbers 8001 to 17998). "
+        "'FY 2025-26' matches both: under 'fy' it names the skipped number 2025, which is inside the supported range, and under 'late' the number 2025, "
+        "which is below it. A match inside the range rules out OUT_OF_RANGE, so the label is LABEL_NOT_RECOGNISED. 'FY 2024-25' likewise matches "
+        "'fy' with an in-range number whose {yy_end} disagrees (the year 2024 ends in 2026) and 'late' out of range: LABEL_NOT_RECOGNISED. "
+        "'FY 0000-01' is out of range under both: OUT_OF_RANGE. 'FY 2024-26' is the transition under 'fy'."
+    )
+    return [single, vector("history-parse-skipped-and-out-of-range", desc, oracle_source(CHECKED), two, cases)]
+
+
+# 13. The edges of the supported range -----------------------------------------------------------------------
+
+
+def range_edge_vectors() -> list[dict]:
+    out = []
+
+    # A transition is the first supported fiscal year: regime 0 (calendar years) has none, because its year 0001 starts on 0001-01-01.
+    base = fixed_date(1, 1, "monday", naming({"fy": scheme("end", {"year": "FY{yyyy}", "quarter": "FY{yyyy} Q{q}"})}))
+    defn = with_history(base, entry("0002-04-01", *fixed_rule(4, 1), start="0002-01-01", transition_sub=months(1, [3])))
+    cal = checked_calendar(defn)
+    assert cal.seq[0].regime is None and iso(cal.seq[0].start) == "0002-01-01"
+    cases = [validate_case(defn), case(cal, "years", {"from": 2, "to": 4})]
+    cases += year_cases(cal, (1, 2, 3))
+    cases += [
+        case(cal, "period", {"level": "quarter", "year": 2, "index": 1}),
+        case(cal, "period", {"level": "quarter", "year": 2, "index": 2}),
+        case(cal, "years", {"from": 1, "to": 3}),
+        case(cal, "years", {"from": 0, "to": 3}),
+        case(cal, "shift", {"period": coords("year", 3), "n": -1}),
+        case(cal, "shift", {"period": coords("year", 2), "n": -1}),
+        case(cal, "shift", {"period": coords("quarter", 2, 1), "n": -1}),
+        case(cal, "shift", {"period": coords("week", 2, 1), "n": -1}),
+    ]
+    cases += locate_cases(cal, ["0001-12-31", "0002-01-01", "0002-03-31", "0002-04-01"])
+    cases += label_cases(cal, [coords("year", 2), coords("quarter", 2, 1), coords("year", 3)])
+    cases += [case(cal, "parse", {"label": label}) for label in ("FY0001", "FY0001 Q1", "FY0002 Q2")]
+    cases.append(case(cal, "dimension", {"start": "0001-12-31", "end_exclusive": "0002-01-02"}))
+    cases.append(case(cal, "dimension", {"start": "0002-03-30", "end_exclusive": "0002-04-02"}))
+    desc = (
+        "A calendar-year definition that changes to 1 April years through a three-month transition 0002-01-01 to 0002-03-31. Regime 0 has no "
+        "fiscal year in the supported range: its year 0001 starts on 0001-01-01, before 0001-01-02. So the transition is the first supported "
+        "fiscal year (number 2 by 'end'; 'start' would give the transition and the year after it the same number 2), and year 1, years from 1 or 0, shift before the transition, locate on 0001-12-31 and a dimension "
+        "that starts there are OUT_OF_RANGE. Illustrative."
+    )
+    out.append(vector("history-range-transition-first", desc, oracle_source(CHECKED), defn, cases))
+
+    # from exactly 0002-01-01, a year start of both rules: regime 0 again has no supported year.
+    base = fixed_date(1, 1, "monday", naming({"fy": scheme("start", {"year": "FY{yyyy}", "quarter": "FY{yyyy} Q{q}"})}))
+    defn = with_history(base, entry("0002-01-01", *fixed_rule(1, 1, (4, 4, 4))))
+    cal = checked_calendar(defn)
+    assert cal.seq[0].regime == 1
+    cases = [validate_case(defn), case(cal, "years", {"from": 2, "to": 3}), case(cal, "years", {"from": 1, "to": 3})]
+    cases += year_cases(cal, (1, 2))
+    cases += [case(cal, "period", {"level": "quarter", "year": 2, "index": i}) for i in (1, 3, 4)]
+    cases += locate_cases(cal, ["0001-12-31", "0002-01-01"])
+    cases += [case(cal, "shift", {"period": coords("quarter", 2, 1), "n": -1}), case(cal, "parse", {"label": "FY0001"}), case(cal, "parse", {"label": "FY0002 Q3"})]
+    desc = (
+        "A history entry whose from is 0002-01-01, the earliest date allowed in exceptions, and a year start of both the previous rule and its own "
+        "(1 January; the entry changes the quarters to three of 4 months). It is accepted. Regime 0 has no fiscal year in the supported range, so "
+        "the first supported year, 2, has three quarters. Illustrative."
+    )
+    out.append(vector("history-range-from-0002-01-01", desc, oracle_source(CHECKED), defn, cases))
+
+    # from exactly 9998-12-31, a year start of both rules (31 December, clamp), after a 52-week week_pattern transition.
+    base = fixed_date(1, 1, WEEKDAYS[date(9998, 1, 1).weekday()], naming({"fy": scheme("end", {"year": "FY{yyyy}", "quarter": "FY{yyyy} Q{q}"})}))
+    dec_31 = ({"type": "fixed_date", "start": {"month": 12, "day": 31}, "short_month": "clamp"}, months(31, (3, 3, 3, 3)))
+    defn = with_history(base, entry("9998-12-31", *dec_31, start="9998-01-01", transition_sub=weeks([4] * 13, [3, 3, 3, 4])))
+    cal = checked_calendar(defn)
+    assert iso(cal.seq[-1].start) == "9998-12-31" and iso(cal.seq[-1].end - 1) == "9999-12-30"
+    cases = [validate_case(defn), case(cal, "years", {"from": 9996, "to": 9999})]
+    cases += year_cases(cal, (9997, 9998, 9999, 10000))
+    cases += structure_cases(cal, (9998, 9999), ("quarter",))
+    cases += locate_cases(cal, ["9997-12-31", "9998-01-01", "9998-12-30", "9998-12-31", "9999-12-30", "9999-12-31"])
+    cases += [
+        case(cal, "years", {"from": 9998, "to": 10000}),
+        case(cal, "shift", {"period": coords("year", 9998), "n": 1}),
+        case(cal, "shift", {"period": coords("year", 9999), "n": 1}),
+        case(cal, "shift", {"period": coords("quarter", 9999, 4), "n": 1}),
+        case(cal, "parse", {"label": "FY9999"}),
+        case(cal, "dimension", {"start": "9999-12-29", "end_exclusive": "9999-12-31"}),
+        case(cal, "dimension", {"start": "9999-12-30", "end_exclusive": "9999-12-31"}),
+    ]
+    cases += label_cases(cal, [coords("year", 9998), coords("year", 9999)])
+    desc = (
+        "A history entry whose from is 9998-12-31, the latest date allowed in exceptions. The calendar-year regime ends with 9997; a 52-week "
+        "week_pattern transition runs from 9998-01-01 (a week start) to 9998-12-30; and the entry's rule, fixed_date 31 December with "
+        "short_month clamp, starts on 9998-12-31, a year start of that rule. Its first year, 9998-12-31 to 9999-12-30, is the last supported "
+        "fiscal year. Numbered by 'end': 9997, 9998 (the transition), 9999. Year 10000, shift past 9999, years to 10000 and locate on "
+        "9999-12-31 are OUT_OF_RANGE. Illustrative."
+    )
+    out.append(vector("history-range-from-9998-12-31", desc, oracle_source(CHECKED), defn, cases))
+
+    # A transition is the last supported fiscal year: the entry's first year has 53 weeks and ends after 9999-12-30.
+    weekday = WEEKDAYS[date(9998, 12, 31).weekday()]
+    base = fixed_date(1, 1, weekday, naming({"fy": scheme("start", {"year": "FY{yyyy}", "week": "FY{yyyy} W{ww}"})}))
+    rule = ({"type": "week_based", "anchor": {"edge": "start", "month": 1, "day": 6, "rule": "last"}},
+            {"type": "week_pattern", "periods": [4] * 13, "quarters": [3, 3, 3, 4], "extra_week": {"period": 13}})
+    defn = with_history(base, entry("9998-12-31", *rule, start="9998-01-01", transition_sub=weeks([4] * 13, [3, 3, 3, 4])))
+    cal = checked_calendar(defn)
+    assert cal.seq[-1].regime is None and iso(cal.seq[-1].end) == "9998-12-31"
+    s, e = cal.rules[1].bounds(9999)
+    assert (iso(s), e - s) == ("9998-12-31", 371)
+    cases = [validate_case(defn), case(cal, "years", {"from": 9996, "to": 9998})]
+    cases += year_cases(cal, (9997, 9998, 9999))
+    cases += [
+        case(cal, "years", {"from": 9997, "to": 9999}),
+        case(cal, "period", {"level": "week", "year": 9998, "index": 52}),
+        case(cal, "period", {"level": "week", "year": 9998, "index": 53}),
+        case(cal, "shift", {"period": coords("year", 9998), "n": 1}),
+        case(cal, "shift", {"period": coords("year", 9997), "n": 1}),
+        case(cal, "shift", {"period": coords("week", 9998, 52), "n": 1}),
+        case(cal, "shift", {"period": coords("week", 9997, 1), "n": 104}),
+        case(cal, "parent", {"period": coords("week", 9998, 52)}),
+        case(cal, "parse", {"label": "FY9999"}),
+        case(cal, "parse", {"label": "FY9998 W52"}),
+        case(cal, "dimension", {"start": "9998-12-29", "end_exclusive": "9998-12-31"}),
+        case(cal, "dimension", {"start": "9998-12-29", "end_exclusive": "9999-01-01"}),
+    ]
+    cases += locate_cases(cal, ["9997-12-31", "9998-01-01", "9998-12-30", "9998-12-31"])
+    desc = (
+        f"Calendar years that change to week-based years (weeks from {weekday.capitalize()}, years starting on the last {weekday.capitalize()} on or "
+        "before 6 January) through a 52-week week_pattern transition, 9998-01-01 to 9998-12-30. The entry's first year runs from 9998-12-31 for "
+        "371 days, past 9999-12-30, so the entry's regime has no supported fiscal year and the transition is the last one (number 9998 by 'start'). "
+        "Year 9999, years to 9999, shift past the transition, locate on 9998-12-31 and a dimension that ends there are OUT_OF_RANGE. Illustrative."
+    )
+    out.append(vector("history-range-transition-last", desc, oracle_source(CHECKED), defn, cases))
+    return out
+
+
 def build() -> list[dict]:
     return [
         jul_to_apr_vector(),
@@ -512,6 +735,10 @@ def build() -> list[dict]:
         fixed_to_week_based_transition_vector(),
         week_based_to_fixed_vector(),
         two_changes_vector(),
+        three_changes_vector(),
+        yy_end_offset_vector(),
+        *parse_range_vectors(),
+        *range_edge_vectors(),
         *canonical_vectors(),
     ]
 

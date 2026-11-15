@@ -1,0 +1,431 @@
+{
+  "name": "history-yy-end-with-offset",
+  "description": "The eighteen-month transition of research/filers/siemens-india.md (2024-10-01 to 2026-03-31, after 1 October years and before 1 April years), numbered by 'start' with offset 1, so the years around the change are 2024, 2025 (the transition) and 2027. {yy_end} does not depend on the offset: it gives 'FY 2025-26' for the transition and 'FY 2024-24' for the year from 1 October 2023 to 30 September 2024. parse removes the offset before looking the year up: 'FY 2024-26' names the year 2024, whose last day is in 2024, so it is LABEL_NOT_RECOGNISED, and 'FY 2026-27' names the skipped number 2026. The first supported year (1 October 0001 to 30 September 0002) is numbered 2, so 'FY 0001-02' names a number below the supported range and is OUT_OF_RANGE. Illustrative.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq built from the regimes and transitions; change_errors and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "offset": 1,
+          "templates": {
+            "year": "FY {yyyy}-{yy_end}",
+            "quarter": "Q{q} FY {yyyy}-{yy_end}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2026-04-01",
+          "transition": {
+            "start": "2024-10-01",
+            "subdivision": {
+              "type": "calendar_months",
+              "month_start_day": 1,
+              "quarters": [
+                3,
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            }
+          },
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 4,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "calendar_months",
+            "month_start_day": 1,
+            "quarters": [
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "8ef3c225a32f5267",
+        "canonical": "{\"exceptions\":{\"history\":[{\"from\":\"2026-04-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"transition\":{\"start\":\"2024-10-01\",\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3,3,3],\"type\":\"calendar_months\"}},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":4},\"type\":\"fixed_date\"}}]},\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":1,\"templates\":{\"quarter\":\"Q{q} FY {yyyy}-{yy_end}\",\"year\":\"FY {yyyy}-{yy_end}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"month_start_day\":1,\"quarters\":[3,3,3,3],\"type\":\"calendar_months\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":10},\"type\":\"fixed_date\"}}"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 2023,
+        "to": 2028
+      },
+      "expect": [
+        {
+          "level": "year",
+          "year": 2023,
+          "index": null,
+          "start": "2022-10-01",
+          "end_exclusive": "2023-10-01",
+          "last_day": "2023-09-30",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2024,
+          "index": null,
+          "start": "2023-10-01",
+          "end_exclusive": "2024-10-01",
+          "last_day": "2024-09-30",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2025,
+          "index": null,
+          "start": "2024-10-01",
+          "end_exclusive": "2026-04-01",
+          "last_day": "2026-03-31",
+          "days": 547,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2027,
+          "index": null,
+          "start": "2026-04-01",
+          "end_exclusive": "2027-04-01",
+          "last_day": "2027-03-31",
+          "days": 365,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2028,
+          "index": null,
+          "start": "2027-04-01",
+          "end_exclusive": "2028-04-01",
+          "last_day": "2028-03-31",
+          "days": 366,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2024
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2023-10-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2025
+      },
+      "expect": {
+        "level": "year",
+        "year": 2025,
+        "index": null,
+        "start": "2024-10-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 547,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2026
+      },
+      "expect_error": {
+        "code": "PERIOD_NOT_FOUND",
+        "path": "year"
+      }
+    },
+    {
+      "op": "period",
+      "args": {
+        "level": "year",
+        "year": 2027
+      },
+      "expect": {
+        "level": "year",
+        "year": 2027,
+        "index": null,
+        "start": "2026-04-01",
+        "end_exclusive": "2027-04-01",
+        "last_day": "2027-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2024,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2024-24",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-24"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2024,
+        "index": null,
+        "start": "2023-10-01",
+        "end_exclusive": "2024-10-01",
+        "last_day": "2024-09-30",
+        "days": 366,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2025,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2025-26"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2025,
+        "index": null,
+        "start": "2024-10-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 547,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2027,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 2027-27",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2027-27"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2027,
+        "index": null,
+        "start": "2026-04-01",
+        "end_exclusive": "2027-04-01",
+        "last_day": "2027-03-31",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "quarter",
+          "year": 2025,
+          "index": 6
+        }
+      },
+      "expect": {
+        "label": "Q6 FY 2025-26",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "Q6 FY 2025-26"
+      },
+      "expect": {
+        "level": "quarter",
+        "year": 2025,
+        "index": 6,
+        "start": "2026-01-01",
+        "end_exclusive": "2026-04-01",
+        "last_day": "2026-03-31",
+        "days": 90,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2024-26"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2025-25"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 2026-27"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 0001-02"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 0002-03"
+      },
+      "expect_error": {
+        "code": "LABEL_NOT_RECOGNISED",
+        "path": "label"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY 0002-02"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2,
+        "index": null,
+        "start": "0001-10-01",
+        "end_exclusive": "0002-10-01",
+        "last_day": "0002-09-30",
+        "days": 365,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY 0002-02",
+        "scheme": "fy"
+      }
+    }
+  ]
+}
