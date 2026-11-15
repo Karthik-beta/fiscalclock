@@ -1,9 +1,9 @@
 {
   "name": "linde-india-annual-report-2022-23-transition",
-  "description": "Linde India Limited Annual Report 2022-23, covering the fifteen months from 1 January 2022 to 31 March 2023 between its calendar-year and April-March calendars, expressed with exceptions.history (fiscalclock 0.2.0). The report labels the years in two forms ('FY 2021' and '2022-23'), so the definition has two schemes. The transition's five quarters of three months, the quarters of the other years and the week block are illustrative: the report states no quarter structure. Only fields the document states are asserted.",
+  "description": "Linde India Limited Annual Report 2022-23, covering the fifteen months from 1 January 2022 to 31 March 2023 between its calendar-year and April-March calendars, expressed with exceptions.history (fiscalclock 0.2.0). The report labels the year 2021 'FY 2021', so the definition has a scheme 'cy' for that form. The scheme 'fy' and its labels are inferred and not asserted: the report's title 'Annual Report 2022-23' (page header) and its cover line 'For 15 months period from 1 January 2022 to 31 March 2023' are separate texts, and no sentence ties '2022-23' to those dates; '2023-24' comes from the heading of a tentative financial calendar. The fifteen-month period and the year after it are therefore reached by date. year_number 'start' is consistent with the report ('end' and 'majority' also give 2021 for the calendar year 2021). The transition's five quarters of three months, the quarters of the other years and the week block are illustrative: the report states no quarter structure. Only fields the document states are asserted.",
   "source": {
     "kind": "cited",
-    "citation": "\"The Board of Directors had at its meeting held on 14 November 2022, approved the change in Financial Year of the Company from existing “1 January to 31 December” to “1 April to 31 March” in order to avoid preparation of two sets of Audited Financial Statements - one as per the Calendar Year (Accounting Year) and the other as per the Financial Year (April - March) for Income Tax purposes, which was requiring a lot of management time and substantial efforts, at various levels every year. The Regional Director – Eastern Region, Ministry of Corporate Affairs had vide its Order dated 29 March 2023, approved the Company’s application for change in its Financial Year from Calendar Year (January – December) to uniform Financial Year (April – March). Consequently, the current Financial Year of the Company comprised of 15 months period from 1 January 2022 to 31 March 2023 and thereafter from 1 April every year to 31 March of the subsequent year.\" (Directors' Report, p. 14) \"Annual Report 2022-23\" (page header, p. 1, repeated on every page) \"the previous financial year ended 31 December 2021 (FY 2021)\" (p. 13) \"Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021\" (p. 84) \"Financial Calendar 2023-24 (tentative and subject to change)\" and \"i. Financial Year April 2023 to March 2024\" (General Shareholder Information, p. 73). Establishes the bounds of the fifteen-month period and its label 2022-23 (the report's title), the calendar year 2021 before it and its label FY 2021, and the 1 April year after it with its label 2023-24 (from a tentative calendar). The 455-day length is calendar arithmetic on the stated first and last days, not a figure the filing prints.",
+    "citation": "\"The Board of Directors had at its meeting held on 14 November 2022, approved the change in Financial Year of the Company from existing “1 January to 31 December” to “1 April to 31 March” in order to avoid preparation of two sets of Audited Financial Statements - one as per the Calendar Year (Accounting Year) and the other as per the Financial Year (April - March) for Income Tax purposes, which was requiring a lot of management time and substantial efforts, at various levels every year. The Regional Director – Eastern Region, Ministry of Corporate Affairs had vide its Order dated 29 March 2023, approved the Company’s application for change in its Financial Year from Calendar Year (January – December) to uniform Financial Year (April – March). Consequently, the current Financial Year of the Company comprised of 15 months period from 1 January 2022 to 31 March 2023 and thereafter from 1 April every year to 31 March of the subsequent year.\" (Directors' Report, p. 14) \"the previous financial year ended 31 December 2021 (FY 2021)\" (p. 13) \"Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021\" (p. 84). Establishes the bounds of the fifteen-month period, the calendar year 2021 before it and its label FY 2021, and that the year after it runs from 1 April 2023 to 31 March 2024 (the first year of the stated 1 April to 31 March rule). The 455-day length is calendar arithmetic on the stated first and last days, not a figure the filing prints.",
     "url": "https://assets.linde.com/-/media/global/apac/linde-india-limited/cp/linde-india_annual-report-2022-23_tcm526-678037.pdf",
     "checked_by": "Each quote found on its stated PDF page in the text pdftotext -enc UTF-8 extracted (with and without -layout, whitespace collapsed) by research/filers/check_quotes.py on 2026-11-03; see research/filers/"
   },
@@ -97,52 +97,40 @@
       }
     },
     {
-      "op": "period",
+      "op": "locate",
       "args": {
-        "level": "year",
-        "year": 2022
+        "date": "2022-01-01"
       },
       "expect_subset": {
-        "start": "2022-01-01",
-        "last_day": "2023-03-31",
-        "days": 455
-      }
-    },
-    {
-      "op": "format",
-      "args": {
-        "period": {
-          "level": "year",
-          "year": 2022,
-          "index": null
+        "year": {
+          "start": "2022-01-01",
+          "last_day": "2023-03-31",
+          "days": 455
         }
-      },
-      "expect": {
-        "label": "2022-23",
-        "scheme": "fy"
       }
     },
     {
-      "op": "parse",
+      "op": "locate",
       "args": {
-        "label": "2022-23"
+        "date": "2023-03-31"
       },
       "expect_subset": {
-        "level": "year",
-        "year": 2022,
-        "start": "2022-01-01",
-        "last_day": "2023-03-31"
+        "year": {
+          "start": "2022-01-01",
+          "last_day": "2023-03-31"
+        }
       }
     },
     {
-      "op": "period",
+      "op": "locate",
       "args": {
-        "level": "year",
-        "year": 2021
+        "date": "2021-12-31"
       },
       "expect_subset": {
-        "start": "2021-01-01",
-        "last_day": "2021-12-31"
+        "year": {
+          "start": "2021-01-01",
+          "last_day": "2021-12-31"
+        }
       }
     },
     {
@@ -161,28 +149,26 @@
       }
     },
     {
-      "op": "period",
+      "op": "parse",
       "args": {
-        "level": "year",
-        "year": 2023
+        "label": "FY 2021"
       },
       "expect_subset": {
-        "start": "2023-04-01",
-        "last_day": "2024-03-31"
+        "level": "year",
+        "start": "2021-01-01",
+        "last_day": "2021-12-31"
       }
     },
     {
-      "op": "format",
+      "op": "locate",
       "args": {
-        "period": {
-          "level": "year",
-          "year": 2023,
-          "index": null
-        }
+        "date": "2023-04-01"
       },
-      "expect": {
-        "label": "2023-24",
-        "scheme": "fy"
+      "expect_subset": {
+        "year": {
+          "start": "2023-04-01",
+          "last_day": "2024-03-31"
+        }
       }
     }
   ]

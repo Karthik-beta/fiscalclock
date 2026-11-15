@@ -610,9 +610,13 @@ class Calendar:
         return re.compile("".join(out))
 
     def parse(self, label: str) -> dict:
+        """api-v1.md, parse. With no candidate, the label is OUT_OF_RANGE only when some whole-label match names a
+        number outside the scheme's first..last supported numbers and no match names one inside (a skipped number is inside)."""
         found = []
+        matched_inside = matched_outside = False
         for name in sorted(self.schemes):
             sc = self.schemes[name]
+            lowest, highest = self.scheme_number(0, name), self.scheme_number(self.last_key(), name)
             for level in LEVELS:
                 template = sc["templates"].get(level)
                 if template is None:
@@ -626,6 +630,10 @@ class Calendar:
                 else:
                     pivot = sc["century_pivot"]
                     number = next(y for y in range(pivot - 99, pivot + 1) if y % 100 == int(g["yy"]))
+                if not lowest <= number <= highest:
+                    matched_outside = True
+                    continue
+                matched_inside = True
                 if "yy" in g and int(g["yy"]) != number % 100:
                     continue
                 if "yy_next" in g and int(g["yy_next"]) != (number + 1) % 100:
@@ -649,7 +657,7 @@ class Calendar:
             merged.setdefault((level, start), (start, name, level, value))
         cands = sorted(merged.values(), key=lambda c: (c[0], c[1]))
         if not cands:
-            raise FiscalError("LABEL_NOT_RECOGNISED", "label")
+            raise FiscalError("OUT_OF_RANGE" if matched_outside and not matched_inside else "LABEL_NOT_RECOGNISED", "label")
         if len(cands) > 1:
             details = {"candidates": [{"period": c[3], "scheme": c[1], "level": c[2]} for c in cands]}
             raise FiscalError("AMBIGUOUS_LABEL", "label", details)

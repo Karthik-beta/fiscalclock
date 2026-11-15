@@ -97,7 +97,8 @@ def exceptions_example_vector() -> dict:
     )
     return vector("definition-exceptions-example", desc,
                   source("spec", "spec/definition-v1.md, exceptions > Example: a change from July to June years to April to March years (fiscalclock 0.2.0)",
-                         "Transcribed from the spec text at commit ee978f1, 2026-11-15; conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"),
+                         "Transcribed from https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#example-a-change-from-july-to-june-years-to-april-to-march-years (the 0.2.0 text), 2026-11-15; "
+                         "conformance/generators/fiscal_oracle.py agrees (asserted by the generator)"),
                   defn, cases)
 
 
@@ -258,8 +259,9 @@ def pg_hygiene_vectors() -> list[dict]:
         "2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) "
         "\"re-appointed M/s. Ashwin Solanki & Associates, as the Cost Auditors of the Company for the financial year 2026-27.\" and "
         "\"to audit the cost records of the Company for the financial year ending March 31, 2027, is being placed for the approval of the shareholders of the Company\" (p. 18). "
-        "Establishes the 1 April start, start-year naming in the form 2025-26, the bounds of 2025-26 and the end of 2026-27. "
-        "The nine-month year 2024-25 needs exceptions.history (fiscalclock 0.2.0) and is asserted in pghh-annual-report-2024-25-transition; see research/filers/pg-hygiene.md."
+        "Establishes the 1 April start, the label form 2025-26 (start-year numbering is consistent with it), the bounds of 2025-26 and the end of 2026-27. "
+        "The nine-month year 2024-25 needs exceptions.history (fiscalclock 0.2.0) and is asserted in pghh-annual-report-2024-25-transition and "
+        "pghh-annual-report-2025-26-transition; see research/filers/pg-hygiene.md."
     )
     july = fixed_date(7, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_next}"})}))
     cal = Calendar(july)
@@ -348,38 +350,73 @@ def year_coords(y: int) -> dict:
     return {"level": "year", "year": y, "index": None}
 
 
-def pg_hygiene_transition_vector() -> dict:
+PGHH_TRANSITION_DESCRIPTION = (
+    "covering the nine-month financial year from 1 July 2024 to 31 March 2025 between its July-June and April-March calendars, expressed with "
+    "exceptions.history (fiscalclock 0.2.0). The transition's three quarters of three months, the quarters of the other years and the week block are "
+    "illustrative: the reports print no quarter or week dates. year_number 'start' is consistent with the report (majority gives the same numbers for "
+    "the years it states). Only fields this report states are asserted."
+)
+
+
+def pg_hygiene_transition_definition() -> dict:
     defn = history_vectors.jul_to_apr_definition()
     defn["naming"]["schemes"]["fy"]["templates"] = {"year": "{yyyy}-{yy_end}"}
+    return defn
+
+
+def pg_hygiene_transition_vectors() -> list[dict]:
+    """One vector per annual report, so that every case is traceable to the document its citation quotes."""
+    defn = pg_hygiene_transition_definition()
     cal = Calendar(defn)
     year = {"level": "year"}
-    cases = [validate_case(defn)] + [agree(cal, c) for c in (
+    cases_2025 = [validate_case(defn)] + [agree(cal, c) for c in (
         {"op": "period", "args": {**year, "year": 2024}, "expect_subset": {"start": "2024-07-01", "last_day": "2025-03-31", "days": 274}},
         {"op": "format", "args": {"period": year_coords(2024)}, "expect": {"label": "2024-25", "scheme": "fy"}},
         {"op": "parse", "args": {"label": "2024-25"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
         {"op": "locate", "args": {"date": "2024-06-30"}, "expect_subset": {"year": {"start": "2023-07-01", "last_day": "2024-06-30"}}},
         {"op": "shift", "args": {"period": year_coords(2024), "n": -1}, "expect_subset": {"start": "2023-07-01", "last_day": "2024-06-30"}},
-        {"op": "shift", "args": {"period": year_coords(2024), "n": 1}, "expect_subset": {"year": 2025, "start": "2025-04-01", "last_day": "2026-03-31"}},
-        {"op": "format", "args": {"period": year_coords(2025)}, "expect": {"label": "2025-26", "scheme": "fy"}},
+        {"op": "shift", "args": {"period": year_coords(2024), "n": 1}, "expect_subset": {"start": "2025-04-01", "last_day": "2026-03-31"}},
     )]
-    citation = (
+    citation_2025 = (
         "\"The Board of Directors of the Company, on January 23, 2025, approved the change in the Financial Year of the Company from “July 1 – June 30” period "
         "to “April 1 – March 31” period. Consequently, the Financial Year of the Company for the period under review, viz., 2024-25, is a period of 9 months "
         "commencing on July 1, 2024, and ending on March 31, 2025. Subsequent financial years of the Company shall commence on April 1 every year and end on "
         "March 31 of the succeeding year.\" (Directors' Report, p. 10) "
         "\"the numbers are not comparable to the previous financial year, which was a twelve months period (July 1, 2023 to June 30, 2024).\" (p. 10) "
-        "Annual Report 2025-26: \"The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on March 31, 2026.\" (p. 9). "
-        "Establishes the bounds and the label 2024-25 of the nine-month transition year, the twelve-month year before it, and the bounds and label of 2025-26, "
-        f"the year after it. The 274-day length {DAYS_NOTE}."
+        "Establishes the bounds and the label 2024-25 of the nine-month transition year, the bounds of the twelve-month year before it, and that the year "
+        "after it runs from 1 April 2025 to 31 March 2026 (the first year of the stated April 1 to March 31 rule). "
+        f"The 274-day length {DAYS_NOTE}. The year before the transition is reached by date and by shift, because its label 2023-24 is inferred; "
+        "the year after it is reached by shift, because this report does not label it."
     )
-    return vector(
-        "pghh-annual-report-2024-25-transition",
-        "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2024-25, covering the nine-month financial year from 1 July 2024 "
-        "to 31 March 2025 between its July-June and April-March calendars, expressed with exceptions.history (fiscalclock 0.2.0). The transition's three quarters "
-        "of three months, the quarters of the other years and the week block are illustrative: the reports print no quarter or week dates. Only fields the "
-        "documents state are asserted; the year before the transition is located by date, because its label 2023-24 is inferred.",
-        source("cited", citation, PDF_QUOTES_CHECKED, PGHH_2025_URL), defn, cases,
+    cases_2026 = [validate_case(defn)] + [agree(cal, c) for c in (
+        {"op": "period", "args": {**year, "year": 2025}, "expect_subset": {"start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "format", "args": {"period": year_coords(2025)}, "expect": {"label": "2025-26", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2025-26"}, "expect_subset": {"level": "year", "year": 2025, "start": "2025-04-01", "last_day": "2026-03-31"}},
+        {"op": "shift", "args": {"period": year_coords(2025), "n": -1}, "expect_subset": {"year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
+        {"op": "format", "args": {"period": year_coords(2024)}, "expect": {"label": "2024-25", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "2024-25"}, "expect_subset": {"level": "year", "year": 2024, "start": "2024-07-01", "last_day": "2025-03-31"}},
+    )]
+    citation_2026 = (
+        "\"The Board of Directors of the Company, on January 23, 2025, had approved the change in Financial Year of the Company from “July 1 – June 30” period "
+        "to “April 1 – March 31” period. The Financial Year of the Company for period under review, viz., 2025-26, commenced on April 1, 2025, and ended on "
+        "March 31, 2026.\" (Directors' Report, p. 9) "
+        "\"*Previous Financial Year 2024-25 was a 9-month period from July 1, 2024, to March 31, 2025, and hence not comparable with current Financial Year "
+        "2025-26 (being 12-month Financial Year from April 1, 2025, to March 31, 2026).\" (p. 9) "
+        "Establishes the bounds and the label 2025-26 of the first April to March year, and the bounds and the label 2024-25 of the nine-month year before it."
     )
+    return [
+        vector(
+            "pghh-annual-report-2024-25-transition",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2024-25, " + PGHH_TRANSITION_DESCRIPTION,
+            source("cited", citation_2025, PDF_QUOTES_CHECKED, PGHH_2025_URL), defn, cases_2025,
+        ),
+        vector(
+            "pghh-annual-report-2025-26-transition",
+            "Procter & Gamble Hygiene and Health Care Limited (stock-exchange symbol PGHH) Annual Report 2025-26, the first report after the change, on the same "
+            "definition as pghh-annual-report-2024-25-transition, " + PGHH_TRANSITION_DESCRIPTION,
+            source("cited", citation_2026, PDF_QUOTES_CHECKED, PGHH_2026_URL), defn, cases_2026,
+        ),
+    ]
 
 
 def siemens_india_transition_vector() -> dict:
@@ -432,15 +469,13 @@ def linde_india_transition_vector() -> dict:
     base = fixed_date(1, 1, "monday", naming({"fy": scheme("start", {"year": "{yyyy}-{yy_end}"}), "cy": scheme("start", {"year": "FY {yyyy}"})}, default="fy"))
     defn = history_vectors.with_history(base, history_vectors.entry("2023-04-01", *history_vectors.fixed_rule(4, 1), start="2022-01-01", transition_sub=history_vectors.months(1, [3] * 5)))
     cal = Calendar(defn)
-    year = {"level": "year"}
     cases = [validate_case(defn)] + [agree(cal, c) for c in (
-        {"op": "period", "args": {**year, "year": 2022}, "expect_subset": {"start": "2022-01-01", "last_day": "2023-03-31", "days": 455}},
-        {"op": "format", "args": {"period": year_coords(2022)}, "expect": {"label": "2022-23", "scheme": "fy"}},
-        {"op": "parse", "args": {"label": "2022-23"}, "expect_subset": {"level": "year", "year": 2022, "start": "2022-01-01", "last_day": "2023-03-31"}},
-        {"op": "period", "args": {**year, "year": 2021}, "expect_subset": {"start": "2021-01-01", "last_day": "2021-12-31"}},
+        {"op": "locate", "args": {"date": "2022-01-01"}, "expect_subset": {"year": {"start": "2022-01-01", "last_day": "2023-03-31", "days": 455}}},
+        {"op": "locate", "args": {"date": "2023-03-31"}, "expect_subset": {"year": {"start": "2022-01-01", "last_day": "2023-03-31"}}},
+        {"op": "locate", "args": {"date": "2021-12-31"}, "expect_subset": {"year": {"start": "2021-01-01", "last_day": "2021-12-31"}}},
         {"op": "format", "args": {"period": year_coords(2021), "scheme": "cy"}, "expect": {"label": "FY 2021", "scheme": "cy"}},
-        {"op": "period", "args": {**year, "year": 2023}, "expect_subset": {"start": "2023-04-01", "last_day": "2024-03-31"}},
-        {"op": "format", "args": {"period": year_coords(2023)}, "expect": {"label": "2023-24", "scheme": "fy"}},
+        {"op": "parse", "args": {"label": "FY 2021"}, "expect_subset": {"level": "year", "start": "2021-01-01", "last_day": "2021-12-31"}},
+        {"op": "locate", "args": {"date": "2023-04-01"}, "expect_subset": {"year": {"start": "2023-04-01", "last_day": "2024-03-31"}}},
     )]
     citation = (
         "\"The Board of Directors had at its meeting held on 14 November 2022, approved the change in Financial Year of the Company from existing “1 January to "
@@ -450,20 +485,21 @@ def linde_india_transition_vector() -> dict:
         "approved the Company’s application for change in its Financial Year from Calendar Year (January – December) to uniform Financial Year (April – March). "
         "Consequently, the current Financial Year of the Company comprised of 15 months period from 1 January 2022 to 31 March 2023 and thereafter from 1 April "
         "every year to 31 March of the subsequent year.\" (Directors' Report, p. 14) "
-        "\"Annual Report 2022-23\" (page header, p. 1, repeated on every page) "
         "\"the previous financial year ended 31 December 2021 (FY 2021)\" (p. 13) "
-        "\"Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021\" (p. 84) "
-        "\"Financial Calendar 2023-24 (tentative and subject to change)\" and \"i. Financial Year April 2023 to March 2024\" (General Shareholder Information, p. 73). "
-        "Establishes the bounds of the fifteen-month period and its label 2022-23 (the report's title), the calendar year 2021 before it and its label FY 2021, "
-        "and the 1 April year after it with its label 2023-24 (from a tentative calendar). "
+        "\"Balance as at 1 January 2021 Changes in equity share capital during the year Balance as at 31 Dec 2021\" (p. 84). "
+        "Establishes the bounds of the fifteen-month period, the calendar year 2021 before it and its label FY 2021, and that the year after it runs from "
+        "1 April 2023 to 31 March 2024 (the first year of the stated 1 April to 31 March rule). "
         f"The 455-day length {DAYS_NOTE}."
     )
     return vector(
         "linde-india-annual-report-2022-23-transition",
         "Linde India Limited Annual Report 2022-23, covering the fifteen months from 1 January 2022 to 31 March 2023 between its calendar-year and April-March "
-        "calendars, expressed with exceptions.history (fiscalclock 0.2.0). The report labels the years in two forms ('FY 2021' and '2022-23'), so the "
-        "definition has two schemes. The transition's five quarters of three months, the quarters of the other years and the week block are illustrative: "
-        "the report states no quarter structure. Only fields the document states are asserted.",
+        "calendars, expressed with exceptions.history (fiscalclock 0.2.0). The report labels the year 2021 'FY 2021', so the definition has a scheme 'cy' for "
+        "that form. The scheme 'fy' and its labels are inferred and not asserted: the report's title 'Annual Report 2022-23' (page header) and its cover line "
+        "'For 15 months period from 1 January 2022 to 31 March 2023' are separate texts, and no sentence ties '2022-23' to those dates; '2023-24' comes from "
+        "the heading of a tentative financial calendar. The fifteen-month period and the year after it are therefore reached by date. year_number 'start' is "
+        "consistent with the report ('end' and 'majority' also give 2021 for the calendar year 2021). The transition's five quarters of three months, the "
+        "quarters of the other years and the week block are illustrative: the report states no quarter structure. Only fields the document states are asserted.",
         source("cited", citation, PDF_QUOTES_CHECKED, LINDE_URL), defn, cases,
     )
 
@@ -530,7 +566,7 @@ def cited_vectors() -> list[dict]:
     return [
         reliance_vector(),
         *pg_hygiene_vectors(),
-        pg_hygiene_transition_vector(),
+        *pg_hygiene_transition_vectors(),
         *siemens_india_vectors(),
         siemens_india_transition_vector(),
         linde_india_transition_vector(),
