@@ -612,12 +612,12 @@ fn explain_has_one_step_per_level() {
             assert!(!step[key].as_str().unwrap().is_empty(), "{step}");
         }
     }
-    let text = out.to_string();
+    // The wording is not API; the year step names the year's dates.
+    let year = steps[0]["result"].as_str().unwrap();
     assert!(
-        text.contains("Saturday nearest the last day of January"),
-        "{text}"
+        year.contains("2023-01-29") && year.contains("2024-02-03"),
+        "{year}"
     );
-    assert!(text.contains("2023-01-29 to 2024-02-03"), "{text}");
 }
 
 #[test]
@@ -689,7 +689,8 @@ fn duplicate_keys_are_rejected_not_resolved() {
 
 // ---- Calendars whose rule changes (0.2.0) ----
 
-fn ok(def: &Value, op: &str, args: Value) -> Value {
+/// The JSON result of a call that must succeed.
+fn call_ok(def: &Value, op: &str, args: Value) -> Value {
     let out: Value = serde_json::from_str(&call(def, op, args.clone())).unwrap();
     assert!(out.get("errors").is_none(), "{op} {args}: {out}");
     out
@@ -710,7 +711,7 @@ fn shifted(
     index: Option<u32>,
     n: i64,
 ) -> (i64, Option<i64>, String) {
-    coords(&ok(
+    coords(&call_ok(
         def,
         "shift",
         json!({"period": {"level": level, "year": year, "index": index}, "n": n}),
@@ -751,28 +752,31 @@ fn shift_walks_the_sequence_of_years_across_a_change_and_a_skipped_number() {
     // Weeks start on Monday. FY 2023-24's last week is Monday 30 September
     // 2024 alone; the transition's first week runs Tuesday 1 to Sunday 6
     // October 2024.
-    let last = ok(&s, "locate", json!({"date": "2024-09-30"}))["week"].clone();
-    let first = ok(&s, "locate", json!({"date": "2024-10-01"}))["week"].clone();
+    let last = call_ok(&s, "locate", json!({"date": "2024-09-30"}))["week"].clone();
+    let first = call_ok(&s, "locate", json!({"date": "2024-10-01"}))["week"].clone();
     assert_eq!(
         (last["days"].as_i64(), first["days"].as_i64()),
         (Some(1), Some(6))
     );
-    assert_eq!(ok(&s, "shift", json!({"period": last, "n": 1})), first);
-    assert_eq!(ok(&s, "shift", json!({"period": first, "n": -1})), last);
+    assert_eq!(call_ok(&s, "shift", json!({"period": last, "n": 1})), first);
+    assert_eq!(
+        call_ok(&s, "shift", json!({"period": first, "n": -1})),
+        last
+    );
 }
 
 #[test]
 fn shift_there_and_back_returns_the_same_period() {
     for (name, def) in changes::all() {
         for (level, index) in [("quarter", 1), ("period", 2), ("week", 3)] {
-            let start = ok(
+            let start = call_ok(
                 &def,
                 "period",
                 json!({"level": level, "year": 2020, "index": index}),
             );
             for n in [1i64, 7, 13, 40, 53, 120, 600] {
-                let there = ok(&def, "shift", json!({"period": start, "n": n}));
-                let back = ok(&def, "shift", json!({"period": there, "n": -n}));
+                let there = call_ok(&def, "shift", json!({"period": start, "n": n}));
+                let back = call_ok(&def, "shift", json!({"period": there, "n": -n}));
                 assert_eq!(back, start, "{name} {level} {n}");
             }
         }
@@ -854,7 +858,7 @@ fn a_skipped_year_number_is_not_found_but_not_out_of_range() {
         );
     }
     let numbers = |from: i32, to: i32| -> Vec<i64> {
-        ok(&s, "years", json!({"from": from, "to": to}))
+        call_ok(&s, "years", json!({"from": from, "to": to}))
             .as_array()
             .unwrap()
             .iter()
@@ -892,9 +896,9 @@ fn a_skipped_year_number_is_not_found_but_not_out_of_range() {
 #[test]
 fn parse_checks_yy_end_and_skips_skipped_numbers() {
     let s = changes::siemens();
-    let p = ok(&s, "parse", json!({"label": "FY 2024-26"}));
+    let p = call_ok(&s, "parse", json!({"label": "FY 2024-26"}));
     assert_eq!(coords(&p), (2024, None, "2024-10-01".into()));
-    let q = ok(&s, "parse", json!({"label": "Q6 FY 2024-26"}));
+    let q = call_ok(&s, "parse", json!({"label": "Q6 FY 2024-26"}));
     assert_eq!(coords(&q), (2024, Some(6), "2026-01-01".into()));
     for label in ["FY 2024-25", "FY 2025-26", "Q1 FY 2025-26", "Q5 FY 2023-24"] {
         assert_err(
@@ -941,7 +945,7 @@ fn parse_is_out_of_range_only_when_no_match_is_in_range() {
         ),
         json!({"year": "FY{yyyy}"}),
     );
-    let parsed = |label: &str| coords(&ok(&s, "parse", json!({"label": label})));
+    let parsed = |label: &str| coords(&call_ok(&s, "parse", json!({"label": label})));
     assert_eq!(parsed("FY2024"), (2024, None, "2024-10-01".into()));
     assert_eq!(parsed("FY2026"), (2026, None, "2026-04-01".into()));
     // A skipped number is in range, so the out-of-range match under `b` does
@@ -976,7 +980,7 @@ fn parse_is_out_of_range_only_when_no_match_is_in_range() {
         "label",
     );
     assert_eq!(
-        coords(&ok(&plain, "parse", json!({"label": "Q4 FY2025"}))),
+        coords(&call_ok(&plain, "parse", json!({"label": "Q4 FY2025"}))),
         (2025, Some(4), "2026-01-01".into())
     );
 }
@@ -987,13 +991,13 @@ fn index_100_or_more_is_written_in_full_and_not_parsed() {
     let mut def = changes::fixed(1, "start", "FY{yyyy}");
     def["exceptions"] =
         json!({"history": [changes::entry("2010-04-01", 4, Some(("2000-01-01", &[3; 41])))]});
-    let p = ok(
+    let p = call_ok(
         &def,
         "period",
         json!({"level": "period", "year": 2000, "index": 105}),
     );
     assert_eq!(p["start"], "2008-09-01");
-    let label = ok(&def, "format", json!({"period": p}));
+    let label = call_ok(&def, "format", json!({"period": p}));
     assert_eq!(label["label"], "P105 FY2000");
     assert_err(
         &def,
@@ -1003,7 +1007,7 @@ fn index_100_or_more_is_written_in_full_and_not_parsed() {
         "label",
     );
     assert_eq!(
-        ok(&def, "parse", json!({"label": "P99 FY2000"}))["index"],
+        call_ok(&def, "parse", json!({"label": "P99 FY2000"}))["index"],
         99
     );
 }
