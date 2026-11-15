@@ -8,6 +8,12 @@
 
 use std::collections::HashMap;
 
+// Not every test target uses calendars that change.
+#[allow(dead_code)]
+pub mod cases;
+#[allow(dead_code)]
+pub mod history;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Civil {
     pub y: i32,
@@ -98,8 +104,15 @@ impl Walk {
         let at = days.iter().enumerate().map(|(i, &c)| (c, i)).collect();
         Walk { days, weekday, at }
     }
+
+    /// The `i`-th walked day.
+    #[allow(dead_code)]
+    pub fn day(&self, i: usize) -> Civil {
+        self.days[i]
+    }
 }
 
+#[derive(Clone, Debug)]
 pub enum Shape {
     Week {
         starts_on: &'static str,
@@ -343,9 +356,57 @@ fn years_of(
     shape: &Shape,
     numbering: Numbering,
 ) -> Result<(Vec<(usize, i32)>, Vec<bool>), Refused> {
-    let n = walk.days.len();
+    let (firsts, is_period_start) = rule_starts(walk, shape);
     // Each fiscal year as (index of its first day, year number), in order.
-    let mut years: Vec<(usize, i32)> = Vec::new();
+    let mut years: Vec<(usize, i32)> = firsts.into_iter().map(|i| (i, 0)).collect();
+
+    // Number each year by counting its days per calendar year. Any even split
+    // is reported before checking that consecutive years get consecutive numbers.
+    if numbering == "majority" {
+        for w in years.windows(2) {
+            let mut held: HashMap<i32, usize> = HashMap::new();
+            for c in &walk.days[w[0].0..w[1].0] {
+                *held.entry(c.y).or_default() += 1;
+            }
+            if held.values().any(|&c| c * 2 == w[1].0 - w[0].0) {
+                return Err(Refused::Tie);
+            }
+        }
+    }
+    for i in 0..years.len() - 1 {
+        let (first, next_first) = (years[i].0, years[i + 1].0);
+        let mut held: Vec<(i32, usize)> = Vec::new();
+        for c in &walk.days[first..next_first] {
+            match held.last_mut() {
+                Some((y, count)) if *y == c.y => *count += 1,
+                _ => held.push((c.y, 1)),
+            }
+        }
+        let total = next_first - first;
+        years[i].1 = match numbering {
+            "start" => walk.days[first].y,
+            "end" => walk.days[next_first - 1].y,
+            _ => {
+                if held.iter().any(|&(_, c)| c * 2 == total) {
+                    return Err(Refused::Tie);
+                }
+                held.iter().find(|&&(_, c)| c * 2 > total).unwrap().0
+            }
+        };
+        if i > 0 && years[i].1 != years[i - 1].1 + 1 {
+            return Err(Refused::Collision);
+        }
+    }
+    years.pop();
+    Ok((years, is_period_start))
+}
+
+/// The index of the first day of every fiscal year that `shape`'s rule opens
+/// in the years 1892 to 2209, in order, and which days start a fiscal month
+/// under a `fixed_date` rule (none under a week-based rule).
+pub fn rule_starts(walk: &Walk, shape: &Shape) -> (Vec<usize>, Vec<bool>) {
+    let n = walk.days.len();
+    let mut firsts: Vec<usize> = Vec::new();
     let mut is_period_start = vec![false; n];
     let starts_on = match shape {
         Shape::Week { starts_on, .. } | Shape::Fixed { starts_on, .. } => *starts_on,
@@ -387,7 +448,7 @@ fn years_of(
                 } else {
                     boundary(y)
                 };
-                years.push((first, 0));
+                firsts.push(first);
             }
         }
         Shape::Fixed {
@@ -415,48 +476,9 @@ fn years_of(
                         yy += 1;
                     }
                 }
-                years.push((month_start(y, *month), 0));
+                firsts.push(month_start(y, *month));
             }
         }
     }
-
-    // Number each year by counting its days per calendar year. Any even split
-    // is reported before checking that consecutive years get consecutive numbers.
-    if numbering == "majority" {
-        for w in years.windows(2) {
-            let mut held: HashMap<i32, usize> = HashMap::new();
-            for j in w[0].0..w[1].0 {
-                *held.entry(walk.days[j].y).or_default() += 1;
-            }
-            if held.values().any(|&c| c * 2 == w[1].0 - w[0].0) {
-                return Err(Refused::Tie);
-            }
-        }
-    }
-    for i in 0..years.len() - 1 {
-        let (first, next_first) = (years[i].0, years[i + 1].0);
-        let mut held: Vec<(i32, usize)> = Vec::new();
-        for j in first..next_first {
-            match held.last_mut() {
-                Some((y, count)) if *y == walk.days[j].y => *count += 1,
-                _ => held.push((walk.days[j].y, 1)),
-            }
-        }
-        let total = next_first - first;
-        years[i].1 = match numbering {
-            "start" => walk.days[first].y,
-            "end" => walk.days[next_first - 1].y,
-            _ => {
-                if held.iter().any(|&(_, c)| c * 2 == total) {
-                    return Err(Refused::Tie);
-                }
-                held.iter().find(|&&(_, c)| c * 2 > total).unwrap().0
-            }
-        };
-        if i > 0 && years[i].1 != years[i - 1].1 + 1 {
-            return Err(Refused::Collision);
-        }
-    }
-    years.pop();
-    Ok((years, is_period_start))
+    (firsts, is_period_start)
 }
