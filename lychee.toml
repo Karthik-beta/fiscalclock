@@ -14,6 +14,9 @@ exclude = [
   # sec.gov refuses requests without a contact email in the User-Agent, and
   # packages.ecosyste.ms answers link checkers with 402; both pages exist.
   '^https://(www\.)?sec\.gov/',
+  # Vishay's investor-relations site answers automated requests with 403
+  # (21 Nov 2026), though its filings open in a browser.
+  '^https://ir\.vishay\.com/',
   '^https://packages\.ecosyste\.ms/',
   # Canva answers GitHub Actions runners with 403 (the links job on pull
   # request 71, 4 Nov 2026), though the same page opens from a desktop.

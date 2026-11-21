@@ -4,7 +4,7 @@
 
 Each page here records, in the company's own words, how one public company defines its fiscal calendar, so that a cited conformance vector can be traced back to its source.
 
-Last reviewed: 15 Nov 2026
+Last reviewed: 21 Nov 2026
 
 ## Rules for these pages
 
@@ -35,7 +35,7 @@ Indian listed companies come first. Most report on a year from 1 April to 31 Mar
 | --- | --- | --- | --- | --- |
 | [Kroger](kroger.md) | 2019 Proxy Statement and 2018 Annual Report (fiscal year ended 2 February 2019) | 52/53 weeks ending on the Saturday nearest 31 January | Quoted | `conformance/vectors/cited/kroger-annual-report-2018.json` |
 | [Costco](costco.md) | 2017 Annual Report (fiscal year ended 3 September 2017) | 52/53 weeks ending on the Sunday nearest 31 August | Quoted | `conformance/vectors/cited/costco-annual-report-2017.json` |
-| [Vishay](vishay.md) | Annual report or Form 10-K | 13-week quarters inside a calendar year | Not retrieved | None; spec version 1 cannot express the calendar |
+| [Vishay](vishay.md) | Forms 10-Q for the quarters ended 29 March 2025 and 3 October 2026 | Fixed 1 January to 31 December year; 13-week quarters, with partial weeks in the first and fourth quarters | Quoted | None yet; needs `stub` (0.3) |
 
 ## How the quotes were checked
 
