@@ -8,6 +8,6 @@ edition = "2024"
 publish = false
 
 [dependencies]
-fiscalclock = "=0.1.0"
+fiscalclock = "=0.2.0"
 
 [workspace]
