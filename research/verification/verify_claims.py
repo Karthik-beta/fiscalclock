@@ -235,6 +235,32 @@ def check_care_com() -> None:
     )
 
 
+def check_vishay() -> None:
+    # Quarter ends that Vishay's own 10-Qs list (research/filers/vishay.md); Saturday is weekday 5.
+    reported = {
+        2024: [date(2024, 3, 30), date(2024, 6, 29), date(2024, 9, 28), date(2024, 12, 31)],
+        2025: [date(2025, 3, 29), date(2025, 6, 28), date(2025, 9, 27), date(2025, 12, 31)],
+        2026: [date(2026, 4, 4), date(2026, 7, 4), date(2026, 10, 3), date(2026, 12, 31)],
+    }
+    april_1 = {y: weekday_nearest(date(y, 4, 1), 5) for y in reported}
+    march_31 = {y: weekday_nearest(date(y, 3, 31), 5) for y in reported}
+    ok = all(
+        q[0] == april_1[y] and q[1] == q[0] + timedelta(weeks=13) and q[2] == q[1] + timedelta(weeks=13)
+        for y, q in reported.items()
+    )
+    check(
+        "C20 Vishay Q1 ends 2024-2026 are the Saturday nearest 1 April, Q2 and Q3 are 13 weeks",
+        ok,
+        f"Saturday nearest 1 April: {[str(d) for d in april_1.values()]}",
+    )
+    misses = [y for y, q in reported.items() if q[0] != march_31[y]]
+    check(
+        "C21 Vishay: 'Saturday nearest 31 March' misses a reported Q1 end",
+        misses == [2026] and march_31[2026] == date(2026, 3, 28),
+        f"misses {misses}; 2026 gives {march_31[2026]} against reported 2026-04-04",
+    )
+
+
 def check_python_overflow() -> None:
     try:
         date(9999, 12, 31) + timedelta(days=1)
@@ -253,6 +279,7 @@ def main() -> int:
     check_broadcast()
     check_iso()
     check_care_com()
+    check_vishay()
     check_python_overflow()
     for claim_id, ok, detail in results:
         print(f"[{'PASS' if ok else 'FAIL'}] {claim_id}: {detail}")

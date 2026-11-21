@@ -42,6 +42,8 @@ A change to `expected_output.txt` needs a linked issue that explains why the res
 | C17 | Informational: the C16 result depends on reading "closest and prior to December 31" as "on or before 31 December", and on the window | Wiki Evidence (caveat) |
 | C18 | `date(9999, 12, 31) + timedelta(days=1)` raises `OverflowError` | Proposal: Edge cases (supported range) |
 | C19 | The NRF rule gives exactly the 53-week years NRF publishes for 2006–2023 (2006, 2012, 2017 and 2023); NRF's page lists none after FY23, so 2028 (C03) is the rule's prediction only | Conformance vector `cited/nrf-53-week-years.json`; wiki Evidence |
+| C20 | Vishay's reported first-quarter ends for 2024–2026 are the Saturday nearest 1 April, and its second and third quarters are 13 weeks each | `research/filers/vishay.md`; ADR-0024 |
+| C21 | "Saturday nearest 31 March", the research documents' anchor for Vishay, gives 28 March 2026, not the reported 4 April 2026 | `research/filers/vishay.md`; wiki Evidence |
 
 ## Relationship to the conformance vectors
 

@@ -556,6 +556,17 @@ fn join(path: &str, key: &str) -> String {
 
 const PLANNED: &str = "planned for fiscalclock 0.3";
 
+/// The hint for a reserved field or value: its planned release, or none for
+/// the parts that ADRs 0035, 0036 and 0038 leave unscheduled.
+fn planned(name: &str) -> &'static str {
+    match name {
+        "standalone" | "by_year" | "first_full" | "overrides" => {
+            "not scheduled for any release; see the reserved table in spec/definition-v1.md"
+        }
+        _ => PLANNED,
+    }
+}
+
 /// The first and last dates allowed in `exceptions`.
 ///
 /// They do not make every regime reach the supported range. A change near
@@ -1497,7 +1508,7 @@ impl Validator {
                         p.clone(),
                         format!("{p} is reserved and not supported in fiscalclock 0.2"),
                     )
-                    .hint(PLANNED),
+                    .hint(planned(key)),
                 );
             } else {
                 self.push(
@@ -1633,7 +1644,7 @@ impl Validator {
                     path,
                     format!("{path} \"{s}\" is reserved and not supported in fiscalclock 0.2"),
                 )
-                .hint(PLANNED),
+                .hint(planned(s)),
             );
             return None;
         }

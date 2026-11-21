@@ -240,6 +240,14 @@ fn unsupported_feature_for_every_reserved_part() {
         .unwrap_err()
         .into_vec()[0];
     assert!(e.hint.as_deref().unwrap().contains("0.3"));
+
+    // ADR-0036 leaves first_full unscheduled; the hint for a reserved value says so.
+    let mut d = nrf();
+    d["week"]["numbering"] = json!("first_full");
+    let e = &Definition::from_json(&d.to_string())
+        .unwrap_err()
+        .into_vec()[0];
+    assert!(e.hint.as_deref().unwrap().starts_with("not scheduled"));
 }
 
 #[test]
@@ -723,7 +731,7 @@ fn reserved_overrides_is_unsupported_even_when_null() {
     let e = &Definition::from_json(&d.to_string())
         .unwrap_err()
         .into_vec()[0];
-    assert!(e.hint.as_deref().unwrap().contains("0.3"));
+    assert!(e.hint.as_deref().unwrap().starts_with("not scheduled"));
 }
 
 #[test]

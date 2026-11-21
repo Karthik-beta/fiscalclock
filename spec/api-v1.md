@@ -184,7 +184,7 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 | `INVALID_TYPE` | validate | A field has the wrong JSON type. |
 | `INVALID_VALUE` | validate | A value is outside its allowed set or range. |
 | `UNSUPPORTED_SPEC_VERSION` | validate | `spec_version` is not 1. |
-| `UNSUPPORTED_FEATURE` | validate | A reserved part of the format is used; the hint names the planned release. |
+| `UNSUPPORTED_FEATURE` | validate | A reserved part of the format is used; the hint names the planned release, or says that none is scheduled. |
 | `UNSUPPORTED_COMBINATION` | validate | A subdivision type is not valid inside the year type. |
 | `WEEKS_SUM_MISMATCH` | validate | `periods` does not sum to 52, or a `week_pattern` transition's `periods` does not sum to the transition's number of weeks. |
 | `QUARTERS_SUM_MISMATCH` | validate | `quarters` does not sum to the number of periods, which for a `calendar_months` transition is its number of months. |

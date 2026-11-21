@@ -347,17 +347,17 @@ The canonical form is the definition after parsing, serialised as JSON with:
 
 ## Reserved for later releases
 
-These parts of the format are designed in the [research proposal](https://github.com/Karthik-beta/fiscalclock/wiki/Definition-Format) but not implemented in 0.2.0. Each is rejected with `UNSUPPORTED_FEATURE` and a hint naming the planned release, exactly as in 0.1.0; [ADR-0031](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0031-themed-releases) moved them from 0.2 to 0.3. The wording of a hint is not part of the API. A reserved field or value inside a history entry or a transition is rejected in the same way, at the prefixed path, for example `exceptions.history[0].subdivision.stub`.
+These parts of the format are designed in the [research proposal](https://github.com/Karthik-beta/fiscalclock/wiki/Definition-Format) but not implemented in 0.2.0. Each is rejected with `UNSUPPORTED_FEATURE` and a hint naming the planned release, or saying that none is scheduled, as in 0.1.0; [ADR-0031](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0031-themed-releases) moved them from 0.2 to 0.3, and ADRs 0035, 0036 and 0038 left four of them unscheduled because no cited calendar needs them. The wording of a hint is not part of the API. A reserved field or value inside a history entry or a transition is rejected in the same way, at the prefixed path, for example `exceptions.history[0].subdivision.stub`.
 
 | Field or value | Planned |
 | --- | --- |
 | `year.type: "table"` | 0.3 |
-| `subdivision.type: "anchored"` | 0.3 |
-| `subdivision.stub` | 0.3, after ADR-0024 |
-| `subdivision.special_periods` | 0.3 |
-| `extra_week.standalone`, `extra_week.by_year` | 0.3 |
-| `week.numbering: "first_full"` | 0.3 |
-| `naming.schemes.*.year_number: "table"`, `eras` | 0.3 |
-| `exceptions.overrides` | 0.3 |
+| `subdivision.type: "anchored"` | 0.3, as decided in [ADR-0033](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0033-anchored-subdivision-and-rule-conflict) |
+| `subdivision.stub` | 0.3, as decided in [ADR-0024](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0024-stub-semantics) |
+| `subdivision.special_periods` | 0.3, as decided in [ADR-0034](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0034-special-periods) |
+| `extra_week.standalone`, `extra_week.by_year` | Not scheduled ([ADR-0035](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0035-extra-week-standalone-and-by-year)) |
+| `week.numbering: "first_full"` | Not scheduled ([ADR-0036](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0036-first-full-week-numbering-deferred)) |
+| `naming.schemes.*.year_number: "table"`, `eras` | 0.3, as decided in [ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries) and [ADR-0037](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0037-eras-and-templates-ambiguous) |
+| `exceptions.overrides` | Not scheduled ([ADR-0038](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0038-exceptions-overrides-deferred)) |
 
 `exceptions.history`, with its transitions, is implemented in 0.2.0 and described in [`exceptions`](#exceptions). There is no separate `exceptions.transitions` field: a transition belongs to the history entry it leads into, and `exceptions.transitions` is `UNKNOWN_FIELD`.

@@ -1,12 +1,16 @@
 {
-  "last_reviewed": "2026-11-04",
+  "last_reviewed": "2026-11-21",
   "cspell_ignore": [
     "Sakura",
     "Akaunting",
     "CPAN",
     "metacpan",
     "NAPI",
-    "Hijri"
+    "Hijri",
+    "MHLW",
+    "MLIT",
+    "Heisei",
+    "Edogawa"
   ],
   "topics": [
     {
@@ -176,31 +180,34 @@
       "id": "E010",
       "topic": "sec",
       "claim": "Vishay: 13-week periods, except Q1 always begins on 1 January and Q4 always ends on 31 December",
-      "source_label": "Vishay 10-Q (2024)",
-      "source_url": "https://sec.gov/Archives/edgar/data/103730/000010373024000102/vishayintertech_10q.htm",
-      "quote": "13-week periods beginning on a Sunday and ending on a Saturday, except for the first fiscal quarter, which always begins on January 1, and the fourth fiscal quarter, which always ends on December 31",
-      "evidence": "\"13-week periods beginning on a Sunday and ending on a Saturday, except for the first fiscal quarter, which always begins on January 1, and the fourth fiscal quarter, which always ends on December 31\"",
+      "source_label": "Vishay 10-Q for the quarter ended 3 October 2026",
+      "source_url": "https://ir.vishay.com/node/21866/html",
+      "quote": "The Company reports interim financial information for 13-week periods beginning on a Sunday and ending on a Saturday, except for the first fiscal quarter, which always begins on January 1, and the fourth fiscal quarter, which always ends on December 31.",
+      "evidence": "\"The Company reports interim financial information for 13-week periods beginning on a Sunday and ending on a Saturday, except for the first fiscal quarter, which always begins on January 1, and the fourth fiscal quarter, which always ends on December 31.\"",
       "check": null,
       "method": "filing",
-      "method_note": "summarised excerpt",
-      "status": "fetch failed",
-      "status_note": "matched in excerpt",
-      "verified_on": "2026-10-31"
+      "method_note": "read in a browser on Vishay's investor-relations site, which refuses automated requests (HTTP 403), so check_quotes.py reports it as fetch failed",
+      "status": "verified",
+      "status_note": "character comparison with the page text",
+      "verified_on": "2026-11-21"
     },
     {
       "id": "E011",
       "topic": "sec",
-      "claim": "Vishay's reported Q1 ends (1 Apr 2023, 30 Mar 2024) match \"Saturday nearest 31 March\"",
-      "source_label": "Vishay 10-Q (2024)",
-      "source_url": "https://sec.gov/Archives/edgar/data/103730/000010373024000102/vishayintertech_10q.htm",
-      "quote": null,
-      "evidence": "The Q1 anchor is not named in the filing and stays illustrative",
+      "claim": "Vishay's reported Q1 ends in 2024, 2025 and 2026 are the Saturday nearest 1 April; \"Saturday nearest 31 March\" misses 2026 (checks C20 and C21)",
+      "source_label": "Vishay 10-Qs for the quarters ended 3 October 2026 and 29 March 2025",
+      "source_url": "https://ir.vishay.com/node/21866/html",
+      "quote": [
+        "The four fiscal quarters in 2026 end on April 4, 2026, July 4, 2026, October 3, 2026, and December 31, 2026, respectively.",
+        "The four fiscal quarters in 2025 ended on March 29, 2025, June 28, 2025, September 27, 2025, and December 31, 2025, respectively."
+      ],
+      "evidence": "\"The four fiscal quarters in 2026 end on April 4, 2026, July 4, 2026, October 3, 2026, and December 31, 2026, respectively.\" \"The four fiscal quarters in 2025 ended on March 29, 2025, June 28, 2025, September 27, 2025, and December 31, 2025, respectively.\" The 10-Q for the quarter ended 29 March 2025 (`https://ir.vishay.com/node/20161/html`) adds \"The four fiscal quarters in 2024 ended on March 30, 2024, June 29, 2024, September 28, 2024, and December 31, 2024, respectively.\"",
       "check": null,
       "method": "filing",
-      "method_note": "summarised excerpt",
-      "status": "fetch failed",
-      "status_note": "anchor illustrative",
-      "verified_on": "2026-10-31"
+      "method_note": "read in a browser on Vishay's investor-relations site, which refuses automated requests (HTTP 403), so check_quotes.py reports it as fetch failed",
+      "status": "quote corrected",
+      "status_note": "the research documents' anchor, Saturday nearest 31 March, gives 28 March 2026 against the reported 4 April 2026",
+      "verified_on": "2026-11-21"
     },
     {
       "id": "E012",
@@ -1261,6 +1268,76 @@
       "method": "secondary",
       "status": "unverified",
       "verified_on": "2026-11-01"
+    },
+    {
+      "id": "E087",
+      "topic": "checks",
+      "claim": "Vishay's reported Q1 ends 2024–2026 are the Saturday nearest 1 April, and Q2 and Q3 are 13 weeks each",
+      "source_label": "verify_claims.py",
+      "source_url": "https://github.com/Karthik-beta/fiscalclock/blob/main/research/verification/README.md",
+      "quote": null,
+      "evidence": "30 Mar 2024, 29 Mar 2025 and 4 Apr 2026, each the Saturday nearest 1 April",
+      "check": "C20",
+      "method": "script check",
+      "status": "verified",
+      "verified_on": "2026-11-21"
+    },
+    {
+      "id": "E088",
+      "topic": "checks",
+      "claim": "\"Saturday nearest 31 March\" misses Vishay's reported 2026 Q1 end",
+      "source_label": "verify_claims.py",
+      "source_url": "https://github.com/Karthik-beta/fiscalclock/blob/main/research/verification/README.md",
+      "quote": null,
+      "evidence": "It gives 28 Mar 2026; Vishay reports 4 Apr 2026",
+      "check": "C21",
+      "method": "script check",
+      "status": "verified",
+      "verified_on": "2026-11-21"
+    },
+    {
+      "id": "E089",
+      "topic": "calendars",
+      "claim": "The Japanese fiscal year 令和8年度 runs from 1 April 2026 to 31 March 2027",
+      "source_label": "Yamagata Labour Bureau (MHLW)",
+      "source_url": "https://jsite.mhlw.go.jp/yamagata-roudoukyoku/koyouhoken-20260316.html",
+      "quote": [
+        "令和8年度の雇用保険料率について",
+        "令和8年4月1日～令和9年3月31日"
+      ],
+      "evidence": "Heading \"令和8年度の雇用保険料率について\" (employment insurance rates for 令和8年度), application period \"令和8年4月1日～令和9年3月31日\". The year 令和8年 is 2026 in the [MLIT table](https://jutaku-shoene2026.mlit.go.jp/wareki-seireki/) (\"令和8年 | 2026年\"), and Sakura City writes \"2026年（令和8年）5月1日\". The second source the Analysis page asked for.",
+      "check": null,
+      "method": "fetched page",
+      "status": "verified",
+      "verified_on": "2026-11-21"
+    },
+    {
+      "id": "E090",
+      "topic": "calendars",
+      "claim": "Japan's national fiscal year runs from 1 April to 31 March",
+      "source_label": "財政法 (Public Finance Act), e-Gov",
+      "source_url": "https://laws.e-gov.go.jp/law/322AC0000000034",
+      "fetch_url": "https://laws.e-gov.go.jp/api/2/law_data/322AC0000000034?response_format=json",
+      "quote": "国の会計年度は、毎年四月一日に始まり、翌年三月三十一日に終るものとする。",
+      "evidence": "\"国の会計年度は、毎年四月一日に始まり、翌年三月三十一日に終るものとする。\" (the national fiscal year begins on 1 April and ends on 31 March of the next year). The [Local Autonomy Act](https://laws.e-gov.go.jp/law/322AC0000000067) (地方自治法) says the same for local governments.",
+      "check": null,
+      "method": "fetched page",
+      "method_note": "through the e-Gov API, because the law viewer needs JavaScript",
+      "status": "verified",
+      "verified_on": "2026-11-21"
+    },
+    {
+      "id": "E091",
+      "topic": "calendars",
+      "claim": "The fiscal year from April 2019, which began under Heisei, was renamed 令和元年度 from the era change on 1 May 2019",
+      "source_label": "City of Nagoya",
+      "source_url": "https://www.city.nagoya.jp/shisei/zaisei/1002655/1034927/1002876/1002877/1002878/1002885/1002888.html",
+      "quote": "改元日（5月1日）以降は、会計年度の名称を「平成31年度」から「令和元年度」としますが、改元日以前に作成した印刷物等は、「平成」のまま表示しています。",
+      "evidence": "\"改元日（5月1日）以降は、会計年度の名称を「平成31年度」から「令和元年度」としますが、改元日以前に作成した印刷物等は、「平成」のまま表示しています。\" (from the era change on 1 May the fiscal year is named 令和元年度 instead of 平成31年度; documents printed before then keep 平成). Edogawa Ward says the same for its budget. One fiscal year had two labels.",
+      "check": null,
+      "method": "fetched page",
+      "status": "verified",
+      "verified_on": "2026-11-21"
     }
   ]
 }

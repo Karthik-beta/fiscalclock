@@ -29,5 +29,7 @@
 [PASS] C15 ISO week year = week_based year starting Monday nearest 1 January, 1600-2399: 800 years compared with date.isocalendar(); mismatches: 0
 [PASS] C16 Care.com Q4 ends diverge in 2020, 2021, 2025-2027 (window 2019-2028): diverging years: [2020, 2021, 2025, 2026, 2027]; 2025: year rule 2025-12-27, quarter rule 2026-01-03
 [PASS] C17 Care.com reading note (informational): if 'prior to December 31' excludes 31 Dec, diverging years 2019-2028 are [2020, 2021, 2022, 2025, 2026, 2027]; inclusive reading over 2010-2035: [2010, 2014, 2015, 2020, 2021, 2025, 2026, 2027, 2031, 2032]
+[PASS] C20 Vishay Q1 ends 2024-2026 are the Saturday nearest 1 April, Q2 and Q3 are 13 weeks: Saturday nearest 1 April: ['2024-03-30', '2025-03-29', '2026-04-04']
+[PASS] C21 Vishay: 'Saturday nearest 31 March' misses a reported Q1 end: misses [2026]; 2026 gives 2026-03-28 against reported 2026-04-04
 [PASS] C18 date(9999,12,31) + 1 day raises OverflowError: OverflowError: date value out of range
-20 passed, 0 failed
+22 passed, 0 failed

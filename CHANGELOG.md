@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The `UNSUPPORTED_FEATURE` hint for `extra_week.standalone`, `extra_week.by_year`, `week.numbering: "first_full"` and `exceptions.overrides` now says that no release is scheduled, instead of naming 0.3. ADRs 0035, 0036 and 0038 defer them because no cited calendar needs them ([#83](https://github.com/Karthik-beta/fiscalclock/issues/83)). Hints are not part of the API.
+
 ## [0.2.0] - 2026-11-15
 
 ### Added
