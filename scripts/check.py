@@ -67,6 +67,7 @@ def pinned(path, pattern):
 MATURIN = pinned(".github/workflows/ci.yml", r'MATURIN_VERSION: "([^"]+)"')
 WASM_BINDGEN = pinned("Cargo.lock", r'name = "wasm-bindgen"\nversion = "([^"]+)"')
 MSRV = pinned("crates/core/Cargo.toml", r'^rust-version = "([^"]+)"')
+FUZZ_NIGHTLY = "+" + pinned(".github/workflows/ci.yml", r"FUZZ_NIGHTLY: (\S+)")
 PANDAS = pinned("conformance/generators/pandas_vectors.py", r'^PANDAS_VERSION = "([^"]+)"')
 
 
@@ -188,6 +189,19 @@ GROUPS = {
         Step("site_examples", ["npm", "run", "test:examples"], cwd="website"),
         Step("site_links", ["lychee", "--config", "website/lychee.toml", "--no-progress",
                             "--root-dir", ROOT / "website" / "dist", "website/dist/**/*.html"]),
+    ],
+    # Needs the dated nightly and cargo-fuzz (fuzz/README.md); on Windows, also
+    # the MSVC AddressSanitizer runtime on PATH.
+    "fuzz": [
+        Step("fuzz_fmt", ["cargo", FUZZ_NIGHTLY, "fmt", "--check"], cwd="fuzz"),
+        Step("fuzz_clippy", ["cargo", FUZZ_NIGHTLY, "clippy", "--locked", "--all-targets", "--", "-D", "warnings"],
+             cwd="fuzz"),
+        Step("fuzz_seeds", [sys.executable, "-I", "fuzz/seed_corpus.py"]),
+        *(
+            Step(f"fuzz_{target}", ["cargo", FUZZ_NIGHTLY, "fuzz", "run", target, f"corpus/{target}", "--",
+                                    "-max_total_time=60", "-timeout=10", "-rss_limit_mb=2048"], cwd="fuzz")
+            for target in ("validate_json", "validate_structured", "parse_label")
+        ),
     ],
     "docs": [
         Step("markdownlint", ["markdownlint-cli2", "--no-globs", Files(("*.md",))]),
