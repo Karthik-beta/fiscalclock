@@ -33,3 +33,6 @@ truthy
 walkthrough
 worktrees
 zizmor
+libfuzzer
+Fuzzer
+printf

@@ -17,6 +17,9 @@ env:
   CARGO_TERM_COLOR: always
   MATURIN_VERSION: "1.15.0"
   MSRV: "1.85"
+  # The fuzz crate needs nightly Rust (fuzz/README.md). A dated nightly keeps runs reproducible.
+  FUZZ_NIGHTLY: nightly-2026-11-01
+  CARGO_FUZZ_VERSION: "0.13.2"
 
 jobs:
   # On a pull request, the jobs that build and test the packages run only when
@@ -39,7 +42,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             # HEAD is the pull request merged into its base, HEAD^1 the base.
             changed=$(git diff --name-only HEAD^1 HEAD)
-            if ! grep -qE '^(crates/|bindings/|conformance/|docs/examples/|Cargo\.(toml|lock)$|\.gitattributes$|\.github/workflows/ci\.yml$)' <<< "$changed"; then
+            if ! grep -qE '^(crates/|bindings/|conformance/|fuzz/|docs/examples/|Cargo\.(toml|lock)$|\.gitattributes$|\.github/workflows/ci\.yml$)' <<< "$changed"; then
               packages=false
             fi
           fi
@@ -206,6 +209,42 @@ jobs:
           echo "$count transcripts identical, $(wc -l < "$reference") cases each"
           test "$count" -eq 14
 
+  # A short run of every fuzz target. The long runs that count toward Gate D's
+  # 24 CPU hours are in fuzz.yml.
+  fuzz:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install nightly Rust and cargo-fuzz
+        run: |
+          rustup toolchain install "$FUZZ_NIGHTLY" --profile minimal --no-self-update --component rustfmt,clippy
+          cargo +"$FUZZ_NIGHTLY" install cargo-fuzz --version "$CARGO_FUZZ_VERSION" --locked
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: fuzz
+      - name: Formatting and Clippy
+        working-directory: fuzz
+        run: |
+          cargo +"$FUZZ_NIGHTLY" fmt --check
+          cargo +"$FUZZ_NIGHTLY" clippy --locked --all-targets -- -D warnings
+      - name: Each target runs for a minute with no crash, hang or runaway allocation
+        run: |
+          python3 -I fuzz/seed_corpus.py
+          cd fuzz
+          for target in validate_json validate_structured parse_label; do
+            cargo +"$FUZZ_NIGHTLY" fuzz run "$target" "corpus/$target" --               -max_total_time=60 -timeout=10 -rss_limit_mb=2048 -print_final_stats=1
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
+
   consistency:
     runs-on: ubuntu-24.04
     steps:
@@ -227,7 +266,7 @@ jobs:
   # changes job decided to skip the package jobs.
   ci-passed:
     if: always()
-    needs: [changes, rust, msrv, python, js, identical-output, consistency]
+    needs: [changes, rust, msrv, python, js, identical-output, fuzz, consistency]
     runs-on: ubuntu-24.04
     steps:
       - name: Every ci job passed

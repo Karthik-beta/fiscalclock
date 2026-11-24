@@ -17,6 +17,7 @@ The source of truth for behaviour is the [PDR](https://github.com/Karthik-beta/f
 | `crates/core/` | The Rust core crate `fiscalclock`: definition parsing and validation, all calendar arithmetic, labels, the JSON API used by every binding. | Language-specific type conversion; I/O; named calendars. |
 | `bindings/python/` | The PyO3 extension and pure-Python wrapper: conversion between Python types and the core's JSON API. | Calendar arithmetic or validation logic. |
 | `bindings/js/` | The wasm-bindgen wrapper and TypeScript layer: conversion between JS types and the core's JSON API. | Calendar arithmetic or validation logic. |
+| `fuzz/` | The cargo-fuzz targets for the definition and label parsers, outside the Cargo workspace, and their CPU-hour log. | Expected values; a dependency of `crates/core`. |
 | `cli/` | The command-line interface and MCP server (planned for v0.6). | Logic that is not also reachable through the core's JSON API. |
 | `spec/` | The normative definition format and API contract. | Implementation notes. |
 | `conformance/` | Shared vectors loaded by every test suite, their JSON Schema, and the independent generators. | Expected values produced by running fiscalclock. |
@@ -73,7 +74,8 @@ These are the commands CI runs (`.github/workflows/ci.yml` and `docs.yml`). Run 
 
 | You changed | Groups to run |
 | --- | --- |
-| `crates/core/`, `Cargo.lock` | `rust python js transcripts` |
+| `crates/core/`, `Cargo.lock` | `rust python js transcripts fuzz` |
+| `fuzz/` | `fuzz` |
 | `conformance/` | `rust python js transcripts evidence website` |
 | `bindings/python/` | `python transcripts` |
 | `bindings/js/` | `js transcripts` |
@@ -88,6 +90,7 @@ The `docs` group checks links between files in the repository offline, as every 
 Tools, from a fresh clone:
 
 - Rust stable with `rustfmt`, `clippy` and the WebAssembly target, plus the minimum supported version: `rustup toolchain install stable --component rustfmt,clippy --target wasm32-unknown-unknown` and `rustup toolchain install 1.85`.
+- For the `fuzz` group, the dated nightly and cargo-fuzz that `ci.yml` pins; [`fuzz/README.md`](fuzz/README.md) gives the commands.
 - Python 3.11 or later for the scripts (the package itself supports 3.10), and [uv](https://docs.astral.sh/uv/) for the commands that start with `uv` or `uvx`.
 - Node.js 22 or later for the npm package, and 24 or later for the website.
 - `wasm-bindgen-cli` at the version in `Cargo.lock`. The `js` group prints the `cargo install` command if yours differs.
