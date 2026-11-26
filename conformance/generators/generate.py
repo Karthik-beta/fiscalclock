@@ -18,6 +18,7 @@ import error_vectors  # noqa: E402
 import history_vectors  # noqa: E402
 import oracle_vectors  # noqa: E402
 import spec_cited_vectors  # noqa: E402
+import table_vectors  # noqa: E402
 from vectorlib import write_all  # noqa: E402
 
 DEFAULT_OUT = HERE.parent / "vectors"
@@ -25,7 +26,7 @@ DEFAULT_OUT = HERE.parent / "vectors"
 
 def build() -> dict[str, list[dict]]:
     return {
-        "oracle": oracle_vectors.build() + history_vectors.build(),
+        "oracle": oracle_vectors.build() + history_vectors.build() + table_vectors.build(),
         "errors": error_vectors.build(),
         "spec": spec_cited_vectors.spec_vectors(),
         "cited": spec_cited_vectors.cited_vectors(),

@@ -5,7 +5,7 @@ use core::fmt::Write;
 
 use crate::calendar::{FiscalCalendar, Level, Period};
 use crate::date::{Date, month_name};
-use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure, YearNumber};
+use crate::definition::{AnchorDay, Edge, Rule, ShortMonth, Structure, YearNumber, YearRule};
 use crate::error::Error;
 use crate::timeline::{Division, Source, nth_size};
 
@@ -137,6 +137,14 @@ impl FiscalCalendar {
                     ),
                 )
             }
+            Division::Table { .. } => (
+                format!("period {k} starts on the day subdivision.boundaries lists for it"),
+                format!(
+                    "weeks start on {}; week 1 runs from the fiscal year's first day to the day before the next {}",
+                    ws.title(),
+                    ws.title()
+                ),
+            ),
         };
         let q = loc.quarter.index.unwrap_or(1);
         let (first, last) = fy.quarter_periods(q);
@@ -176,32 +184,60 @@ impl FiscalCalendar {
 
     /// How a regime's rule bounds its fiscal years.
     fn year_rule(&self, rule: &Structure) -> String {
-        let ws = self.def.week_start;
         match rule {
-            Structure::FixedDate(f) => format!(
-                "the fiscal year starts on {} {}{}",
-                f.day,
-                month_name(f.month),
-                short_month_policy(f.short_month)
-            ),
-            Structure::WeekBased(w) => {
-                let target = match w.day {
-                    AnchorDay::Last => format!("the last day of {}", month_name(w.month)),
-                    AnchorDay::Day(d) => format!("{d} {}", month_name(w.month)),
+            Structure::FixedDate(f) => fixed_rule(f.month, f.day, f.short_month),
+            Structure::WeekBased(w) => self.week_rule((w.edge, w.month, w.day, w.rule)),
+            Structure::Tabled(t) => {
+                let year = match &t.year {
+                    YearRule::Fixed {
+                        month,
+                        day,
+                        short_month,
+                    } => fixed_rule(*month, *day, *short_month),
+                    YearRule::Week {
+                        edge,
+                        month,
+                        day,
+                        rule,
+                    } => self.week_rule((*edge, *month, *day, *rule)),
+                    YearRule::Table(_) => {
+                        String::from("the fiscal year is listed in year.boundaries")
+                    }
                 };
-                let (verb, weekday) = match w.edge {
-                    Edge::End => ("ends", ws.plus(-1)),
-                    Edge::Start => ("starts", ws),
-                };
-                let choice = match w.rule {
-                    Rule::Last => format!("the last {} on or before {target}", weekday.title()),
-                    Rule::First => format!("the first {} on or after {target}", weekday.title()),
-                    Rule::Nearest => format!("the {} nearest {target}", weekday.title()),
-                };
-                format!("the fiscal year {verb} on {choice}")
+                let (first, end) = rule.table_range().unwrap_or((Date::MIN, Date::MIN));
+                format!(
+                    "{year}, for the fiscal years that subdivision.boundaries lists, {first} to {}",
+                    end.add(-1)
+                )
             }
         }
     }
+
+    fn week_rule(&self, (edge, month, day, rule): (Edge, u32, AnchorDay, Rule)) -> String {
+        let ws = self.def.week_start;
+        let target = match day {
+            AnchorDay::Last => format!("the last day of {}", month_name(month)),
+            AnchorDay::Day(d) => format!("{d} {}", month_name(month)),
+        };
+        let (verb, weekday) = match edge {
+            Edge::End => ("ends", ws.plus(-1)),
+            Edge::Start => ("starts", ws),
+        };
+        let choice = match rule {
+            Rule::Last => format!("the last {} on or before {target}", weekday.title()),
+            Rule::First => format!("the first {} on or after {target}", weekday.title()),
+            Rule::Nearest => format!("the {} nearest {target}", weekday.title()),
+        };
+        format!("the fiscal year {verb} on {choice}")
+    }
+}
+
+fn fixed_rule(month: u32, day: u32, short_month: Option<ShortMonth>) -> String {
+    format!(
+        "the fiscal year starts on {day} {}{}",
+        month_name(month),
+        short_month_policy(short_month)
+    )
 }
 
 /// How a `short_month` policy moves a start day that a month does not have.

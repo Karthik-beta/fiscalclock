@@ -6,7 +6,7 @@ use crate::date::Date;
 use crate::definition::{Definition, Scheme, YearNumber};
 use crate::error::{Candidate, Details, Error, ErrorCode, Errors};
 use crate::label::Captures;
-use crate::timeline::{FiscalYear, Key, Source, Timeline};
+use crate::timeline::{Division, FiscalYear, Key, Source, Timeline};
 
 /// A level of the fiscal hierarchy.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -625,15 +625,16 @@ impl FiscalCalendar {
             .hint("ask for a level below the period's level"));
         }
         if !fy.is_week_pattern() && level == Level::Week && period.level != Level::Year {
-            let year = match fy.source {
-                Source::Transition(_) => "a calendar_months transition",
-                Source::TopLevel | Source::History(_) => "a fixed_date year",
+            let year = match (fy.source, fy.division) {
+                (_, Division::Table { .. }) => "a table subdivision",
+                (Source::Transition(_), _) => "a calendar_months transition",
+                (Source::TopLevel | Source::History(_), _) => "a fixed_date year",
             };
             return Err(Error::new(
                 ErrorCode::LevelNotNested,
                 "level",
                 format!(
-                    "weeks cross month boundaries in {year}, so they do not nest inside a {}",
+                    "weeks cross period boundaries in {year}, so they do not nest inside a {}",
                     period.level.name()
                 ),
             )
@@ -975,5 +976,5 @@ pub(crate) fn out_of_range(path: impl Into<String>, what: String) -> Error {
         path,
         format!("{what} is outside the supported range"),
     )
-    .hint("fiscalclock supports fiscal years that lie wholly between 0001-01-02 and 9999-12-30")
+    .hint("fiscalclock supports fiscal years that lie wholly between 0001-01-02 and 9999-12-30; a calendar with a table covers only the fiscal years its table lists")
 }

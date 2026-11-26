@@ -1,0 +1,100 @@
+{
+  "name": "table-calendar-id-pair-a",
+  "description": "First of a pair of table-subdivision definitions that differ only in key order, $schema and a written-out default (offset 0); both must have calendar_id 73ce7ea4ea04311f. The boundaries are written in the canonical form as the date strings given. Illustrative dates.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "hashlib.sha256 over the canonical form built in fiscal_oracle.canonical"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "table",
+      "boundaries": [
+        "2023-01-01",
+        "2023-01-29",
+        "2023-02-26",
+        "2023-03-26",
+        "2023-04-23",
+        "2023-05-21",
+        "2023-06-18",
+        "2023-07-16",
+        "2023-08-13",
+        "2023-09-10",
+        "2023-10-08",
+        "2023-11-05",
+        "2023-12-03",
+        "2024-01-01",
+        "2024-01-29",
+        "2024-02-26",
+        "2024-03-25",
+        "2024-04-22",
+        "2024-05-20",
+        "2024-06-17",
+        "2024-07-15",
+        "2024-08-12",
+        "2024-09-09",
+        "2024-10-07",
+        "2024-11-04",
+        "2024-12-02",
+        "2025-01-01",
+        "2025-01-29",
+        "2025-02-26",
+        "2025-03-26",
+        "2025-04-23",
+        "2025-05-21",
+        "2025-06-18",
+        "2025-07-16",
+        "2025-08-13",
+        "2025-09-10",
+        "2025-10-08",
+        "2025-11-05",
+        "2025-12-03",
+        "2026-01-01"
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        4
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "73ce7ea4ea04311f",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"FY{yyyy} P{pp}\",\"quarter\":\"FY{yyyy} Q{q}\",\"week\":\"FY{yyyy} W{ww}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"boundaries\":[\"2023-01-01\",\"2023-01-29\",\"2023-02-26\",\"2023-03-26\",\"2023-04-23\",\"2023-05-21\",\"2023-06-18\",\"2023-07-16\",\"2023-08-13\",\"2023-09-10\",\"2023-10-08\",\"2023-11-05\",\"2023-12-03\",\"2024-01-01\",\"2024-01-29\",\"2024-02-26\",\"2024-03-25\",\"2024-04-22\",\"2024-05-20\",\"2024-06-17\",\"2024-07-15\",\"2024-08-12\",\"2024-09-09\",\"2024-10-07\",\"2024-11-04\",\"2024-12-02\",\"2025-01-01\",\"2025-01-29\",\"2025-02-26\",\"2025-03-26\",\"2025-04-23\",\"2025-05-21\",\"2025-06-18\",\"2025-07-16\",\"2025-08-13\",\"2025-09-10\",\"2025-10-08\",\"2025-11-05\",\"2025-12-03\",\"2026-01-01\"],\"quarters\":[3,3,3,4],\"type\":\"table\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"short_month\":null,\"start\":{\"day\":1,\"month\":1},\"type\":\"fixed_date\"}}"
+      }
+    }
+  ]
+}

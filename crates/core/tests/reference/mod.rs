@@ -13,6 +13,8 @@ use std::collections::HashMap;
 pub mod cases;
 #[allow(dead_code)]
 pub mod history;
+#[allow(dead_code)]
+pub mod table;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Civil {

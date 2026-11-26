@@ -185,10 +185,6 @@ fn unsupported_feature_for_every_reserved_part() {
     only(&d, ErrorCode::UnsupportedFeature, "exceptions.overrides");
 
     let mut d = nrf();
-    d["year"] = json!({"type": "table"});
-    only(&d, ErrorCode::UnsupportedFeature, "year.type");
-
-    let mut d = nrf();
     d["subdivision"]["type"] = json!("anchored");
     only(&d, ErrorCode::UnsupportedFeature, "subdivision.type");
 
@@ -226,11 +222,8 @@ fn unsupported_feature_for_every_reserved_part() {
 
     let mut d = nrf();
     d["naming"]["schemes"]["fy"]["year_number"] = json!("table");
-    only(
-        &d,
-        ErrorCode::UnsupportedFeature,
-        "naming.schemes.fy.year_number",
-    );
+    // No longer reserved: ADR-0022 numbers table years by start, end or majority.
+    only(&d, ErrorCode::InvalidValue, "naming.schemes.fy.year_number");
 
     let mut d = nrf();
     d["naming"]["schemes"]["fy"]["eras"] = json!(null);
@@ -248,6 +241,157 @@ fn unsupported_feature_for_every_reserved_part() {
         .unwrap_err()
         .into_vec()[0];
     assert!(e.hint.as_deref().unwrap().starts_with("not scheduled"));
+}
+
+/// A table year with a table subdivision: three fiscal years from 2024-07-16,
+/// each with two listed periods.
+fn table_years() -> Value {
+    let mut d = nrf();
+    d["year"] = json!({"type": "table", "boundaries": ["2024-07-16", "2025-07-17", "2026-07-17", "2027-07-17"]});
+    d["subdivision"] = json!({
+        "type": "table",
+        "quarters": [1, 1],
+        "boundaries": ["2024-07-16", "2025-01-01", "2025-07-17", "2026-01-01", "2026-07-17", "2027-01-01", "2027-07-17"]
+    });
+    d
+}
+
+#[test]
+fn table_block_level_errors() {
+    cal(&table_years());
+    let mut d = table_years();
+    d["year"]["boundaries"] = json!(["2024-07-16"]);
+    only(&d, ErrorCode::InvalidValue, "year.boundaries");
+    let mut d = table_years();
+    d["year"]["boundaries"][1] = json!(20250717);
+    only(&d, ErrorCode::InvalidType, "year.boundaries[1]");
+    let mut d = table_years();
+    d["year"]["boundaries"][3] = json!("10000-01-01");
+    only(&d, ErrorCode::InvalidValue, "year.boundaries[3]");
+    let mut d = table_years();
+    d["year"]["boundaries"][0] = json!("0001-01-01");
+    only(&d, ErrorCode::InvalidValue, "year.boundaries[0]");
+    // Every entry not after its predecessor is reported.
+    let mut d = table_years();
+    d["subdivision"]["boundaries"] =
+        json!(["2024-07-16", "2024-07-16", "2024-01-01", "2027-07-17"]);
+    assert_eq!(
+        errors_of(&d),
+        [
+            (
+                ErrorCode::TableNotIncreasing,
+                "subdivision.boundaries[1]".into()
+            ),
+            (
+                ErrorCode::TableNotIncreasing,
+                "subdivision.boundaries[2]".into()
+            ),
+        ]
+    );
+    let mut d = table_years();
+    d["subdivision"] =
+        json!({"type": "calendar_months", "month_start_day": 1, "quarters": [3, 3, 3, 3]});
+    only(&d, ErrorCode::UnsupportedCombination, "subdivision.type");
+    let mut d = table_years();
+    d["subdivision"]["extra_week"] = json!({"period": 1});
+    only(&d, ErrorCode::UnknownField, "subdivision.extra_week");
+}
+
+#[test]
+fn table_cross_block_errors() {
+    let mut d = table_years();
+    d["subdivision"]["boundaries"][0] = json!("2024-07-17");
+    only(
+        &d,
+        ErrorCode::SubdivisionYearMismatch,
+        "subdivision.boundaries[0]",
+    );
+    let mut d = table_years();
+    d["subdivision"]["boundaries"][6] = json!("2027-07-18");
+    only(
+        &d,
+        ErrorCode::SubdivisionYearMismatch,
+        "subdivision.boundaries[6]",
+    );
+    let mut d = table_years();
+    d["subdivision"]["boundaries"][2] = json!("2025-07-18");
+    only(
+        &d,
+        ErrorCode::SubdivisionYearMismatch,
+        "subdivision.boundaries",
+    );
+    let mut d = table_years();
+    d["subdivision"]["quarters"] = json!([1, 2]);
+    only(&d, ErrorCode::QuartersSumMismatch, "subdivision.quarters");
+    // Periods covering only the middle year narrow the calendar to it.
+    let mut d = table_years();
+    d["subdivision"]["boundaries"] = json!(["2025-07-17", "2026-01-01", "2026-07-17"]);
+    let c = cal(&d);
+    assert!(c.locate(common::d("2025-07-16")).is_err());
+    assert_eq!(
+        c.locate(common::d("2026-07-16")).unwrap().period.index,
+        Some(2)
+    );
+    assert!(c.locate(common::d("2026-07-17")).is_err());
+    // A fixed_date year whose years the periods do not start.
+    let mut d = table_years();
+    d["year"] = json!({"type": "fixed_date", "start": {"month": 7, "day": 16}});
+    d["subdivision"]["boundaries"] = json!([
+        "2024-07-16",
+        "2025-01-01",
+        "2025-07-17",
+        "2026-01-01",
+        "2026-07-16"
+    ]);
+    only(
+        &d,
+        ErrorCode::SubdivisionYearMismatch,
+        "subdivision.boundaries",
+    );
+}
+
+#[test]
+fn table_regimes_in_history() {
+    // A table regime 0 that ends where its table ends, then a fixed-date rule.
+    let mut d = table_years();
+    d["exceptions"] = json!({"history": [{
+        "from": "2027-07-17",
+        "year": {"type": "fixed_date", "start": {"month": 7, "day": 17}},
+        "subdivision": {"type": "calendar_months", "month_start_day": 17, "quarters": [6, 6]}
+    }]});
+    let c = cal(&d);
+    assert_eq!(
+        c.locate(common::d("2027-07-17")).unwrap().year.start,
+        common::d("2027-07-17")
+    );
+    assert!(c.locate(common::d("2024-07-15")).is_err());
+    // A change after the table's last year leaves a gap.
+    d["exceptions"]["history"][0]["from"] = json!("2028-07-17");
+    only(
+        &d,
+        ErrorCode::ChangeNotOnBoundary,
+        "exceptions.history[0].from",
+    );
+    // An entry whose own table does not reach its from.
+    let mut d = nrf();
+    d["exceptions"] = json!({"history": [{
+        "from": "2030-01-01",
+        "year": table_years()["year"].clone(),
+        "subdivision": table_years()["subdivision"].clone()
+    }]});
+    assert_eq!(
+        errors_of(&d),
+        [
+            (
+                ErrorCode::ChangeNotOnBoundary,
+                "exceptions.history[0].from".into()
+            ),
+            (
+                ErrorCode::ChangeNotOnBoundary,
+                "exceptions.history[0].from".into()
+            ),
+        ]
+    );
 }
 
 #[test]
@@ -690,9 +834,11 @@ fn exceptions_block_level_errors() {
             format!("{h}[0].subdivision.stub"),
         ),
         (
-            pg_with(|e| e["year"] = json!({"type": "table"})),
-            ErrorCode::UnsupportedFeature,
-            format!("{h}[0].year.type"),
+            pg_with(|e| {
+                e["year"] = json!({"type": "table", "boundaries": ["2025-04-01", "2026-04-01"]})
+            }),
+            ErrorCode::UnsupportedCombination,
+            format!("{h}[0].subdivision.type"),
         ),
     ];
     for (d, code, path) in cases {

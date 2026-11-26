@@ -43,8 +43,12 @@ named_enum!(ShortMonth { Clamp => "clamp", Next => "next" });
 named_enum!(Edge { End => "end", Start => "start" });
 named_enum!(Rule { Last => "last", First => "first", Nearest => "nearest" });
 named_enum!(YearNumber { Start => "start", End => "end", Majority => "majority" });
-named_enum!(YearType { FixedDate => "fixed_date", WeekBased => "week_based" });
-named_enum!(SubdivisionType { CalendarMonths => "calendar_months", WeekPattern => "week_pattern" });
+named_enum!(YearType { FixedDate => "fixed_date", WeekBased => "week_based", Table => "table" });
+named_enum!(SubdivisionType {
+    CalendarMonths => "calendar_months",
+    WeekPattern => "week_pattern",
+    Table => "table",
+});
 named_enum!(Numbering { ContainsStart => "contains_start" });
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,10 +80,41 @@ pub(crate) struct WeekBased {
     pub extra_period: u32,
 }
 
+/// The `year` block of a rule whose subdivision is a `table`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum YearRule {
+    Fixed {
+        month: u32,
+        day: u32,
+        short_month: Option<ShortMonth>,
+    },
+    Week {
+        edge: Edge,
+        month: u32,
+        day: AnchorDay,
+        rule: Rule,
+    },
+    /// The listed year boundaries: each year's first day, then the day after
+    /// the last year. Strictly increasing, at least two entries.
+    Table(Vec<Date>),
+}
+
+/// A rule whose periods are listed: any `year` block with a `table`
+/// subdivision. It produces only the fiscal years its periods cover.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Tabled {
+    pub year: YearRule,
+    /// Each period's first day, then the day after the last period. Strictly
+    /// increasing, at least two entries.
+    pub boundaries: Vec<Date>,
+    pub quarters: Vec<u32>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Structure {
     FixedDate(FixedDate),
     WeekBased(WeekBased),
+    Tabled(Tabled),
 }
 
 /// How a transition year is split into periods.
@@ -264,6 +299,15 @@ impl Definition {
     fn cross_block_errors(&self) -> Vec<Error> {
         let ws = self.week_start;
         let mut errors = Vec::new();
+        table_errors(&self.structure, ws, "", &mut errors);
+        for (i, change) in self.history.iter().enumerate() {
+            table_errors(
+                &change.structure,
+                ws,
+                &format!("exceptions.history[{i}]"),
+                &mut errors,
+            );
+        }
         // The previous regime's rule, its `from` (none for regime 0) and its name.
         let mut previous = (&self.structure, None, String::from("the top-level rule"));
         for (i, change) in self.history.iter().enumerate() {
@@ -288,7 +332,23 @@ impl Definition {
                     .hint("list history entries in date order, each change after the previous entry's from"),
                 );
             }
-            if let Some((before, after)) = rule.off_boundary(ws, point) {
+            if let Some((first, end)) = rule.table_range().filter(|&(f, e)| point < f || point > e)
+            {
+                errors.push(
+                    Error::new(
+                        ErrorCode::ChangeNotOnBoundary,
+                        point_path,
+                        format!(
+                            "{point} is outside the fiscal years that {name} covers, {first} to {}",
+                            end.add(-1)
+                        ),
+                    )
+                    .hint(format!(
+                        "{name} lists fiscal years from {first} to {}, so the change must fall on one of their boundaries from {first} to {end}",
+                        end.add(-1)
+                    )),
+                );
+            } else if let Some((before, after)) = rule.off_boundary(ws, point) {
                 errors.push(
                     Error::new(
                         ErrorCode::ChangeNotOnBoundary,
@@ -300,7 +360,24 @@ impl Definition {
                     )),
                 );
             }
-            if let Some((before, after)) = change.structure.off_boundary(ws, change.from) {
+            if let Some((first, end)) = change
+                .structure
+                .table_range()
+                .filter(|&(f, e)| change.from < f || change.from >= e)
+            {
+                errors.push(
+                    Error::new(
+                        ErrorCode::ChangeNotOnBoundary,
+                        format!("{path}.from"),
+                        format!(
+                            "{} is outside the fiscal years that this entry's rule covers, {first} to {}",
+                            change.from,
+                            end.add(-1)
+                        ),
+                    )
+                    .hint("from must be the first day of one of the fiscal years this entry's table covers"),
+                );
+            } else if let Some((before, after)) = change.structure.off_boundary(ws, change.from) {
                 errors.push(
                     Error::new(
                         ErrorCode::ChangeNotOnBoundary,
@@ -326,6 +403,82 @@ impl Definition {
             );
         }
         errors
+    }
+}
+
+/// The cross-block checks of a `table` subdivision against its `year` block,
+/// for the rule at `prefix`.
+fn table_errors(structure: &Structure, ws: Weekday, prefix: &str, errors: &mut Vec<Error>) {
+    let Structure::Tabled(t) = structure else {
+        return;
+    };
+    let path = join(prefix, "subdivision");
+    let list = &t.boundaries;
+    let n = list.len() - 1;
+    let year_table_end = match &t.year {
+        YearRule::Table(b) => b.last().copied(),
+        _ => None,
+    };
+    let mut ends_ok = true;
+    for (k, ok) in [
+        (0, t.year.is_year_start(ws, list[0])),
+        (
+            n,
+            t.year.is_year_start(ws, list[n]) || year_table_end == Some(list[n]),
+        ),
+    ] {
+        if !ok {
+            ends_ok = false;
+            errors.push(
+                Error::new(
+                    ErrorCode::SubdivisionYearMismatch,
+                    format!("{path}.boundaries[{k}]"),
+                    format!(
+                        "{} is not the first day of a fiscal year under the year block",
+                        list[k]
+                    ),
+                )
+                .hint(t.year.boundary_hint(ws, list[k])),
+            );
+        }
+    }
+    if !ends_ok {
+        return;
+    }
+    let years = t.year.years_between(ws, list[0], list[n]);
+    if let Some(&(start, _)) = years
+        .iter()
+        .find(|&&(start, _)| list.binary_search(&start).is_err())
+    {
+        errors.push(
+            Error::new(
+                ErrorCode::SubdivisionYearMismatch,
+                format!("{path}.boundaries"),
+                format!(
+                    "the fiscal year that starts on {start} under the year block has no period that starts on {start}"
+                ),
+            )
+            .hint("list every fiscal year's first day as a period boundary"),
+        );
+        return;
+    }
+    let sum: u64 = t.quarters.iter().map(|&q| u64::from(q)).sum();
+    let counted = years.iter().map(|&(start, end)| {
+        let periods = list.partition_point(|&d| d < end) - list.partition_point(|&d| d < start);
+        (start, end, periods as u64)
+    });
+    if let Some((start, end, periods)) = counted.into_iter().find(|&(_, _, p)| p != sum) {
+        errors.push(
+            Error::new(
+                ErrorCode::QuartersSumMismatch,
+                format!("{path}.quarters"),
+                format!(
+                    "quarters sum to {sum} periods, but the fiscal year from {start} to {} has {periods} listed periods",
+                    end.add(-1)
+                ),
+            )
+            .hint("give every fiscal year the same number of periods, and make quarters add up to it"),
+        );
     }
 }
 
@@ -417,21 +570,49 @@ fn transition_errors(
     }
 }
 
+/// The canonical `year` block of a fixed-date rule.
+fn fixed_year_value(month: u32, day: u32, short_month: Option<ShortMonth>) -> Value {
+    obj([
+        (
+            "short_month",
+            short_month.map_or(Value::Null, |s| s.name().into()),
+        ),
+        ("start", obj([("day", day.into()), ("month", month.into())])),
+        ("type", YearType::FixedDate.name().into()),
+    ])
+}
+
+/// The canonical `year` block of a week-based rule.
+fn week_year_value(edge: Edge, month: u32, day: AnchorDay, rule: Rule) -> Value {
+    obj([
+        (
+            "anchor",
+            obj([
+                (
+                    "day",
+                    match day {
+                        AnchorDay::Day(d) => d.into(),
+                        AnchorDay::Last => "last".into(),
+                    },
+                ),
+                ("edge", edge.name().into()),
+                ("month", month.into()),
+                ("rule", rule.name().into()),
+            ]),
+        ),
+        ("type", YearType::WeekBased.name().into()),
+    ])
+}
+
+fn dates_value(dates: &[Date]) -> Value {
+    Value::Array(dates.iter().map(|d| format!("{d}").into()).collect())
+}
+
 /// The canonical `year` and `subdivision` blocks of a rule.
 fn rule_values(structure: &Structure) -> (Value, Value) {
     match structure {
         Structure::FixedDate(f) => (
-            obj([
-                (
-                    "short_month",
-                    f.short_month.map_or(Value::Null, |s| s.name().into()),
-                ),
-                (
-                    "start",
-                    obj([("day", f.day.into()), ("month", f.month.into())]),
-                ),
-                ("type", YearType::FixedDate.name().into()),
-            ]),
+            fixed_year_value(f.month, f.day, f.short_month),
             obj([
                 ("month_start_day", f.day.into()),
                 ("quarters", f.quarters.clone().into()),
@@ -439,29 +620,36 @@ fn rule_values(structure: &Structure) -> (Value, Value) {
             ]),
         ),
         Structure::WeekBased(w) => (
-            obj([
-                (
-                    "anchor",
-                    obj([
-                        (
-                            "day",
-                            match w.day {
-                                AnchorDay::Day(d) => d.into(),
-                                AnchorDay::Last => "last".into(),
-                            },
-                        ),
-                        ("edge", w.edge.name().into()),
-                        ("month", w.month.into()),
-                        ("rule", w.rule.name().into()),
-                    ]),
-                ),
-                ("type", YearType::WeekBased.name().into()),
-            ]),
+            week_year_value(w.edge, w.month, w.day, w.rule),
             obj([
                 ("extra_week", obj([("period", w.extra_period.into())])),
                 ("periods", w.periods.clone().into()),
                 ("quarters", w.quarters.clone().into()),
                 ("type", SubdivisionType::WeekPattern.name().into()),
+            ]),
+        ),
+        Structure::Tabled(t) => (
+            match &t.year {
+                YearRule::Fixed {
+                    month,
+                    day,
+                    short_month,
+                } => fixed_year_value(*month, *day, *short_month),
+                YearRule::Week {
+                    edge,
+                    month,
+                    day,
+                    rule,
+                } => week_year_value(*edge, *month, *day, *rule),
+                YearRule::Table(b) => obj([
+                    ("boundaries", dates_value(b)),
+                    ("type", YearType::Table.name().into()),
+                ]),
+            },
+            obj([
+                ("boundaries", dates_value(&t.boundaries)),
+                ("quarters", t.quarters.clone().into()),
+                ("type", SubdivisionType::Table.name().into()),
             ]),
         ),
     }
@@ -579,25 +767,13 @@ const CHANGE_DATES: (Date, Date) = (Date::civil(2, 1, 1), Date::civil(9998, 12, 
 enum YearKind {
     Fixed { day: Option<u32> },
     Week,
-}
-
-enum YearSpec {
-    Fixed {
-        month: u32,
-        day: u32,
-        short_month: Option<ShortMonth>,
-    },
-    Week {
-        edge: Edge,
-        month: u32,
-        day: AnchorDay,
-        rule: Rule,
-    },
+    Table,
 }
 
 enum SubKind {
     CalendarMonths { month_start_day: Option<u32> },
     WeekPattern,
+    Table,
 }
 
 enum SubSpec {
@@ -608,6 +784,10 @@ enum SubSpec {
         periods: Vec<u32>,
         quarters: Vec<u32>,
         extra_period: u32,
+    },
+    Table {
+        boundaries: Vec<Date>,
+        quarters: Vec<u32>,
     },
 }
 
@@ -700,6 +880,20 @@ impl Validator {
             .map_or((None, None), |v| self.subdivision(v, &sub_path));
 
         match (&year_kind, &sub_kind) {
+            (
+                Some(YearKind::Table),
+                Some(SubKind::CalendarMonths { .. } | SubKind::WeekPattern),
+            ) => {
+                self.push(
+                    Error::new(
+                        ErrorCode::UnsupportedCombination,
+                        join(&sub_path, "type"),
+                        "a table year needs a table subdivision",
+                    )
+                    .hint("list the periods' first days in a subdivision of type \"table\""),
+                );
+                return None;
+            }
             (Some(YearKind::Fixed { .. }), Some(SubKind::WeekPattern)) => {
                 self.push(
                     Error::new(
@@ -742,7 +936,18 @@ impl Validator {
         }
         match (year_spec?, sub_spec?) {
             (
-                YearSpec::Fixed {
+                year,
+                SubSpec::Table {
+                    boundaries,
+                    quarters,
+                },
+            ) => Some(Structure::Tabled(Tabled {
+                year,
+                boundaries,
+                quarters,
+            })),
+            (
+                YearRule::Fixed {
                     month,
                     day,
                     short_month,
@@ -755,7 +960,7 @@ impl Validator {
                 quarters,
             })),
             (
-                YearSpec::Week {
+                YearRule::Week {
                     edge,
                     month,
                     day,
@@ -779,22 +984,24 @@ impl Validator {
         }
     }
 
-    fn year(&mut self, v: &Value, path: &str) -> (Option<YearKind>, Option<YearSpec>) {
+    fn year(&mut self, v: &Value, path: &str) -> (Option<YearKind>, Option<YearRule>) {
         let Some(m) = self.object(v, path) else {
             return (None, None);
         };
         let Some(t) = self.required(m, path, "type") else {
             return (None, None);
         };
-        let Some(kind) = self.choice(
-            t,
-            &join(path, "type"),
-            YearType::ALL,
-            YearType::name,
-            &["table"],
-        ) else {
+        let Some(kind) = self.choice(t, &join(path, "type"), YearType::ALL, YearType::name, &[])
+        else {
             return (None, None);
         };
+        if kind == YearType::Table {
+            self.fields(m, path, &["type", "boundaries"], &[]);
+            let boundaries = self
+                .required(m, path, "boundaries")
+                .and_then(|v| self.date_list(v, &join(path, "boundaries")));
+            return (Some(YearKind::Table), boundaries.map(YearRule::Table));
+        }
         if kind == YearType::FixedDate {
             self.fields(m, path, &["type", "start", "short_month"], &[]);
             let start_path = join(path, "start");
@@ -847,7 +1054,7 @@ impl Validator {
                 _ => {}
             }
             let spec = match (month, day, short_ok) {
-                (Some(month), Some(day), Some(short_month)) => Some(YearSpec::Fixed {
+                (Some(month), Some(day), Some(short_month)) => Some(YearRule::Fixed {
                     month,
                     day,
                     short_month,
@@ -878,7 +1085,7 @@ impl Validator {
                 .required(am, &ap, "rule")
                 .and_then(|v| self.choice(v, &join(&ap, "rule"), Rule::ALL, Rule::name, &[]));
             let spec = match (edge, month, day, rule) {
-                (Some(edge), Some(month), Some(day), Some(rule)) => Some(YearSpec::Week {
+                (Some(edge), Some(month), Some(day), Some(rule)) => Some(YearRule::Week {
                     edge,
                     month,
                     day,
@@ -966,12 +1173,26 @@ impl Validator {
     }
 
     /// The subdivision `type` at `path`, with the reserved types rejected.
-    fn subdivision_type(&mut self, m: &Map<String, Value>, path: &str) -> Option<SubdivisionType> {
+    /// `table` is valid only when `allow_table`; a transition cannot use it.
+    fn subdivision_type(
+        &mut self,
+        m: &Map<String, Value>,
+        path: &str,
+        allow_table: bool,
+    ) -> Option<SubdivisionType> {
         let t = self.required(m, path, "type")?;
+        let options: &[SubdivisionType] = if allow_table {
+            SubdivisionType::ALL
+        } else {
+            &[
+                SubdivisionType::CalendarMonths,
+                SubdivisionType::WeekPattern,
+            ]
+        };
         self.choice(
             t,
             &join(path, "type"),
-            SubdivisionType::ALL,
+            options,
             SubdivisionType::name,
             &["anchored"],
         )
@@ -981,10 +1202,32 @@ impl Validator {
         let Some(m) = self.object(v, path) else {
             return (None, None);
         };
-        let Some(kind) = self.subdivision_type(m, path) else {
+        let Some(kind) = self.subdivision_type(m, path, true) else {
             return (None, None);
         };
         let quarters_path = join(path, "quarters");
+        if kind == SubdivisionType::Table {
+            self.fields(
+                m,
+                path,
+                &["type", "boundaries", "quarters"],
+                &["stub", "special_periods"],
+            );
+            let boundaries = self
+                .required(m, path, "boundaries")
+                .and_then(|v| self.date_list(v, &join(path, "boundaries")));
+            let quarters = self
+                .required(m, path, "quarters")
+                .and_then(|v| self.positive_array(v, &quarters_path));
+            let spec = match (boundaries, quarters) {
+                (Some(boundaries), Some(quarters)) => Some(SubSpec::Table {
+                    boundaries,
+                    quarters,
+                }),
+                _ => None,
+            };
+            return (Some(SubKind::Table), spec);
+        }
         if kind == SubdivisionType::CalendarMonths {
             self.fields(
                 m,
@@ -1244,7 +1487,7 @@ impl Validator {
 
     fn transition_subdivision(&mut self, v: &Value, path: &str) -> Option<TransitionSubdivision> {
         let m = self.object(v, path)?;
-        let kind = self.subdivision_type(m, path)?;
+        let kind = self.subdivision_type(m, path, false)?;
         if kind == SubdivisionType::CalendarMonths {
             self.fields(
                 m,
@@ -1292,6 +1535,72 @@ impl Validator {
                 periods: periods?,
                 quarters: quarters?,
             })
+        }
+    }
+
+    /// A `table`'s `boundaries`: at least two strictly increasing `YYYY-MM-DD`
+    /// dates from 0001-01-02 to 9999-12-31, so that every listed year or
+    /// period lies in the supported range.
+    fn date_list(&mut self, v: &Value, path: &str) -> Option<Vec<Date>> {
+        let Some(items) = v.as_array() else {
+            self.type_error(v, path, "an array of YYYY-MM-DD date strings");
+            return None;
+        };
+        if items.len() < 2 {
+            self.push(
+                Error::new(
+                    ErrorCode::InvalidValue,
+                    path,
+                    format!("{path} has {} entries, expected at least 2", items.len()),
+                )
+                .hint("list each first day, then the day after the last one"),
+            );
+            return None;
+        }
+        let (lo, hi) = (Date::civil(1, 1, 2), Date::MAX);
+        let mut dates = Vec::with_capacity(items.len());
+        let mut ok = true;
+        for (k, item) in items.iter().enumerate() {
+            let p = format!("{path}[{k}]");
+            let Some(s) = item.as_str() else {
+                self.type_error(item, &p, "a YYYY-MM-DD date string");
+                ok = false;
+                dates.push(None);
+                continue;
+            };
+            let date = Date::parse_iso(s).filter(|d| (lo..=hi).contains(d));
+            if date.is_none() {
+                self.push(
+                    Error::new(
+                        ErrorCode::InvalidValue,
+                        p,
+                        format!("\"{s}\" is not a YYYY-MM-DD date from {lo} to {hi}"),
+                    )
+                    .hint("write the date as YYYY-MM-DD, for example \"2025-07-17\""),
+                );
+                ok = false;
+            }
+            dates.push(date);
+        }
+        for k in 1..dates.len() {
+            if let (Some(before), Some(at)) = (dates[k - 1], dates[k]) {
+                if at <= before {
+                    self.push(
+                        Error::new(
+                            ErrorCode::TableNotIncreasing,
+                            format!("{path}[{k}]"),
+                            format!("{at} is not after the entry before it, {before}"),
+                        )
+                        .hint("list the dates in increasing order, each once"),
+                    );
+                    ok = false;
+                }
+            }
+        }
+        if ok {
+            dates.into_iter().collect()
+        } else {
+            None
         }
     }
 
@@ -1410,7 +1719,7 @@ impl Validator {
                 &join(&path, "year_number"),
                 YearNumber::ALL,
                 YearNumber::name,
-                &["table"],
+                &[],
             )
         });
         let offset = match m.get("offset") {

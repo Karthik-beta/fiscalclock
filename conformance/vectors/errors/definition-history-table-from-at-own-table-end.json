@@ -1,0 +1,112 @@
+{
+  "name": "definition-history-table-from-at-own-table-end",
+  "description": "Invalid definition (fiscalclock 0.3.0), rejected by the cross-block checks, which run only when the definition has no block-level error. from 2026-01-01 is the day after the entry's own table's last year; that day counts only for c(i) under the previous regime's rule, not for from under the entry's own rule. The dates are illustrative. The complete error list is asserted (code and path of each error, sorted by path, then code).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, year and subdivision type table and Cross-block checks (fiscalclock 0.3.0, ADR-0022), and spec/api-v1.md error catalogue",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#cross-block-checks",
+    "checked_by": "Manual reading of the 0.3.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md (year type table, subdivision type table, Timeline, Cross-block checks) and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue, 2026-11-26; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "fixed_date",
+      "start": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "calendar_months",
+      "month_start_day": 1,
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    },
+    "exceptions": {
+      "history": [
+        {
+          "from": "2026-01-01",
+          "year": {
+            "type": "fixed_date",
+            "start": {
+              "month": 1,
+              "day": 1
+            }
+          },
+          "subdivision": {
+            "type": "table",
+            "boundaries": [
+              "2024-01-01",
+              "2024-01-29",
+              "2024-02-26",
+              "2024-03-25",
+              "2024-04-22",
+              "2024-05-20",
+              "2024-06-17",
+              "2024-07-15",
+              "2024-08-12",
+              "2024-09-09",
+              "2024-10-07",
+              "2024-11-04",
+              "2024-12-02",
+              "2025-01-01",
+              "2025-01-29",
+              "2025-02-26",
+              "2025-03-26",
+              "2025-04-23",
+              "2025-05-21",
+              "2025-06-18",
+              "2025-07-16",
+              "2025-08-13",
+              "2025-09-10",
+              "2025-10-08",
+              "2025-11-05",
+              "2025-12-03",
+              "2026-01-01"
+            ],
+            "quarters": [
+              3,
+              3,
+              3,
+              4
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "CHANGE_NOT_ON_BOUNDARY",
+          "path": "exceptions.history[0].from"
+        }
+      ]
+    }
+  ]
+}

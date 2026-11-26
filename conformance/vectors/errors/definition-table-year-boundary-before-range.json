@@ -1,0 +1,101 @@
+{
+  "name": "definition-table-year-boundary-before-range",
+  "description": "Invalid definition (fiscalclock 0.3.0). Spec rule, paraphrased: An entry before 0001-01-02 is INVALID_VALUE at year.boundaries[k]. The definition has no other error, so the complete error list is asserted (code and path of each error, sorted by path, then code).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, year and subdivision type table and Cross-block checks (fiscalclock 0.3.0, ADR-0022), and spec/api-v1.md error catalogue",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#type-table",
+    "checked_by": "Manual reading of the 0.3.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md (year type table, subdivision type table, Timeline, Cross-block checks) and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue, 2026-11-26"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "table",
+      "boundaries": [
+        "0001-01-01",
+        "2025-07-17",
+        "2026-07-17",
+        "2027-07-17"
+      ]
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "table",
+      "boundaries": [
+        "2024-07-16",
+        "2024-08-17",
+        "2024-09-17",
+        "2024-10-17",
+        "2024-11-18",
+        "2024-12-16",
+        "2025-01-16",
+        "2025-02-15",
+        "2025-03-14",
+        "2025-04-13",
+        "2025-05-14",
+        "2025-06-15",
+        "2025-07-17",
+        "2025-08-17",
+        "2025-09-17",
+        "2025-10-17",
+        "2025-11-18",
+        "2025-12-16",
+        "2026-01-16",
+        "2026-02-15",
+        "2026-03-14",
+        "2026-04-13",
+        "2026-05-14",
+        "2026-06-15",
+        "2026-07-17",
+        "2026-08-17",
+        "2026-09-17",
+        "2026-10-17",
+        "2026-11-18",
+        "2026-12-16",
+        "2027-01-16",
+        "2027-02-15",
+        "2027-03-14",
+        "2027-04-13",
+        "2027-05-14",
+        "2027-06-15",
+        "2027-07-17"
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    "naming": {
+      "default": "bs",
+      "schemes": {
+        "bs": {
+          "year_number": "start",
+          "offset": 57,
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "INVALID_VALUE",
+          "path": "year.boundaries[0]"
+        }
+      ]
+    }
+  ]
+}

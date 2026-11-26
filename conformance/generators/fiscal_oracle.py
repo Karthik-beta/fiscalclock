@@ -11,6 +11,9 @@ per history entry. `Calendar.seq` lists every fiscal year in the supported range
 in date order: each regime's years, with each entry's transition year between
 the previous regime's last year and the entry's first. Every operation works on
 positions in that list.
+
+Table years and the `table` subdivision (fiscalclock 0.3.0, ADR-0022) follow the 0.3.0 text of the spec:
+a rule with a `table` subdivision produces only the fiscal years between its first and last entry.
 """
 
 from __future__ import annotations
@@ -109,27 +112,36 @@ class Rule:
 
     def __init__(self, year: dict, sub: dict, week_start: int):
         self.kind = year["type"]
+        self.sub_kind = sub["type"]
         self.quarters = list(sub["quarters"])
-        if self.kind == "week_based":
+        # The listed period starts of a table subdivision; the rule's years lie between its first and last entry.
+        self.table = [parse_iso(b) for b in sub["boundaries"]] if self.sub_kind == "table" else None
+        if self.kind == "table":
+            self.year_table = [parse_iso(b) for b in year["boundaries"]]
+            self._year_starts = set(self.year_table[:-1])
+            assert self.sub_kind == "table"
+        elif self.kind == "week_based":
             a = year["anchor"]
             self.edge = a["edge"]
             self.month = a["month"]
             self.day = a["day"]
             self.rule = a["rule"]
             self.qual = week_start if self.edge == "start" else (week_start - 1) % 7
-            self.period_weeks = list(sub["periods"])
-            self.extra_period = sub["extra_week"]["period"]
-            assert sub["type"] == "week_pattern" and sum(self.period_weeks) == 52
+            if self.sub_kind == "week_pattern":
+                self.period_weeks = list(sub["periods"])
+                self.extra_period = sub["extra_week"]["period"]
+                assert sum(self.period_weeks) == 52 and sum(self.quarters) == len(self.period_weeks)
+            else:
+                assert self.sub_kind == "table"
         else:
             self.month = year["start"]["month"]
             self.day = year["start"]["day"]
             self.short_month = year.get("short_month")
-            assert sub["type"] == "calendar_months" and sub["month_start_day"] == self.day
-        assert sum(self.quarters) == self.n_periods()
+            if self.sub_kind == "calendar_months":
+                assert sub["month_start_day"] == self.day and sum(self.quarters) == 12
+            else:
+                assert self.sub_kind == "table"
         self._bounds: dict[int, tuple[int, int]] = {}
-
-    def n_periods(self) -> int:
-        return len(self.period_weeks) if self.kind == "week_based" else 12
 
     def _boundary(self, y: int) -> int:
         d = days_in_month(y, self.month) if self.day == "last" else self.day
@@ -152,9 +164,11 @@ class Rule:
         return ymd_ord(y, m, dim) + 1
 
     def bounds(self, k: int) -> tuple[int, int]:
-        """First day and end_exclusive of the year with key k: its start year (fixed_date) or anchor year (week_based)."""
+        """First day and end_exclusive of the year with key k: its start year (fixed_date), anchor year (week_based) or table index (table)."""
         if k not in self._bounds:
-            if self.kind == "fixed_date":
+            if self.kind == "table":
+                b = self.year_table[k], self.year_table[k + 1]
+            elif self.kind == "fixed_date":
                 b = self.adjusted(k, self.month, self.day), self.adjusted(k + 1, self.month, self.day)
             elif self.edge == "end":
                 b = self._boundary(k - 1) + 1, self._boundary(k) + 1
@@ -164,6 +178,10 @@ class Rule:
         return self._bounds[k]
 
     def key_of(self, o: int) -> int:
+        if self.kind == "table":
+            k = bisect.bisect_right(self.year_table, o) - 1
+            assert 0 <= k < len(self.year_table) - 1, "no listed year contains ordinal %d" % o
+            return k
         y = civil_year(o)
         for k in (y - 1, y, y + 1, y - 2, y + 2):
             s, e = self.bounds(k)
@@ -171,8 +189,47 @@ class Rule:
                 return k
         raise AssertionError("no fiscal year contains ordinal %d" % o)
 
-    def starts_year(self, o: int) -> bool:
+    def year_starts(self, o: int) -> bool:
+        """Whether o is the first day of a fiscal year under the `year` block alone."""
+        if self.kind == "table":
+            return o in self._year_starts
         return self.bounds(self.key_of(o))[0] == o
+
+    def starts_year(self, o: int, allow_end: bool = False) -> bool:
+        """Whether o is the first day of a fiscal year this rule produces; with allow_end, also the day after its table's last year."""
+        if self.table is None:
+            return self.year_starts(o)
+        lo, hi = self.table[0], self.table[-1]
+        return (lo <= o < hi and self.year_starts(o)) or (allow_end and o == hi)
+
+    def year_starts_between(self, a: int, b: int) -> list[int]:
+        """The first days of the `year` block's fiscal years in [a, b), where a is one of them."""
+        if self.kind == "table":
+            return [x for x in self.year_table[:-1] if a <= x < b]
+        out, k = [], self.key_of(a)
+        while self.bounds(k)[0] < b:
+            out.append(self.bounds(k)[0])
+            k += 1
+        return out
+
+    def table_errors(self, base: str) -> list[FiscalError]:
+        """The cross-block checks of a table subdivision against its year block (definition-v1.md, Cross-block checks)."""
+        t, path = self.table, base + "subdivision."
+        errors = []
+        if not self.year_starts(t[0]):
+            errors.append(FiscalError("SUBDIVISION_YEAR_MISMATCH", path + "boundaries[0]"))
+        if not (self.year_starts(t[-1]) or (self.kind == "table" and t[-1] == self.year_table[-1])):
+            errors.append(FiscalError("SUBDIVISION_YEAR_MISMATCH", path + "boundaries[%d]" % (len(t) - 1)))
+        if errors:
+            return errors
+        starts = self.year_starts_between(t[0], t[-1])
+        listed = set(t)
+        if any(s not in listed for s in starts):
+            return [FiscalError("SUBDIVISION_YEAR_MISMATCH", path + "boundaries")]
+        for s, e in zip(starts, starts[1:] + [t[-1]]):
+            if bisect.bisect_left(t, e) - bisect.bisect_left(t, s) != sum(self.quarters):
+                return [FiscalError("QUARTERS_SUM_MISMATCH", path + "quarters")]
+        return []
 
 
 @dataclass(frozen=True)
@@ -219,15 +276,18 @@ class Calendar:
     # Validation that needs dates ------------------------------------------
 
     def change_errors(self) -> list[FiscalError]:
-        """The cross-block checks on exceptions.history, which the spec runs once every block is otherwise valid."""
+        """The cross-block checks (table subdivisions and exceptions.history), which the spec runs once every block is otherwise valid."""
         errors = []
+        for r, rule in enumerate(self.rules):
+            if rule.table is not None:
+                errors += rule.table_errors("" if r == 0 else f"exceptions.history[{r - 1}].")
         for i, ch in enumerate(self.history):
             base = f"exceptions.history[{i}]"
             prev, own = self.rules[i], self.rules[i + 1]
             c, c_path = (ch.frm, base + ".from") if ch.start is None else (ch.start, base + ".transition.start")
             if i >= 1 and c <= self.history[i - 1].frm:
                 errors.append(FiscalError("EXCEPTIONS_OVERLAP", c_path))
-            if not prev.starts_year(c):
+            if not prev.starts_year(c, allow_end=True):
                 errors.append(FiscalError("CHANGE_NOT_ON_BOUNDARY", c_path))
             if not own.starts_year(ch.frm):
                 errors.append(FiscalError("CHANGE_NOT_ON_BOUNDARY", base + ".from"))
@@ -268,10 +328,13 @@ class Calendar:
                 upper = None if ch is None else (ch.frm if ch.start is None else ch.start)
                 a = MIN_ORD if lower is None else max(lower, MIN_ORD)
                 b = MAX_ORD if upper is None else min(upper - 1, MAX_ORD)
+                if rule.table is not None:
+                    a, b = max(a, rule.table[0]), min(b, rule.table[-1] - 1)
                 if a <= b:
                     for k in range(rule.key_of(a), rule.key_of(b) + 1):
                         s, e = rule.bounds(k)
-                        if (lower is None or s >= lower) and (upper is None or e <= upper):
+                        inside = rule.table is None or (rule.table[0] <= s and e <= rule.table[-1])
+                        if inside and (lower is None or s >= lower) and (upper is None or e <= upper):
                             years.append(FiscalYear(s, e, r, k, None))
                 if ch is not None:
                     if ch.start is not None:
@@ -301,11 +364,11 @@ class Calendar:
         return k
 
     def week_pattern(self, k: int) -> bool:
-        """Whether fiscal year k is divided into whole weeks (a week_based regime year or a week_pattern transition)."""
+        """Whether fiscal year k's subdivision is week_pattern (a week_based regime's, or a week_pattern transition's)."""
         fy = self.seq[k]
         if fy.regime is None:
             return fy.transition["type"] == "week_pattern"
-        return self.rules[fy.regime].kind == "week_based"
+        return self.rules[fy.regime].sub_kind == "week_pattern"
 
     # Year numbers -------------------------------------------------------
 
@@ -395,7 +458,7 @@ class Calendar:
         s, e = fy.start, fy.end
         pattern = self.week_pattern(k)
         if level == "year":
-            long_year = fy.regime is not None and self.rules[fy.regime].kind == "week_based" and (e - s) // 7 == 53
+            long_year = pattern and fy.regime is not None and (e - s) // 7 == 53
             return [Span("year", None, s, e, (e - s) // 7 if pattern else None, long_year)]
         if level == "week":
             return self._week_spans(k)
@@ -434,6 +497,12 @@ class Calendar:
             assert starts[0] == s
             return [Span("period", i + 1, starts[i], starts[i + 1], None, False) for i in range(months)]
         rule = self.rules[fy.regime]
+        if rule.table is not None:
+            # Period k is the k-th listed period starting on or after the year's first day.
+            t = rule.table
+            i0, i1 = bisect.bisect_left(t, s), bisect.bisect_left(t, e)
+            assert t[i0] == s and t[i1] == e
+            return [Span("period", j + 1, t[i0 + j], t[i0 + j + 1], None, False) for j in range(i1 - i0)]
         if rule.kind == "week_based":
             long_year = (e - s) // 7 == 53
             out, cur = [], s
@@ -459,7 +528,7 @@ class Calendar:
         pattern = self.week_pattern(k)
         rule = self.rules[fy.regime] if fy.regime is not None else None
         extra_idx = None
-        if rule is not None and rule.kind == "week_based" and (e - s) // 7 == 53:
+        if rule is not None and rule.sub_kind == "week_pattern" and (e - s) // 7 == 53:
             extra_idx = sum(rule.period_weeks[: rule.extra_period]) + 1
         out, cur, i = [], s, 1
         while cur < e:
@@ -469,7 +538,7 @@ class Calendar:
             cur, i = nxt, i + 1
         if pattern:
             assert all(w.end - w.start == 7 for w in out)
-        if rule is not None and rule.kind == "fixed_date":
+        if rule is not None and rule.sub_kind == "calendar_months":
             assert 53 <= len(out) <= 54
         return out
 

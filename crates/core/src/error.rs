@@ -29,7 +29,8 @@ pub enum ErrorCode {
     /// `periods` does not sum to its number of weeks.
     WeeksSumMismatch,
     /// `quarters` does not sum to the number of periods, which for a
-    /// `calendar_months` transition is its number of months.
+    /// `calendar_months` transition is its number of months, and for a
+    /// `table` subdivision the number of listed periods in each fiscal year.
     QuartersSumMismatch,
     /// A week-based year has no `extra_week`.
     ExtraWeekMissing,
@@ -37,9 +38,12 @@ pub enum ErrorCode {
     ExtraWeekOutOfRange,
     /// `start.day` is 29–31 and `short_month` is absent.
     ShortMonthPolicyMissing,
-    /// `month_start_day` differs from `year.start.day`, or a transition's
-    /// subdivision does not fit its dates.
+    /// `month_start_day` differs from `year.start.day`, a transition's
+    /// subdivision does not fit its dates, or a `table` subdivision does not
+    /// tile the fiscal years of its `year` block.
     SubdivisionYearMismatch,
+    /// An entry of a `table`'s `boundaries` is on or before the one before it.
+    TableNotIncreasing,
     /// A history entry's change point is on or before the previous entry's `from`.
     ExceptionsOverlap,
     /// A history entry's change point is not the first day of a fiscal year
@@ -98,6 +102,7 @@ impl ErrorCode {
             ErrorCode::ExtraWeekOutOfRange => "EXTRA_WEEK_OUT_OF_RANGE",
             ErrorCode::ShortMonthPolicyMissing => "SHORT_MONTH_POLICY_MISSING",
             ErrorCode::SubdivisionYearMismatch => "SUBDIVISION_YEAR_MISMATCH",
+            ErrorCode::TableNotIncreasing => "TABLE_NOT_INCREASING",
             ErrorCode::ExceptionsOverlap => "EXCEPTIONS_OVERLAP",
             ErrorCode::ChangeNotOnBoundary => "CHANGE_NOT_ON_BOUNDARY",
             ErrorCode::DefaultSchemeMissing => "DEFAULT_SCHEME_MISSING",
