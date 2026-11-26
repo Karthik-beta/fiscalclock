@@ -1,10 +1,10 @@
 # Calendar definition format, spec version 1
 
-Status: draft for fiscalclock 0.2.0. Last reviewed: 15 Nov 2026.
+Status: draft for fiscalclock 0.3.0. Last reviewed: 26 Nov 2026.
 
 A calendar definition is one JSON object that describes how a fiscal year is bounded, subdivided, divided into weeks and named, and, optionally, how that rule changes on a date. The library computes every answer from this object and holds no built-in calendars.
 
-This document is normative for the parts that fiscalclock 0.2.0 implements. Parts of the format that are designed but not yet implemented are listed in [Reserved for later releases](#reserved-for-later-releases); a definition that uses them is rejected with `UNSUPPORTED_FEATURE`, so it never produces a silent wrong answer. [ADR-0032](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0032-year-rule-history-and-transitions) records the design of [`exceptions`](#exceptions), new in 0.2.0. Every definition that fiscalclock 0.1.0 accepts keeps its meaning, canonical form and `calendar_id`, and every successful output is byte-identical. Definitions that 0.1.0 rejected may now be valid (`exceptions`, `{yy_end}`), and some messages and hints changed (reserved features now name 0.3).
+This document is normative for the parts that fiscalclock implements on its `main` branch, which become 0.3.0. Parts of the format that are designed but not yet implemented are listed in [Reserved for later releases](#reserved-for-later-releases); a definition that uses them is rejected with `UNSUPPORTED_FEATURE`, so it never produces a silent wrong answer. [ADR-0032](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0032-year-rule-history-and-transitions) records the design of [`exceptions`](#exceptions), new in 0.2.0. Every definition that fiscalclock 0.1.0 accepts keeps its meaning, canonical form and `calendar_id`, and every successful output is byte-identical. Definitions that 0.1.0 rejected may now be valid (`exceptions`, `{yy_end}`), and some messages and hints changed (reserved features now name 0.3). The same holds from 0.2.0 to 0.3.0: table years and the `table` subdivision are new, and `year_number: "table"` changes from `UNSUPPORTED_FEATURE` to `INVALID_VALUE`, as [ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries) decides.
 
 The key words "must", "must not" and "may" are used as in RFC 2119.
 
@@ -30,7 +30,7 @@ Weekday values are the lower-case English names `monday` … `sunday`. Month val
 
 ## `year`
 
-A `year` block together with a `subdivision` block is a *rule*: it produces a fiscal year for every calendar year, as described below. Without `exceptions`, the top-level rule produces every fiscal year of the calendar. With `exceptions`, each rule is in force only for part of the timeline; see [Timeline](#timeline).
+A `year` block together with a `subdivision` block is a *rule*: it produces a fiscal year for every calendar year, as described below. A rule in which either block is a `table` produces only the fiscal years its table covers. Without `exceptions`, the top-level rule produces every fiscal year of the calendar. With `exceptions`, each rule is in force only for part of the timeline; see [Timeline](#timeline).
 
 ### `type: "fixed_date"`
 
@@ -73,6 +73,21 @@ Examples:
 - Apple's fiscal year ends on the last Saturday of September: `{"edge": "end", "month": 9, "day": "last", "rule": "last"}` with `week.starts_on: "sunday"`. Apple states the rule in its [Form 10-Q for the quarter ended 30 December 2023](https://www.sec.gov/Archives/edgar/data/320193/000032019324000006/aapl-20231230.htm).
 - The ISO 8601 week-numbering year starts on the Monday nearest 1 January: `{"edge": "start", "month": 1, "day": 1, "rule": "nearest"}` with `week.starts_on: "monday"`. This anchor matches Python's `date.isocalendar()` for every year from 1600 to 2399 (check C15 in [`research/verification/`](../research/verification/README.md)). Its years must be numbered with `year_number: "majority"` (see [Year numbers must be unique](#year-numbers-must-be-unique)).
 
+### `type: "table"`
+
+The fiscal years are listed instead of following a rule ([ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries)).
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `boundaries` | array of at least 2 `YYYY-MM-DD` date strings | yes | The first day of each fiscal year, in order, followed by the day after the last listed year's last day. |
+
+Fiscal year *k* (from 0) runs from `boundaries[k]` to the day before `boundaries[k + 1]`. The rule produces only these years: the calendar is not defined before `boundaries[0]` or from the last entry on, and a date there returns `OUT_OF_RANGE`.
+
+- Fewer than 2 entries is `INVALID_VALUE` at `year.boundaries`. An entry that is not a string is `INVALID_TYPE`, and one that is not a `YYYY-MM-DD` date from 0001-01-02 to 9999-12-31 is `INVALID_VALUE`, each at `year.boundaries[k]`.
+- Each entry must be after the one before it. An entry on or before its predecessor is `TABLE_NOT_INCREASING` at `year.boundaries[k]`, once for every such *k*. Only two neighbouring entries that are both valid dates are compared, so an invalid entry gives its own error and no `TABLE_NOT_INCREASING` beside it.
+- A table year needs a `table` subdivision. With `calendar_months` or `week_pattern` it is `UNSUPPORTED_COMBINATION` at `subdivision.type`.
+- Year numbers come from `naming`, as for every other year type. A table year has no numbers of its own.
+
 ## `week`
 
 | Field | Type | Required | Meaning |
@@ -100,7 +115,7 @@ For a definition without `exceptions`, this is the same rule as in fiscalclock 0
 
 ### `type: "calendar_months"`
 
-Valid only inside a `fixed_date` year. Inside a `week_based` year it is rejected with `UNSUPPORTED_COMBINATION`. A transition has its own `calendar_months` subdivision with different checks; see [Transitions](#transitions).
+Valid only inside a `fixed_date` year. Inside a `week_based` or `table` year it is rejected with `UNSUPPORTED_COMBINATION`. A transition has its own `calendar_months` subdivision with different checks; see [Transitions](#transitions).
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
@@ -111,7 +126,7 @@ Period *k* (1–12) starts on `month_start_day` of the *k*-th month counted from
 
 ### `type: "week_pattern"`
 
-Valid only inside a `week_based` year. Inside a `fixed_date` year it needs `stub`, which is reserved, so it is rejected with `UNSUPPORTED_COMBINATION`. A transition has its own `week_pattern` subdivision, without `extra_week`; see [Transitions](#transitions).
+Valid only inside a `week_based` year. Inside a `fixed_date` year it needs `stub`, which is reserved, so it is rejected with `UNSUPPORTED_COMBINATION`, as it is inside a `table` year. A transition has its own `week_pattern` subdivision, without `extra_week`; see [Transitions](#transitions).
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
@@ -121,6 +136,25 @@ Valid only inside a `week_based` year. Inside a `fixed_date` year it needs `stub
 | `extra_week.period` | integer | yes | The period that gains the extra week as its last week. Outside 1 … length of `periods` is `EXTRA_WEEK_OUT_OF_RANGE`. |
 
 In a 53-week year, period `extra_week.period` has one more week than `periods` says, and the extra week is that period's last week.
+
+### `type: "table"`
+
+The periods are listed instead of following a rule ([ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries)). Valid inside every year type. A transition cannot use it: `"table"` there is `INVALID_VALUE`, as any other unknown type is.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `boundaries` | array of at least 2 `YYYY-MM-DD` date strings | yes | The first day of each period, in order, followed by the day after the last listed period's last day. The entry rules of a table year's `boundaries` apply, at `subdivision.boundaries[k]`, including `TABLE_NOT_INCREASING`. |
+| `quarters` | array of positive integers | yes | Number of periods in each quarter. Every fiscal year has as many periods as `quarters` sums to. |
+
+Period *k* of a fiscal year is the *k*-th listed period that starts on or after the year's first day. The listed periods must tile the fiscal years of the `year` block exactly, which the [cross-block checks](#cross-block-checks) verify:
+
+- `boundaries[0]` and the last entry must each be the first day of a fiscal year under the `year` block, or, for a table year, the day after its last listed year;
+- every first day of a fiscal year between them must be listed;
+- each fiscal year between them must hold exactly as many listed periods as `quarters` sums to.
+
+The rule then produces only the fiscal years between `boundaries[0]` and the last entry, so the calendar is defined only there, whatever the `year` block would produce outside them. This narrowing is the one effect a `table` subdivision has on another block.
+
+A `table` subdivision does not split periods into weeks. Weeks are counted from the fiscal year's first day, as in a `fixed_date` year, and do not nest in quarters or periods.
 
 ### Quarters
 
@@ -137,7 +171,7 @@ Each scheme:
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
-| `year_number` | `"start"`, `"end"` or `"majority"` | yes | Number a fiscal year by the calendar year of its first day, of its last day, or that holds more than half of its days. `"table"` is reserved (`UNSUPPORTED_FEATURE`). |
+| `year_number` | `"start"`, `"end"` or `"majority"` | yes | Number a fiscal year by the calendar year of its first day, of its last day, or that holds more than half of its days. Any other value, `"table"` included, is `INVALID_VALUE`: table years are numbered by these rules too. |
 | `offset` | integer −1,000,000,000 to 1,000,000,000 | no, default 0 | Added to the year number, for example 1 to label each fiscal year by the following calendar year. Outside the range is `INVALID_VALUE`, so that every year number fits a 32-bit integer. |
 | `century_pivot` | integer 100–9999 | see below | Resolves two-digit years when parsing. A two-digit value *yy* means the unique year in [`century_pivot` − 99, `century_pivot`] whose last two digits are *yy*. |
 | `templates` | object | yes | Label templates keyed by level: `year`, `quarter`, `period`, `week`. At least one; an empty object is `INVALID_VALUE` at `naming.schemes.<name>.templates`. Unknown keys are `UNKNOWN_FIELD`. |
@@ -255,12 +289,12 @@ Quarters in a transition are formed from its periods as described in [Quarters](
 
 ### Timeline
 
-The regimes of a calendar are the top-level `year` and `subdivision` (regime 0), then the `year` and `subdivision` of history entry *i* (regime *i* + 1). Regime 0 is in force from the start of the supported range; regime *i* + 1 is in force from entry *i*'s `from`.
+The regimes of a calendar are the top-level `year` and `subdivision` (regime 0), then the `year` and `subdivision` of history entry *i* (regime *i* + 1). Regime 0 is in force from the start of the supported range; regime *i* + 1 is in force from entry *i*'s `from`. A rule with a table produces only the fiscal years its table covers, so its regime has no years outside them.
 
 The change point *c*(*i*) of history entry *i* is its `transition.start` when it has a transition, and its `from` otherwise.
 
 - Regime 0's fiscal years are the years its rule produces that end on or before *c*(0).
-- Regime *i* + 1's fiscal years are the years its rule produces that start on or after entry *i*'s `from` and end on or before *c*(*i* + 1). The last regime has no upper bound.
+- Regime *i* + 1's fiscal years are the years its rule produces that start on or after entry *i*'s `from` and end on or before *c*(*i* + 1). The last regime has no upper bound other than its table's, so a calendar whose last regime has a table ends where that table ends.
 - Entry *i*'s transition, when it has one, is the fiscal year `[transition.start, from)`.
 
 The fiscal years of the calendar are, in date order: the years of regime 0, then for each history entry in order its transition (if any) and the years of its regime. Validation guarantees that they tile time with no gap and no overlap. Each fiscal year has its own subdivision: a regime's year uses its regime's `subdivision`, and a transition uses its transition's `subdivision`. The number of quarters, periods and weeks can therefore differ from one fiscal year to the next.
@@ -269,7 +303,18 @@ The fiscal years of the calendar are, in date order: the years of regime 0, then
 
 Validation runs in three stages: block-level checks, then cross-block checks, then year numbering. The cross-block checks are exactly the rows of the table below, and year numbering is described in [Year numbers must be unique](#year-numbers-must-be-unique). Every other check is block-level. "Block-level" names the stage, not the number of blocks a check reads: it covers types, required and unknown fields, values and their ranges, reserved features and combinations, in every block and history entry, and also `SUBDIVISION_YEAR_MISMATCH` against `year.start.day`, `DEFAULT_SCHEME_MISSING`, `QUARTERS_SUM_MISMATCH`, `WEEKS_SUM_MISMATCH`, `EXTRA_WEEK_MISSING`, `EXTRA_WEEK_OUT_OF_RANGE`, `INVALID_TEMPLATE`, `CENTURY_PIVOT_MISSING` and `SHORT_MONTH_POLICY_MISSING`, at the top level and in history entries, except the transition rows of the table below. Block-level checks include `transition.start` on or after `from`, an empty transition `periods`, and a transition `week_pattern`'s `quarters` that do not sum to the length of its `periods` (checked when `periods` is otherwise valid). Every error they find is reported together. The checks that compare a transition's subdivision with its dates are cross-block, although the field tables above mention them; they are in the table below.
 
-Only when the definition has no block-level error do the following checks run, for every history entry *i*. Every error they find is reported. "The previous regime" of entry *i* is regime 0 when *i* = 0 and history entry *i* − 1 otherwise. "The first day of a fiscal year under a rule" means the first day of one of the years that the rule produces for any calendar year, regardless of the regime's own bounds.
+Only when the definition has no block-level error do the following checks run. Every error they find is reported.
+
+For every rule with a `table` subdivision (the top level, and every history entry with its paths prefixed by `exceptions.history[i].`), where *n* is the index of the last entry of `subdivision.boundaries`:
+
+| Condition | Error |
+| --- | --- |
+| `subdivision.boundaries[0]` is not the first day of a fiscal year under the `year` block | `SUBDIVISION_YEAR_MISMATCH` at `subdivision.boundaries[0]` |
+| `subdivision.boundaries[n]` is not the first day of a fiscal year under the `year` block, nor, for a table year, the day after its last listed year | `SUBDIVISION_YEAR_MISMATCH` at `subdivision.boundaries[n]` |
+| Only when neither row above finds an error: a first day of a fiscal year between `boundaries[0]` and `boundaries[n]` is not listed | `SUBDIVISION_YEAR_MISMATCH` at `subdivision.boundaries`; the message names the earliest such day |
+| Only when no row above finds an error: a fiscal year between `boundaries[0]` and `boundaries[n]` does not hold exactly as many listed periods as `quarters` sums to | `QUARTERS_SUM_MISMATCH` at `subdivision.quarters`; the message names the earliest such year |
+
+For every history entry *i*: "The previous regime" of entry *i* is regime 0 when *i* = 0 and history entry *i* − 1 otherwise. "The first day of a fiscal year under a rule" means the first day of one of the years that the rule produces for any calendar year, regardless of the regime's own bounds. For a rule with a table it means the first day of one of the years the table covers, where the table covers the dates from `subdivision.boundaries[0]` to the day before its last entry, whether or not the table rows above find an error; for *c*(*i*) under the previous regime's rule, the day after its table's last year counts too, because that regime may end where its table ends.
 
 Each path in the Error column is relative to the entry, `exceptions.history[i]`: for example `transition.start` stands for `exceptions.history[i].transition.start`.
 
@@ -285,7 +330,7 @@ Each path in the Error column is relative to the entry, `exceptions.history[i]`:
 
 The first three checks run independently, so one entry can report more than one error. When an entry has no transition and its `from` fails both the previous-regime check and its own-rule check, both `CHANGE_NOT_ON_BOUNDARY` errors are reported at `exceptions.history[i].from`, the previous-regime error first. Hints name the nearest valid dates where that helps, for example the first days of the previous regime's fiscal years just before and just after *c*(*i*). Validation never picks a date for the user.
 
-Together these checks guarantee the tiling: each regime after regime 0 starts on one of its own year boundaries and has at least one fiscal year before the next change point, and each change point is a year boundary of the regime it ends.
+Together these checks guarantee the tiling: each regime after regime 0 starts on one of its own year boundaries and has at least one fiscal year before the next change point, and each change point is a year boundary of the regime it ends, inside its table when it has one.
 
 Year numbering (see [Year numbers must be unique](#year-numbers-must-be-unique)) runs only when the cross-block checks find no error.
 
@@ -340,7 +385,7 @@ The canonical form is the definition after parsing, serialised as JSON with:
 - optional fields with a default written out (`offset: 0`), and optional fields without a default written as `null` (`short_month`, `century_pivot`, and a history entry's `transition`); template levels that are absent stay absent;
 - `exceptions` left out when it is absent or `null`, so every definition that fiscalclock 0.1.0 accepts keeps its 0.1.0 canonical form and `calendar_id`; when present, it is written with its `history` and the rules above apply inside it (for example, a history entry's `fixed_date` year has `short_month`, `null` when absent);
 - object keys sorted by their UTF-8 bytes at every level; array elements, including the entries of `exceptions.history`, keep their order;
-- dates in `exceptions` written as the `YYYY-MM-DD` strings given;
+- dates in `exceptions` and in `boundaries` written as the `YYYY-MM-DD` strings given;
 - no insignificant whitespace, integers in plain decimal, strings with the minimal JSON escapes: `\"`, `\\`, `\b`, `\f`, `\n`, `\r`, `\t`, other characters U+0000 to U+001F as `\u00xx` with lower-case hexadecimal digits, and every other character, including non-ASCII, written as UTF-8.
 
 `calendar_id` is the first 16 lower-case hexadecimal characters of the SHA-256 digest of the canonical form's UTF-8 bytes. Two definitions that differ only in key order, whitespace, `$schema` or written-out defaults have the same `calendar_id`.
@@ -351,13 +396,12 @@ These parts of the format are designed in the [research proposal](https://github
 
 | Field or value | Planned |
 | --- | --- |
-| `year.type: "table"` | 0.3 |
 | `subdivision.type: "anchored"` | 0.3, as decided in [ADR-0033](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0033-anchored-subdivision-and-rule-conflict) |
 | `subdivision.stub` | 0.3, as decided in [ADR-0024](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0024-stub-semantics) |
 | `subdivision.special_periods` | 0.3, as decided in [ADR-0034](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0034-special-periods) |
 | `extra_week.standalone`, `extra_week.by_year` | Not scheduled ([ADR-0035](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0035-extra-week-standalone-and-by-year)) |
 | `week.numbering: "first_full"` | Not scheduled ([ADR-0036](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0036-first-full-week-numbering-deferred)) |
-| `naming.schemes.*.year_number: "table"`, `eras` | 0.3, as decided in [ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries) and [ADR-0037](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0037-eras-and-templates-ambiguous) |
+| `naming.schemes.*.eras` | 0.3, as decided in [ADR-0037](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0037-eras-and-templates-ambiguous) |
 | `exceptions.overrides` | Not scheduled ([ADR-0038](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0038-exceptions-overrides-deferred)) |
 
 `exceptions.history`, with its transitions, is implemented in 0.2.0 and described in [`exceptions`](#exceptions). There is no separate `exceptions.transitions` field: a transition belongs to the history entry it leads into, and `exceptions.transitions` is `UNKNOWN_FIELD`.

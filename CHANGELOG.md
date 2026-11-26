@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Table years and the `table` subdivision: `year.type: "table"` lists each fiscal year's first day, and `subdivision.type: "table"` lists each period's first day, in any year type, for calendars whose years or periods follow no rule, such as ERP period tables. A rule with a table produces only the fiscal years its table covers; any other date is `OUT_OF_RANGE`. Both work at the top level and in `exceptions.history` entries ([spec](spec/definition-v1.md#type-table), [ADR-0022](https://github.com/Karthik-beta/fiscalclock/wiki/ADR-0022-table-years-with-period-boundaries), [#85](https://github.com/Karthik-beta/fiscalclock/issues/85)).
+- The validation code `TABLE_NOT_INCREASING`, for a `boundaries` entry on or before the one before it. `SUBDIVISION_YEAR_MISMATCH` and `QUARTERS_SUM_MISMATCH` also report a `table` subdivision that does not tile its fiscal years ([error catalogue](spec/api-v1.md#error-catalogue)).
+
 ### Changed
+
+- `year_number: "table"` is `INVALID_VALUE` instead of `UNSUPPORTED_FEATURE`: table years are numbered by `start`, `end` or `majority` like any other year, as ADR-0022 decides. The error vector that expected `UNSUPPORTED_FEATURE` now expects `INVALID_VALUE` ([#85](https://github.com/Karthik-beta/fiscalclock/issues/85)).
+- The `OUT_OF_RANGE` hint now says that a calendar with a table covers only the fiscal years its table lists, and the `LEVEL_NOT_NESTED` message for weeks names a `table` subdivision when that is the cause. Messages and hints are not part of the API; every successful output for a definition that 0.2.0 accepts is unchanged, as the unchanged conformance vectors show.
 
 - The `UNSUPPORTED_FEATURE` hint for `extra_week.standalone`, `extra_week.by_year`, `week.numbering: "first_full"` and `exceptions.overrides` now says that no release is scheduled, instead of naming 0.3. ADRs 0035, 0036 and 0038 defer them because no cited calendar needs them ([#83](https://github.com/Karthik-beta/fiscalclock/issues/83)). Hints are not part of the API.
 

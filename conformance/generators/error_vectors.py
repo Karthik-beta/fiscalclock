@@ -6,6 +6,7 @@ import copy
 from datetime import date
 
 import history_vectors as hv
+import table_vectors as tv
 from fiscal_oracle import Calendar, iso
 from oracle_vectors import iso_definition, nrf_definition
 from vectorlib import case, coords, fixed_date, naming, scheme, source, validate_case, vector, week_based, year_args
@@ -84,7 +85,6 @@ INVALID = [
     ("invalid-value-century-pivot", edit(fixed, setp("naming.schemes.fy.century_pivot", 99)), {"code": "INVALID_VALUE", "path": "naming.schemes.fy.century_pivot"}, "century_pivot is an integer 100-9999"),
     ("unsupported-spec-version", edit(nrf, setp("spec_version", 2)), {"code": "UNSUPPORTED_SPEC_VERSION", "path": "spec_version"}, "A higher value is rejected with UNSUPPORTED_SPEC_VERSION"),
     ("unsupported-feature-first-full", edit(nrf, setp("week.numbering", "first_full")), {"code": "UNSUPPORTED_FEATURE", "path": "week.numbering"}, "first_full is reserved and rejected with UNSUPPORTED_FEATURE"),
-    ("unsupported-feature-year-number-table", edit(nrf, setp("naming.schemes.nrf.year_number", "table")), {"code": "UNSUPPORTED_FEATURE", "path": "naming.schemes.nrf.year_number"}, "year_number table is reserved (UNSUPPORTED_FEATURE)"),
     ("unsupported-feature-eras", edit(nrf, setp("naming.schemes.nrf.eras", [])), {"code": "UNSUPPORTED_FEATURE", "path": "naming.schemes.nrf.eras"}, "eras: Reserved (UNSUPPORTED_FEATURE)"),
     ("unsupported-feature-standalone", edit(nrf, setp("subdivision.extra_week.standalone", True)), {"code": "UNSUPPORTED_FEATURE", "path": "subdivision.extra_week.standalone"}, "extra_week.standalone is reserved for 0.2"),
     ("unsupported-combination-calendar-months", edit(nrf, setp("subdivision", calendar_months_in_week_based)), {"code": "UNSUPPORTED_COMBINATION", "path": "subdivision.type"}, "calendar_months inside a week_based year is rejected with UNSUPPORTED_COMBINATION"),
@@ -313,7 +313,6 @@ HISTORY_BLOCK = [
     ("history-from-not-iso", edit(jul_to_apr(), hset("from", "2025-4-1")), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date must be written YYYY-MM-DD; any other string is INVALID_VALUE"),
     ("history-from-before-range", edit(jul_to_apr(), both(hset("from", "0001-12-31"), hset("transition", None))), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date before 0002-01-01 is INVALID_VALUE"),
     ("history-from-after-range", edit(jul_to_apr(), hset("from", "9999-01-01")), {"code": "INVALID_VALUE", "path": H0 + ".from"}, "history-entries", "A date after 9998-12-31 is INVALID_VALUE"),
-    ("history-year-reserved", edit(jul_to_apr(), hset("year", {"type": "table"})), {"code": "UNSUPPORTED_FEATURE", "path": H0 + ".year.type"}, "history-entries", "An entry's year is validated as the top-level year, so year.type table is reserved (UNSUPPORTED_FEATURE) at the prefixed path"),
     ("history-subdivision-stub", edit(jul_to_apr(), hset("subdivision.stub", {})), {"code": "UNSUPPORTED_FEATURE", "path": H0 + ".subdivision.stub"}, "reserved-for-later-releases", "A reserved field inside a history entry is rejected at the prefixed path, for example exceptions.history[0].subdivision.stub"),
     ("history-unsupported-combination", edit(jul_to_apr(), hset("subdivision", copy.deepcopy(week_pattern_in_fixed))), {"code": "UNSUPPORTED_COMBINATION", "path": H0 + ".subdivision.type"}, "history-entries", "week_pattern inside an entry's fixed_date year is UNSUPPORTED_COMBINATION at the prefixed path"),
     ("history-subdivision-year-mismatch", edit(jul_to_apr(), hset("subdivision.month_start_day", 2)), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": H0 + ".subdivision.month_start_day"}, "history-entries", "An entry's month_start_day must equal the entry's own year.start.day"),
@@ -461,5 +460,118 @@ def history_error_vectors() -> list[dict]:
     return out
 
 
+# Table years and the table subdivision (fiscalclock 0.3.0, ADR-0022) -------------------------------------------
+
+TABLE_SPEC = "spec/definition-v1.md, year and subdivision type table and Cross-block checks (fiscalclock 0.3.0, ADR-0022), and spec/api-v1.md error catalogue"
+TABLE_CHECKED = (
+    "Manual reading of the 0.3.0 text of " + SPEC_BASE + "definition-v1.md (year type table, subdivision type table, Timeline, "
+    "Cross-block checks) and " + SPEC_BASE + "api-v1.md#error-catalogue, 2026-11-26"
+)
+TABLE_CROSS_CHECKED = TABLE_CHECKED + "; conformance/generators/fiscal_oracle.py Calendar.change_errors gives the same codes, paths and order (asserted)"
+CHANGED_85 = "This vector replaces a 0.2.0 vector whose expected error changed in 0.3.0, as issue #85 explains"
+NEPAL = tv.nepal_definition()
+ERP = tv.erp_definition()
+ERP_N = len(ERP["subdivision"]["boundaries"]) - 1
+
+
+def erp_boundaries(fn) -> list[str]:
+    b = list(ERP["subdivision"]["boundaries"])
+    fn(b)
+    return b
+
+
+# (name, definition, expected error(s), section anchor in definition-v1.md, paraphrase of the spec rule)
+TABLE_BLOCK = [
+    ("table-year-too-few-boundaries", edit(NEPAL, setp("year.boundaries", ["2024-07-16"])), {"code": "INVALID_VALUE", "path": "year.boundaries"}, "type-table", "A table year's boundaries has at least 2 entries; fewer is INVALID_VALUE at year.boundaries"),
+    ("table-year-boundary-not-string", edit(NEPAL, setp("year.boundaries.1", 20250717)), {"code": "INVALID_TYPE", "path": "year.boundaries[1]"}, "type-table", "An entry that is not a string is INVALID_TYPE at year.boundaries[k]"),
+    ("table-year-boundary-not-a-date", edit(NEPAL, setp("year.boundaries.1", "2025-02-30")), {"code": "INVALID_VALUE", "path": "year.boundaries[1]"}, "type-table", "An entry that is not a YYYY-MM-DD date is INVALID_VALUE at year.boundaries[k]"),
+    ("table-year-boundary-before-range", edit(NEPAL, setp("year.boundaries.0", "0001-01-01")), {"code": "INVALID_VALUE", "path": "year.boundaries[0]"}, "type-table", "An entry before 0001-01-02 is INVALID_VALUE at year.boundaries[k]"),
+    ("table-year-not-increasing", edit(NEPAL, setp("year.boundaries", ["2024-07-16", "2026-07-17", "2025-07-17", "2025-07-17"])),
+     [{"code": "TABLE_NOT_INCREASING", "path": "year.boundaries[2]"}, {"code": "TABLE_NOT_INCREASING", "path": "year.boundaries[3]"}], "type-table",
+     "An entry on or before its predecessor is TABLE_NOT_INCREASING at year.boundaries[k], once for every such k: entry 2 is before entry 1 and entry 3 equals entry 2"),
+    ("table-year-calendar-months", edit(NEPAL, setp("subdivision", {"type": "calendar_months", "month_start_day": 16, "quarters": [3, 3, 3, 3]})), {"code": "UNSUPPORTED_COMBINATION", "path": "subdivision.type"}, "type-table", "A table year needs a table subdivision; calendar_months is UNSUPPORTED_COMBINATION at subdivision.type"),
+    ("table-year-week-pattern", edit(NEPAL, setp("subdivision", copy.deepcopy(PATTERN_4_4_5))), {"code": "UNSUPPORTED_COMBINATION", "path": "subdivision.type"}, "type-table", "A table year needs a table subdivision; week_pattern is UNSUPPORTED_COMBINATION at subdivision.type"),
+    ("table-subdivision-too-few-boundaries", edit(ERP, setp("subdivision.boundaries", ["2023-01-01"])), {"code": "INVALID_VALUE", "path": "subdivision.boundaries"}, "type-table-1", "A table subdivision's boundaries has at least 2 entries; fewer is INVALID_VALUE at subdivision.boundaries"),
+    ("table-subdivision-boundary-not-string", edit(ERP, setp("subdivision.boundaries.3", None)), {"code": "INVALID_TYPE", "path": "subdivision.boundaries[3]"}, "type-table-1", "The entry rules of a table year's boundaries apply at subdivision.boundaries[k]: not a string is INVALID_TYPE"),
+    ("table-subdivision-boundary-not-a-date", edit(ERP, setp("subdivision.boundaries.3", "2023-13-01")), {"code": "INVALID_VALUE", "path": "subdivision.boundaries[3]"}, "type-table-1", "The entry rules of a table year's boundaries apply at subdivision.boundaries[k]: not a date is INVALID_VALUE"),
+    ("table-subdivision-not-increasing", edit(ERP, setp("subdivision.boundaries.2", ERP["subdivision"]["boundaries"][1])), {"code": "TABLE_NOT_INCREASING", "path": "subdivision.boundaries[2]"}, "type-table-1", "TABLE_NOT_INCREASING applies to a table subdivision's boundaries too: entry 2 equals entry 1"),
+    ("year-number-table", edit(nrf, setp("naming.schemes.nrf.year_number", "table")), {"code": "INVALID_VALUE", "path": "naming.schemes.nrf.year_number"}, "naming",
+     "year_number is start, end or majority; any other value, table included, is INVALID_VALUE (UNSUPPORTED_FEATURE in 0.2.0). " + CHANGED_85 + ", definition-unsupported-feature-year-number-table"),
+    ("history-year-table-calendar-months", edit(jul_to_apr(), both(hset("year", {"type": "table", "boundaries": ["2025-04-01", "2026-04-01"]}), hset("subdivision", hv.months(1, [3, 3, 3, 3])))),
+     {"code": "UNSUPPORTED_COMBINATION", "path": H0 + ".subdivision.type"}, "history-entries",
+     "An entry's year is validated as the top-level year: year type table is no longer reserved, and a table year with a calendar_months subdivision is UNSUPPORTED_COMBINATION at the prefixed path. " + CHANGED_85 + ", definition-history-year-reserved, which expected UNSUPPORTED_FEATURE for year type table"),
+    ("history-table-subdivision-not-increasing", edit(tv.rule_then_table_definition(), hset("subdivision.boundaries.1", "2023-12-31")), {"code": "TABLE_NOT_INCREASING", "path": H0 + ".subdivision.boundaries[1]"}, "history-entries", "An entry's table subdivision is validated as the top-level one, at the prefixed path: entry 1 is before entry 0"),
+]
+
+# Cross-block checks with tables: (name, definition, expected error(s), paraphrase). fiscal_oracle.py computes each (asserted).
+TABLE_CROSS = [
+    ("table-subdivision-first-not-year-start", edit(ERP, setp("subdivision.boundaries.0", "2023-01-02")), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": "subdivision.boundaries[0]"},
+     "The first entry, 2023-01-02, is not the first day of a 1 January fiscal year"),
+    ("table-subdivision-last-not-year-start", edit(ERP, setp(f"subdivision.boundaries.{ERP_N}", "2026-01-02")), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": f"subdivision.boundaries[{ERP_N}]"},
+     "The last entry, 2026-01-02, is not the first day of a 1 January fiscal year"),
+    ("table-subdivision-first-and-last-not-year-start", edit(ERP, both(setp("subdivision.boundaries.0", "2023-01-02"), setp(f"subdivision.boundaries.{ERP_N}", "2026-01-02"))),
+     [{"code": "SUBDIVISION_YEAR_MISMATCH", "path": "subdivision.boundaries[0]"}, {"code": "SUBDIVISION_YEAR_MISMATCH", "path": f"subdivision.boundaries[{ERP_N}]"}],
+     "Both the first and the last entry fail; both errors are reported, and the listing and quarters rows do not run"),
+    ("table-subdivision-year-start-not-listed", edit(ERP, setp("subdivision.boundaries", erp_boundaries(lambda b: b.remove("2024-01-01")))), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": "subdivision.boundaries"},
+     "2024-01-01, the first day of a fiscal year between the first and last entry, is not listed; the quarters row then does not run"),
+    ("table-subdivision-quarters-sum-mismatch", edit(ERP, setp("subdivision.boundaries", erp_boundaries(lambda b: b.remove("2024-02-26")))), {"code": "QUARTERS_SUM_MISMATCH", "path": "subdivision.quarters"},
+     "With 2024-02-26 removed, fiscal year 2024 holds 12 listed periods, but quarters sum to 13"),
+    ("table-year-subdivision-last-not-year-end", edit(NEPAL, setp("subdivision.boundaries.36", "2027-07-18")), {"code": "SUBDIVISION_YEAR_MISMATCH", "path": "subdivision.boundaries[36]"},
+     "In a table year, the subdivision's last entry may be a listed year start or the day after the last listed year (2027-07-17); 2027-07-18 is neither"),
+    ("history-table-subdivision-quarters-sum-mismatch", edit(tv.rule_then_table_definition(), hset("subdivision.boundaries", erp_boundaries(lambda b: b.remove("2024-02-26"))[13:])),
+     {"code": "QUARTERS_SUM_MISMATCH", "path": H0 + ".subdivision.quarters"},
+     "An entry's table subdivision is checked against the entry's own year block, at the prefixed path: with 2024-02-26 removed, 2024 holds 12 listed periods, but quarters sum to 13"),
+    ("history-table-change-after-table-end", hv.with_history(ERP, hv.entry("2027-01-01", *hv.fixed_rule(1, 1))), {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"},
+     "Regime 0's table covers 2023 to 2025, so its change point may be a listed year start or 2026-01-01, the day after its last year; from 2027-01-01 is neither"),
+    ("history-table-from-before-own-table", edit(tv.rule_then_table_definition(), hset("from", "2023-01-01")), {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"},
+     "The entry's own rule has a table that starts on 2024-01-01, so from 2023-01-01 is not the first day of a fiscal year the table covers, although it is a 1 January"),
+    ("history-table-from-at-own-table-end", edit(tv.rule_then_table_definition(), hset("from", "2026-01-01")), {"code": "CHANGE_NOT_ON_BOUNDARY", "path": H0 + ".from"},
+     "from 2026-01-01 is the day after the entry's own table's last year; that day counts only for c(i) under the previous regime's rule, not for from under the entry's own rule"),
+]
+
+
+def one_period_tables(boundaries: list[str], year_number: str) -> dict:
+    return {"spec_version": 1, "year": tv.table_year(boundaries), "week": {"starts_on": "monday", "numbering": "contains_start"},
+            "subdivision": tv.table(boundaries, [1]), "naming": named(year_number)}
+
+
+# Year numbering over the years a table covers: (name, definition, code, details.years, explanation). Computed by the oracle's scan (asserted).
+TABLE_NAMING = [
+    ("table-year-number-collision", one_period_tables(["2024-01-01", "2024-12-31", "2026-01-01"], "start"), "YEAR_NUMBER_COLLISION", [2024],
+     "Illustrative table years 2024-01-01 to 2024-12-30 and 2024-12-31 to 2025-12-31, each one period. Numbered by 'start', both get 2024"),
+    ("table-majority-tie", one_period_tables(["2024-12-31", "2025-01-02", "2026-01-02"], "majority"), "MAJORITY_TIE", [2024],
+     "Illustrative table years 2024-12-31 to 2025-01-01 (one day in each calendar year, so no majority) and 2025-01-02 to 2026-01-01"),
+]
+
+
+def table_error_vectors() -> list[dict]:
+    out = []
+    for name, defn, expected, anchor, rule in TABLE_BLOCK:
+        desc = (
+            f"Invalid definition (fiscalclock 0.3.0). Spec rule, paraphrased: {rule}. The definition has no other error, so the complete "
+            "error list is asserted (code and path of each error, sorted by path, then code)."
+        )
+        out.append(vector(f"definition-{name}", desc, source("errors", TABLE_SPEC, TABLE_CHECKED, f"{DEFINITION_URL}#{anchor}"), defn, [{"op": "validate", "args": {}, "expect_error": as_list(expected)}]))
+    for name, defn, expected, rule in TABLE_CROSS:
+        got = [e.expect_error() for e in Calendar(defn).change_errors()]
+        assert got == as_list(expected), (name, got)
+        desc = (
+            "Invalid definition (fiscalclock 0.3.0), rejected by the cross-block checks, which run only when the definition has no block-level "
+            f"error. {rule}. The dates are illustrative. The complete error list is asserted (code and path of each error, sorted by path, then code)."
+        )
+        src = source("errors", TABLE_SPEC, TABLE_CROSS_CHECKED, DEFINITION_URL + "#cross-block-checks")
+        out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": as_list(expected)}]))
+    for name, defn, code, years, why in TABLE_NAMING:
+        cal = Calendar(defn)
+        assert not cal.change_errors(), name
+        got = [e.expect_error() for e in cal.naming_errors()]
+        assert got == [{"code": code, "path": "naming.schemes.fy.year_number", "details": {"years": years}}], (name, got)
+        desc = f"Invalid definition (fiscalclock 0.3.0). {why}. Year numbering runs over the years the table covers. The complete error list is asserted (code, path and details)."
+        src = source("errors", "spec/definition-v1.md, Year numbers must be unique and type table (fiscalclock 0.3.0)",
+                     TABLE_CHECKED + "; fiscal_oracle.py Calendar.naming_errors scans every fiscal year the table covers (asserted)", YEAR_NUMBERS_URL)
+        out.append(vector(f"definition-{name}", desc, src, defn, [{"op": "validate", "args": {}, "expect_error": got}]))
+    return out
+
+
 def build() -> list[dict]:
-    return invalid_definition_vectors() + naming_error_vectors() + runtime_vectors() + history_error_vectors()
+    return invalid_definition_vectors() + naming_error_vectors() + runtime_vectors() + history_error_vectors() + table_error_vectors()

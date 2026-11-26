@@ -1,0 +1,303 @@
+{
+  "name": "table-week-based-narrowed-numbering",
+  "description": "ILLUSTRATIVE: the ISO 8601 week-year anchor (Monday nearest 1 January) numbered by 'start', which collides over the whole supported range (the years starting 2018-01-01 and 2018-12-31 both get 2018), with a table subdivision of two invented half-years per year for the ISO years 2016 to 2018, which all start in January. Year numbering runs only over the years the table covers, so 2016, 2017 and 2018 are consecutive and the definition is valid.",
+  "source": {
+    "kind": "oracle",
+    "citation": "Independent implementation of the spec in conformance/generators/fiscal_oracle.py, written with Python datetime and no fiscalclock code",
+    "url": null,
+    "checked_by": "fiscal_oracle.py: Calendar.seq narrowed to the table's years; the table cross-block checks and naming_errors pass"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "week_based",
+      "anchor": {
+        "edge": "start",
+        "month": 1,
+        "day": 1,
+        "rule": "nearest"
+      }
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "table",
+      "boundaries": [
+        "2016-01-04",
+        "2016-07-04",
+        "2017-01-02",
+        "2017-07-03",
+        "2018-01-01",
+        "2018-07-02",
+        "2018-12-31"
+      ],
+      "quarters": [
+        1,
+        1
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}",
+            "period": "FY{yyyy} P{pp}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect": {
+        "ok": true,
+        "calendar_id": "d764b4bed2b502cc",
+        "canonical": "{\"naming\":{\"default\":\"fy\",\"schemes\":{\"fy\":{\"century_pivot\":null,\"offset\":0,\"templates\":{\"period\":\"FY{yyyy} P{pp}\",\"year\":\"FY{yyyy}\"},\"year_number\":\"start\"}}},\"spec_version\":1,\"subdivision\":{\"boundaries\":[\"2016-01-04\",\"2016-07-04\",\"2017-01-02\",\"2017-07-03\",\"2018-01-01\",\"2018-07-02\",\"2018-12-31\"],\"quarters\":[1,1],\"type\":\"table\"},\"week\":{\"numbering\":\"contains_start\",\"starts_on\":\"monday\"},\"year\":{\"anchor\":{\"day\":1,\"edge\":\"start\",\"month\":1,\"rule\":\"nearest\"},\"type\":\"week_based\"}}"
+      }
+    },
+    {
+      "op": "years",
+      "args": {
+        "from": 2016,
+        "to": 2018
+      },
+      "expect": [
+        {
+          "level": "year",
+          "year": 2016,
+          "index": null,
+          "start": "2016-01-04",
+          "end_exclusive": "2017-01-02",
+          "last_day": "2017-01-01",
+          "days": 364,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2017,
+          "index": null,
+          "start": "2017-01-02",
+          "end_exclusive": "2018-01-01",
+          "last_day": "2017-12-31",
+          "days": 364,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        {
+          "level": "year",
+          "year": 2018,
+          "index": null,
+          "start": "2018-01-01",
+          "end_exclusive": "2018-12-31",
+          "last_day": "2018-12-30",
+          "days": 364,
+          "weeks": null,
+          "has_extra_week": false
+        }
+      ]
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2016-01-03"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2016-01-04"
+      },
+      "expect": {
+        "date": "2016-01-04",
+        "year": {
+          "level": "year",
+          "year": 2016,
+          "index": null,
+          "start": "2016-01-04",
+          "end_exclusive": "2017-01-02",
+          "last_day": "2017-01-01",
+          "days": 364,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2016,
+          "index": 1,
+          "start": "2016-01-04",
+          "end_exclusive": "2016-07-04",
+          "last_day": "2016-07-03",
+          "days": 182,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2016,
+          "index": 1,
+          "start": "2016-01-04",
+          "end_exclusive": "2016-07-04",
+          "last_day": "2016-07-03",
+          "days": 182,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2016,
+          "index": 1,
+          "start": "2016-01-04",
+          "end_exclusive": "2016-01-11",
+          "last_day": "2016-01-10",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 1,
+        "day_of_quarter": 1,
+        "day_of_period": 1,
+        "day_of_week": 1
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2018-12-30"
+      },
+      "expect": {
+        "date": "2018-12-30",
+        "year": {
+          "level": "year",
+          "year": 2018,
+          "index": null,
+          "start": "2018-01-01",
+          "end_exclusive": "2018-12-31",
+          "last_day": "2018-12-30",
+          "days": 364,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "quarter": {
+          "level": "quarter",
+          "year": 2018,
+          "index": 2,
+          "start": "2018-07-02",
+          "end_exclusive": "2018-12-31",
+          "last_day": "2018-12-30",
+          "days": 182,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "period": {
+          "level": "period",
+          "year": 2018,
+          "index": 2,
+          "start": "2018-07-02",
+          "end_exclusive": "2018-12-31",
+          "last_day": "2018-12-30",
+          "days": 182,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "week": {
+          "level": "week",
+          "year": 2018,
+          "index": 52,
+          "start": "2018-12-24",
+          "end_exclusive": "2018-12-31",
+          "last_day": "2018-12-30",
+          "days": 7,
+          "weeks": null,
+          "has_extra_week": false
+        },
+        "day_of_year": 364,
+        "day_of_quarter": 182,
+        "day_of_period": 182,
+        "day_of_week": 7
+      }
+    },
+    {
+      "op": "locate",
+      "args": {
+        "date": "2018-12-31"
+      },
+      "expect_error": {
+        "code": "OUT_OF_RANGE",
+        "path": "date"
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "year",
+          "year": 2018,
+          "index": null
+        }
+      },
+      "expect": {
+        "label": "FY2018",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY2018"
+      },
+      "expect": {
+        "level": "year",
+        "year": 2018,
+        "index": null,
+        "start": "2018-01-01",
+        "end_exclusive": "2018-12-31",
+        "last_day": "2018-12-30",
+        "days": 364,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    },
+    {
+      "op": "format",
+      "args": {
+        "period": {
+          "level": "period",
+          "year": 2017,
+          "index": 2
+        }
+      },
+      "expect": {
+        "label": "FY2017 P02",
+        "scheme": "fy"
+      }
+    },
+    {
+      "op": "parse",
+      "args": {
+        "label": "FY2017 P02"
+      },
+      "expect": {
+        "level": "period",
+        "year": 2017,
+        "index": 2,
+        "start": "2017-07-03",
+        "end_exclusive": "2018-01-01",
+        "last_day": "2017-12-31",
+        "days": 182,
+        "weeks": null,
+        "has_extra_week": false
+      }
+    }
+  ]
+}

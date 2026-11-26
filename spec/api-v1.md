@@ -27,8 +27,8 @@ Every operation is defined once, in the Rust core, as JSON in and JSON out. The 
 | `index` | 1-based position within the fiscal year; `null` for a year. |
 | `start`, `end_exclusive`, `last_day` | Bounds. |
 | `days` | Number of days. |
-| `weeks` | Number of weeks, the period's `days` divided by 7, when the subdivision of the period's fiscal year is `week_pattern` (a `week_based` year, or a `week_pattern` transition); `null` otherwise. |
-| `has_extra_week` | For a year, quarter or period: true when it contains the extra week. For a week: true when it is the extra week. Only a 371-day year of a `week_based` regime has an extra week, so this is always false in `fixed_date` years and in every period of a transition. |
+| `weeks` | Number of weeks, the period's `days` divided by 7, when the subdivision of the period's fiscal year is `week_pattern` (a `week_based` year, or a `week_pattern` transition); `null` otherwise, including for a `table` subdivision. |
+| `has_extra_week` | For a year, quarter or period: true when it contains the extra week. For a week: true when it is the extra week. Only a 371-day year of a `week_based` regime whose subdivision is `week_pattern` has an extra week (a `table` subdivision has none), so this is always false in `fixed_date` years and in every period of a transition. |
 
 ### Location
 
@@ -103,8 +103,8 @@ A failed operation returns `{"errors":[Error, …]}`. Validation reports every e
 | `locate` | `date` | Location |
 | `period` | `level`, `year`, `index` (omit or `null` for a year) | Period, or `PERIOD_NOT_FOUND` |
 | `shift` | `period`, `n` (integer) | The period `n` steps away at the same level, crossing years as needed |
-| `parent` | `period` | The enclosing period one level up: week → period when the subdivision of the week's fiscal year is `week_pattern` (a `week_based` year or a `week_pattern` transition), week → year otherwise (a `fixed_date` year or a `calendar_months` transition), period → quarter, quarter → year. A year has no parent (`INVALID_ARGUMENT`). |
-| `children` | `period`, `level` | Periods at `level` inside `period`, in order. `week` children of a quarter or period are `LEVEL_NOT_NESTED` unless the subdivision of its fiscal year is `week_pattern`, because weeks cross month boundaries in a `fixed_date` year and in a `calendar_months` transition. |
+| `parent` | `period` | The enclosing period one level up: week → period when the subdivision of the week's fiscal year is `week_pattern` (a `week_based` year or a `week_pattern` transition), week → year otherwise (a `calendar_months` or `table` subdivision, or a `calendar_months` transition), period → quarter, quarter → year. A year has no parent (`INVALID_ARGUMENT`). |
+| `children` | `period`, `level` | Periods at `level` inside `period`, in order. `week` children of a quarter or period are `LEVEL_NOT_NESTED` unless the subdivision of its fiscal year is `week_pattern`, because weeks cross period boundaries in a `calendar_months` or `table` subdivision and in a `calendar_months` transition. |
 | `years` | `from`, `to` (fiscal year numbers, inclusive, `from` ≤ `to`, at most 10,000 years: `to` − `from` + 1 ≤ 10,000) | Array of the year Periods whose numbers lie in [`from`, `to`], in order. It is empty only when every number in the range is skipped at a change of rule. |
 | `format` | `period`, `scheme` (optional) | `{"label":"…","scheme":"…"}`, or `TEMPLATE_MISSING` when the scheme has no template for the level, or `SCHEME_NOT_FOUND` |
 | `parse` | `label` | Period, or `AMBIGUOUS_LABEL`, or `LABEL_NOT_RECOGNISED` |
@@ -187,11 +187,12 @@ In JSON each row is an object with those keys in that order. CSV output follows 
 | `UNSUPPORTED_FEATURE` | validate | A reserved part of the format is used; the hint names the planned release, or says that none is scheduled. |
 | `UNSUPPORTED_COMBINATION` | validate | A subdivision type is not valid inside the year type. |
 | `WEEKS_SUM_MISMATCH` | validate | `periods` does not sum to 52, or a `week_pattern` transition's `periods` does not sum to the transition's number of weeks. |
-| `QUARTERS_SUM_MISMATCH` | validate | `quarters` does not sum to the number of periods, which for a `calendar_months` transition is its number of months. |
+| `QUARTERS_SUM_MISMATCH` | validate | `quarters` does not sum to the number of periods, which for a `calendar_months` transition is its number of months, and for a `table` subdivision the number of listed periods in each fiscal year. |
 | `EXTRA_WEEK_MISSING` | validate | A week-based year has no `extra_week`. |
 | `EXTRA_WEEK_OUT_OF_RANGE` | validate | `extra_week.period` names a period the year does not have. |
 | `SHORT_MONTH_POLICY_MISSING` | validate | `start.day` is 29–31 and `short_month` is absent. |
-| `SUBDIVISION_YEAR_MISMATCH` | validate | `month_start_day` differs from `year.start.day`; or a transition's subdivision does not fit its dates: a `calendar_months` transition's `month_start_day` differs from the day of `transition.start` or of `from`, or a `week_pattern` transition does not start on `week.starts_on` or is not a whole number of weeks. |
+| `SUBDIVISION_YEAR_MISMATCH` | validate | `month_start_day` differs from `year.start.day`; or a `table` subdivision's first or last boundary is not a fiscal year boundary, or a fiscal year boundary between them is not listed; or a transition's subdivision does not fit its dates: a `calendar_months` transition's `month_start_day` differs from the day of `transition.start` or of `from`, or a `week_pattern` transition does not start on `week.starts_on` or is not a whole number of weeks. |
+| `TABLE_NOT_INCREASING` | validate | An entry of a `table` year's or `table` subdivision's `boundaries` is on or before the entry before it. |
 | `DEFAULT_SCHEME_MISSING` | validate | `naming.default` is not a scheme name. |
 | `INVALID_TEMPLATE` | validate | A template has no year placeholder, an unknown or misplaced placeholder, or unbalanced braces. |
 | `CENTURY_PIVOT_MISSING` | validate | A two-digit year template has no `century_pivot`. |

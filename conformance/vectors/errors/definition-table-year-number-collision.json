@@ -1,0 +1,64 @@
+{
+  "name": "definition-table-year-number-collision",
+  "description": "Invalid definition (fiscalclock 0.3.0). Illustrative table years 2024-01-01 to 2024-12-30 and 2024-12-31 to 2025-12-31, each one period. Numbered by 'start', both get 2024. Year numbering runs over the years the table covers. The complete error list is asserted (code, path and details).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, Year numbers must be unique and type table (fiscalclock 0.3.0)",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#year-numbers-must-be-unique",
+    "checked_by": "Manual reading of the 0.3.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md (year type table, subdivision type table, Timeline, Cross-block checks) and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue, 2026-11-26; fiscal_oracle.py Calendar.naming_errors scans every fiscal year the table covers (asserted)"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "table",
+      "boundaries": [
+        "2024-01-01",
+        "2024-12-31",
+        "2026-01-01"
+      ]
+    },
+    "week": {
+      "starts_on": "monday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "table",
+      "boundaries": [
+        "2024-01-01",
+        "2024-12-31",
+        "2026-01-01"
+      ],
+      "quarters": [
+        1
+      ]
+    },
+    "naming": {
+      "default": "fy",
+      "schemes": {
+        "fy": {
+          "year_number": "start",
+          "templates": {
+            "year": "FY{yyyy}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "YEAR_NUMBER_COLLISION",
+          "path": "naming.schemes.fy.year_number",
+          "details": {
+            "years": [
+              2024
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

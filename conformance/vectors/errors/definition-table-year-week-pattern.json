@@ -1,0 +1,79 @@
+{
+  "name": "definition-table-year-week-pattern",
+  "description": "Invalid definition (fiscalclock 0.3.0). Spec rule, paraphrased: A table year needs a table subdivision; week_pattern is UNSUPPORTED_COMBINATION at subdivision.type. The definition has no other error, so the complete error list is asserted (code and path of each error, sorted by path, then code).",
+  "source": {
+    "kind": "errors",
+    "citation": "spec/definition-v1.md, year and subdivision type table and Cross-block checks (fiscalclock 0.3.0, ADR-0022), and spec/api-v1.md error catalogue",
+    "url": "https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md#type-table",
+    "checked_by": "Manual reading of the 0.3.0 text of https://github.com/Karthik-beta/fiscalclock/blob/main/spec/definition-v1.md (year type table, subdivision type table, Timeline, Cross-block checks) and https://github.com/Karthik-beta/fiscalclock/blob/main/spec/api-v1.md#error-catalogue, 2026-11-26"
+  },
+  "definition": {
+    "spec_version": 1,
+    "year": {
+      "type": "table",
+      "boundaries": [
+        "2024-07-16",
+        "2025-07-17",
+        "2026-07-17",
+        "2027-07-17"
+      ]
+    },
+    "week": {
+      "starts_on": "sunday",
+      "numbering": "contains_start"
+    },
+    "subdivision": {
+      "type": "week_pattern",
+      "periods": [
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        4,
+        5
+      ],
+      "quarters": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "extra_week": {
+        "period": 12
+      }
+    },
+    "naming": {
+      "default": "bs",
+      "schemes": {
+        "bs": {
+          "year_number": "start",
+          "offset": 57,
+          "templates": {
+            "year": "FY{yyyy}",
+            "quarter": "FY{yyyy} Q{q}",
+            "period": "FY{yyyy} P{pp}",
+            "week": "FY{yyyy} W{ww}"
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "op": "validate",
+      "args": {},
+      "expect_error": [
+        {
+          "code": "UNSUPPORTED_COMBINATION",
+          "path": "subdivision.type"
+        }
+      ]
+    }
+  ]
+}

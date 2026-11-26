@@ -7,12 +7,15 @@
 //! year. A fiscal year's identity is its [`Key`], an ordinal that increases by
 //! one from each fiscal year to the next.
 
+use alloc::format;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::calendar::Level;
 use crate::date::{Date, Weekday, days_in_month};
 use crate::definition::{
-    AnchorDay, Definition, Edge, Rule, ShortMonth, Structure, TransitionSubdivision, WeekBased,
+    AnchorDay, Definition, Edge, Rule, ShortMonth, Structure, Tabled, TransitionSubdivision,
+    YearRule,
 };
 
 /// The internal identity of a fiscal year: an ordinal that increases by one
@@ -45,19 +48,23 @@ fn month_start(day: u32, short_month: Option<ShortMonth>, index: i32) -> Date {
 }
 
 /// The boundary date `B(y)` of a `week_based` rule.
-fn week_boundary(w: &WeekBased, week_start: Weekday, y: i32) -> Date {
-    let day = match w.day {
+fn week_boundary(
+    (edge, month, day, rule): (Edge, u32, AnchorDay, Rule),
+    week_start: Weekday,
+    y: i32,
+) -> Date {
+    let day = match day {
         AnchorDay::Day(d) => d,
-        AnchorDay::Last => days_in_month(y, w.month),
+        AnchorDay::Last => days_in_month(y, month),
     };
-    let target = Date::civil(y, w.month, day);
-    let qualifying = match w.edge {
+    let target = Date::civil(y, month, day);
+    let qualifying = match edge {
         Edge::End => week_start.plus(-1),
         Edge::Start => week_start,
     };
     let forward = (qualifying.index() as i32 - target.weekday().index() as i32).rem_euclid(7);
     let back = if forward == 0 { 0 } else { forward - 7 };
-    match w.rule {
+    match rule {
         Rule::First => target.add(forward),
         Rule::Last => target.add(back),
         Rule::Nearest if forward <= 3 => target.add(forward),
@@ -65,46 +72,164 @@ fn week_boundary(w: &WeekBased, week_start: Weekday, y: i32) -> Date {
     }
 }
 
-impl Structure {
-    /// `[start, end_exclusive)` of the fiscal year with rule key `y`, the
-    /// calendar year `Y` of the boundary rules in `spec/definition-v1.md`.
+/// `[start, end_exclusive)` of the fixed-date year with rule key `y`.
+fn fixed_bounds(month: u32, day: u32, short_month: Option<ShortMonth>, y: i32) -> (Date, Date) {
+    (
+        month_start(day, short_month, month_index(y, month)),
+        month_start(day, short_month, month_index(y + 1, month)),
+    )
+}
+
+/// `[start, end_exclusive)` of the week-based year with rule key `y`.
+fn week_bounds(anchor: (Edge, u32, AnchorDay, Rule), week_start: Weekday, y: i32) -> (Date, Date) {
+    match anchor.0 {
+        Edge::End => (
+            week_boundary(anchor, week_start, y - 1).add(1),
+            week_boundary(anchor, week_start, y).add(1),
+        ),
+        Edge::Start => (
+            week_boundary(anchor, week_start, y),
+            week_boundary(anchor, week_start, y + 1),
+        ),
+    }
+}
+
+/// The rule key of the year containing `date`, for a rule keyed by calendar year.
+fn search_key(bounds: impl Fn(i32) -> (Date, Date), date: Date) -> i32 {
+    let y = date.year();
+    // A boundary lies within six days of its target, so a late-December
+    // target with edge "start" can put a date in the year keyed y - 2, and
+    // an early-January target with edge "end" in the year keyed y + 2.
+    [y, y - 1, y + 1, y - 2, y + 2]
+        .into_iter()
+        .find(|&k| {
+            let (s, e) = bounds(k);
+            s <= date && date < e
+        })
+        .unwrap_or(y)
+}
+
+impl YearRule {
+    /// `[start, end_exclusive)` of the fiscal year with rule key `y`. A table
+    /// year's key is its index in the table; keys outside it are clamped.
     pub(crate) fn bounds(&self, week_start: Weekday, y: i32) -> (Date, Date) {
         match self {
-            Structure::FixedDate(f) => (
-                month_start(f.day, f.short_month, month_index(y, f.month)),
-                month_start(f.day, f.short_month, month_index(y + 1, f.month)),
-            ),
-            Structure::WeekBased(w) => match w.edge {
-                Edge::End => (
-                    week_boundary(w, week_start, y - 1).add(1),
-                    week_boundary(w, week_start, y).add(1),
-                ),
-                Edge::Start => (
-                    week_boundary(w, week_start, y),
-                    week_boundary(w, week_start, y + 1),
-                ),
-            },
+            YearRule::Fixed {
+                month,
+                day,
+                short_month,
+            } => fixed_bounds(*month, *day, *short_month, y),
+            YearRule::Week {
+                edge,
+                month,
+                day,
+                rule,
+            } => week_bounds((*edge, *month, *day, *rule), week_start, y),
+            YearRule::Table(b) => {
+                let k = y.clamp(0, b.len() as i32 - 2) as usize;
+                (b[k], b[k + 1])
+            }
         }
+    }
+
+    /// The rule key of the fiscal year containing `date`. For a table year,
+    /// −1 before the table and the number of listed years from its end on.
+    pub(crate) fn key_of(&self, week_start: Weekday, date: Date) -> i32 {
+        match self {
+            YearRule::Table(b) => b.partition_point(|&d| d <= date) as i32 - 1,
+            _ => search_key(|k| self.bounds(week_start, k), date),
+        }
+    }
+
+    /// Whether `date` is the first day of a fiscal year under this rule; for
+    /// a table year, of one of its listed years.
+    pub(crate) fn is_year_start(&self, week_start: Weekday, date: Date) -> bool {
+        match self {
+            YearRule::Table(b) => b[..b.len() - 1].binary_search(&date).is_ok(),
+            _ => self.bounds(week_start, self.key_of(week_start, date)).0 == date,
+        }
+    }
+
+    /// A hint naming the fiscal year boundaries around `date`.
+    pub(crate) fn boundary_hint(&self, week_start: Weekday, date: Date) -> String {
+        match self {
+            YearRule::Table(b) if date < b[0] || date >= b[b.len() - 1] => format!(
+                "the year table lists fiscal years from {} to {}",
+                b[0],
+                b[b.len() - 1].add(-1)
+            ),
+            _ => {
+                let (start, end) = self.bounds(week_start, self.key_of(week_start, date));
+                format!("the fiscal years around {date} start on {start} and {end}")
+            }
+        }
+    }
+
+    /// `(start, end_exclusive)` of every fiscal year from the one starting on
+    /// `first` to the one ending the day before `end`; both must be boundaries.
+    pub(crate) fn years_between(
+        &self,
+        week_start: Weekday,
+        first: Date,
+        end: Date,
+    ) -> Vec<(Date, Date)> {
+        let lo = self.key_of(week_start, first);
+        let hi = self.key_of(week_start, end);
+        (lo..hi).map(|k| self.bounds(week_start, k)).collect()
+    }
+}
+
+impl Structure {
+    /// `[start, end_exclusive)` of the fiscal year with rule key `y`, the
+    /// calendar year `Y` of the boundary rules in `spec/definition-v1.md`, or
+    /// the index of a table year.
+    pub(crate) fn bounds(&self, week_start: Weekday, y: i32) -> (Date, Date) {
+        match self {
+            Structure::FixedDate(f) => fixed_bounds(f.month, f.day, f.short_month, y),
+            Structure::WeekBased(w) => week_bounds((w.edge, w.month, w.day, w.rule), week_start, y),
+            Structure::Tabled(t) => t.year.bounds(week_start, y),
+        }
+    }
+
+    /// The first day of the first year and the day after the last year that
+    /// a rule with a table produces; `None` for a rule without one.
+    pub(crate) fn table_range(&self) -> Option<(Date, Date)> {
+        match self {
+            Structure::Tabled(t) => Some((t.boundaries[0], t.boundaries[t.boundaries.len() - 1])),
+            _ => None,
+        }
+    }
+
+    /// The rule keys of the first and last years a rule with a table produces.
+    fn key_range(&self, week_start: Weekday) -> Option<(i32, i32)> {
+        let (first, end) = self.table_range()?;
+        Some((
+            self.key_of(week_start, first),
+            self.key_of(week_start, end) - 1,
+        ))
     }
 
     /// The rule key of the fiscal year containing `date`.
     pub(crate) fn key_of(&self, week_start: Weekday, date: Date) -> i32 {
-        let y = date.year();
-        // A boundary lies within six days of its target, so a late-December
-        // target with edge "start" can put a date in the year keyed y - 2, and
-        // an early-January target with edge "end" in the year keyed y + 2.
-        [y, y - 1, y + 1, y - 2, y + 2]
-            .into_iter()
-            .find(|&k| {
-                let (s, e) = self.bounds(week_start, k);
-                s <= date && date < e
-            })
-            .unwrap_or(y)
+        match self {
+            Structure::Tabled(t) => t.year.key_of(week_start, date),
+            _ => search_key(|k| self.bounds(week_start, k), date),
+        }
     }
 
     /// `None` when `date` is the first day of a fiscal year under this rule,
-    /// otherwise the first days of the years that contain it and follow it.
+    /// or the day after a table year's last listed year, otherwise the first
+    /// days of the years that contain it and follow it.
     pub(crate) fn off_boundary(&self, week_start: Weekday, date: Date) -> Option<(Date, Date)> {
+        if let Structure::Tabled(Tabled {
+            year: YearRule::Table(b),
+            ..
+        }) = self
+        {
+            if b.last() == Some(&date) {
+                return None;
+            }
+        }
         let (start, end) = self.bounds(week_start, self.key_of(week_start, date));
         (start != date).then_some((start, end))
     }
@@ -144,6 +269,10 @@ impl Shape {
                 rule: Structure::WeekBased(w),
                 ..
             } => (&w.quarters, &w.periods),
+            Shape::Rule {
+                rule: Structure::Tabled(t),
+                ..
+            } => (&t.quarters, &[]),
             Shape::Transition(TransitionSubdivision::CalendarMonths { quarters, .. }) => {
                 (quarters, &[])
             }
@@ -215,9 +344,14 @@ impl Timeline {
         // Year boundaries move a few days either side of the target date, so
         // the first and last supported rule keys are searched for.
         let top = &def.structure;
-        let lowest = (-3..=5)
-            .find(|&k| top.bounds(week_start, k).0 >= first_day)
-            .unwrap_or(5);
+        let lowest = top.key_range(week_start).map_or_else(
+            || {
+                (-3..=5)
+                    .find(|&k| top.bounds(week_start, k).0 >= first_day)
+                    .unwrap_or(5)
+            },
+            |(lo, _)| lo,
+        );
         let mut timeline = Timeline {
             week_start,
             segments: Vec::with_capacity(2 * def.history.len() + 1),
@@ -247,10 +381,15 @@ impl Timeline {
             };
             let hi = match def.history.get(regime) {
                 Some(change) => rule.key_of(week_start, change.change_point()) - 1,
-                None => (9995..=10_003)
-                    .rev()
-                    .find(|&k| rule.bounds(week_start, k).1 <= Date::MAX)
-                    .unwrap_or(9995),
+                None => rule.key_range(week_start).map_or_else(
+                    || {
+                        (9995..=10_003)
+                            .rev()
+                            .find(|&k| rule.bounds(week_start, k).1 <= Date::MAX)
+                            .unwrap_or(9995)
+                    },
+                    |(_, hi)| hi,
+                ),
             };
             if lo <= hi {
                 next = timeline.push(
@@ -340,6 +479,22 @@ impl Timeline {
             .map(|(i, s)| {
                 let years = u64::try_from(s.last.0 - s.first.0 + 1).unwrap_or(0);
                 let per_year = match (&s.shape, level) {
+                    // Listed years can have any length, so their weeks are counted.
+                    (
+                        Shape::Rule {
+                            rule:
+                                Structure::Tabled(Tabled {
+                                    year: YearRule::Table(_),
+                                    ..
+                                }),
+                            ..
+                        },
+                        Level::Week,
+                    ) => {
+                        return (s.first.0..=s.last.0)
+                            .map(|k| u64::from(self.year_in(i, Key(k)).count(level)))
+                            .sum();
+                    }
                     // 53 or 54 weeks in a fixed_date year, 52 or 53 in a week_based one.
                     (Shape::Rule { .. }, Level::Week) => 54,
                     // Constant within a segment for the other levels.
@@ -373,6 +528,15 @@ impl Timeline {
                         extra_period: Some(w.extra_period),
                         has_extra: start.days_until(end) == 371,
                     },
+                    Structure::Tabled(t) => {
+                        // Validation lists every year's first day and gives
+                        // every year the same number of periods.
+                        let first = t.boundaries.binary_search(&start).unwrap_or(0);
+                        let periods = seg.totals.quarters[seg.totals.quarters.len() - 1] as usize;
+                        Division::Table {
+                            starts: &t.boundaries[first..=first + periods],
+                        }
+                    }
                 };
                 (start, end, division)
             }
@@ -429,6 +593,9 @@ pub(crate) enum Division<'a> {
         /// Whether this year is a 371-day year of a `week_based` rule.
         has_extra: bool,
     },
+    /// Listed periods: period `k` runs from `starts[k - 1]` to the day before
+    /// `starts[k]`; the last entry is the year's `end_exclusive`.
+    Table { starts: &'a [Date] },
 }
 
 /// Size `k` (from 1) of the sizes whose running totals are `totals` (see
@@ -513,7 +680,7 @@ impl FiscalYear<'_> {
             Division::Weeks { week_totals, .. } => {
                 week_totals[k as usize] + u32::from(self.extra_period().is_some_and(|e| e <= k))
             }
-            Division::Months { .. } => 0,
+            Division::Months { .. } | Division::Table { .. } => 0,
         }
     }
 
@@ -539,6 +706,7 @@ impl FiscalYear<'_> {
                     after_weeks(self.weeks_through(k)),
                 )
             }
+            Division::Table { starts } => (starts[k as usize - 1], starts[k as usize]),
         }
     }
 
@@ -576,6 +744,10 @@ impl FiscalYear<'_> {
                     }
                 }
                 lo
+            }
+            // The number of listed periods that start on or before the date.
+            Division::Table { starts } => {
+                starts[..periods as usize].partition_point(|&d| d <= date) as u32
             }
         }
     }
