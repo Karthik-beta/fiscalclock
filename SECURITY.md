@@ -4,7 +4,7 @@ fiscalclock computes dates from data. A security problem here could be a crash o
 
 ## Supported versions
 
-Security fixes go into the latest minor release only. As of 3 Nov 2026 the only release is 0.1.0, released on 31 Oct 2026 (see the [changelog](CHANGELOG.md)).
+Security fixes go into the latest minor release only. As of 15 Nov 2026 the latest release is 0.2.0, released on 15 Nov 2026, so 0.1.0 receives no further fixes (see the [changelog](CHANGELOG.md)).
 
 | Version | Supported |
 | --- | --- |

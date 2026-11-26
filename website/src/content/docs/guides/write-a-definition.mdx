@@ -22,7 +22,7 @@ A definition is one JSON object. Besides `spec_version`, which must be `1`, it h
 | `week` | yes | The weekday each week starts on, and how week 1 is chosen. | [`week`](/reference/spec/definition-v1/#week) |
 | `subdivision` | yes | How the year splits into periods and quarters: calendar months (`calendar_months`) or a pattern of weeks such as 4-5-4 (`week_pattern`). | [`subdivision`](/reference/spec/definition-v1/#subdivision) |
 | `naming` | yes | How fiscal years are numbered, and the label templates, such as `FY{yyyy} Q{q}`. | [`naming`](/reference/spec/definition-v1/#naming) |
-| `exceptions` | no | Reserved. Any value is rejected with `UNSUPPORTED_FEATURE` in 0.1.0. | [Reserved for later releases](/reference/spec/definition-v1/#reserved-for-later-releases) |
+| `exceptions` | no | Changes of the year rule and subdivision over time (`history`), each with an optional transition period, added in 0.2.0. `exceptions.overrides` is reserved and rejected with `UNSUPPORTED_FEATURE`. | [`exceptions`](/reference/spec/definition-v1/#exceptions) |
 
 The blocks are parsed and validated separately, and no field in one block changes the meaning of a field in another, except where the spec says so. For example, a week-based year always ends on the weekday before `week.starts_on`, a `calendar_months` subdivision is only valid in a `fixed_date` year and a `week_pattern` subdivision only in a `week_based` year, and `month_start_day` must equal `year.start.day`.
 

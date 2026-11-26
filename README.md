@@ -16,7 +16,7 @@
 
 fiscalclock is an open-source fiscal calendar engine. You describe your organisation's fiscal calendar as a JSON definition, and it tells you which fiscal year, quarter, period and week any date falls in, the bounds of every period, and the labels your organisation uses for them.
 
-**Status:** As of 4 Nov 2026, 0.1.0 is the first release (published 31 Oct 2026; see the [release notes](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.1.0)). The definition format and API are version 1 drafts and may change before 1.0; every change is recorded in the [changelog](CHANGELOG.md). The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
+**Status:** As of 15 Nov 2026, the latest release is 0.2.0 (published 15 Nov 2026; see the [release notes](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.2.0)), which adds definitions whose year rule changes, with transition periods. The definition format and API are version 1 drafts and may change before 1.0; every change is recorded in the [changelog](CHANGELOG.md). The design is documented on the [wiki](https://github.com/Karthik-beta/fiscalclock/wiki).
 
 ## Why it exists
 
@@ -73,9 +73,9 @@ The format is specified in [`spec/definition-v1.md`](spec/definition-v1.md).
 
 - Releases are built and published only by the [release workflow](.github/workflows/release.yml), from a version tag on `main`. Each publish step needs the maintainer's approval in a protected GitHub environment.
 - Before publishing, the workflow installs the built wheel and npm tarball on Linux, macOS and Windows and runs a smoke test.
-- As of 3 Nov 2026, every wheel, source distribution, npm tarball and crate of the [0.1.0 GitHub release](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.1.0) has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations), and the files on crates.io, PyPI and npm have the same SHA-256 digests as the release files. `gh attestation verify <file> --repo Karthik-beta/fiscalclock` checks a file downloaded from GitHub or from a registry.
-- As of 3 Nov 2026, every [0.1.0 file on PyPI](https://pypi.org/project/fiscalclock/0.1.0/#files) also has PyPI provenance naming the release workflow, and the npm package has npm provenance (`npm view fiscalclock@0.1.0 dist.attestations`).
-- The release workflow publishes to all three registries with trusted publishing: it authenticates with short-lived OIDC credentials, and the repository stores no registry tokens. Version 0.1.0 was published to crates.io and npm with API tokens, which have since been removed ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
+- As of 15 Nov 2026, every wheel, source distribution, npm tarball and crate of the [0.2.0 GitHub release](https://github.com/Karthik-beta/fiscalclock/releases/tag/v0.2.0) has a [build provenance attestation](https://github.com/Karthik-beta/fiscalclock/attestations), and the files on crates.io, PyPI and npm have the same SHA-256 digests as the release files. `gh attestation verify <file> --repo Karthik-beta/fiscalclock` checks a file downloaded from GitHub or from a registry.
+- As of 15 Nov 2026, every [0.2.0 file on PyPI](https://pypi.org/project/fiscalclock/0.2.0/#files) also has PyPI provenance naming the release workflow, and the npm package has npm provenance (`npm view fiscalclock@0.2.0 dist.attestations`).
+- The release workflow publishes to all three registries with trusted publishing: it authenticates with short-lived OIDC credentials, and the repository stores no registry tokens. Version 0.1.0 was published to crates.io and npm with API tokens, which were removed before 0.2.0 ([#35](https://github.com/Karthik-beta/fiscalclock/issues/35)).
 - The core depends only on `serde`, `serde_json` and `sha2`, forbids `unsafe` code, and reads no clock, environment variable or global state.
 
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
