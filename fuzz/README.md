@@ -52,7 +52,12 @@ CPU hours are wall-clock time multiplied by the number of fuzzing processes. Gat
 | 24 Nov 2026 | Windows 11, local | `validate_json` | issue #84 branch | 1 | 72 | 0.02 | Nothing found |
 | 24 Nov 2026 | Windows 11, local | `validate_structured` | issue #84 branch | 1 | 61 | 0.02 | Nothing found |
 | 24 Nov 2026 | Windows 11, local | `parse_label` | issue #84 branch | 1 | 61 | 0.02 | Nothing found |
+| 24 Nov 2026 | [`fuzz.yml` run 45326630385](https://github.com/Karthik-beta/fiscalclock/actions/runs/45326630385) | `validate_json` | `aad5e8e` | 4 | 7238 | 8.04 | Nothing found |
+| 24 Nov 2026 | [`fuzz.yml` run 45326630385](https://github.com/Karthik-beta/fiscalclock/actions/runs/45326630385) | `validate_structured` | `aad5e8e` | 4 | 7205 | 8.01 | Nothing found |
+| 24 Nov 2026 | [`fuzz.yml` run 45326630385](https://github.com/Karthik-beta/fiscalclock/actions/runs/45326630385) | `parse_label` | `aad5e8e` | 4 | 7206 | 8.01 | Nothing found |
 
-Total: 0.06 CPU hours as of 24 Nov 2026.
+Total: 24.12 CPU hours as of 24 Nov 2026, which meets Gate D's 24.
+
+The seconds for run 45326630385 are libFuzzer's own fuzzing time, from the last line of each job's log (`INFO: exiting: 0 time: …s`), and the cores are its `-fork=4`. Each job's last status line reports `oom/timeout/crash: 0/0/0`. The workflow's job summary also counted about 30 seconds of build in each row; from the next run it builds before it starts timing.
 
 The first local runs timed out on an empty input. The cause was in the harness, not in fiscalclock: reading the 377 seed definitions on the first input took longer than the ten-second limit in the instrumented build, so the targets now read them in libFuzzer's `init` step.

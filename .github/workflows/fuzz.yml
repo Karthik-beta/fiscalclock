@@ -40,6 +40,7 @@ jobs:
           test "$MINUTES" -ge 1 && test "$MINUTES" -le 330
           python3 -I fuzz/seed_corpus.py
           cd fuzz
+          cargo +"$FUZZ_NIGHTLY" fuzz build "$TARGET"
           cores=$(nproc)
           start=$(date +%s)
           status=0
